@@ -1,0 +1,816 @@
+{
+    "name": "whatsapp-router",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-layanan",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ],
+            "webhookId": "whatsapp-layanan"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Normalize and extract payload data\nconst payload = $input.first().json.body || $input.first().json;\n\n// Extract key fields\nconst phone = payload.from || payload.phone || payload.chatId || '';\nconst message = payload.body || payload.message || payload.text || '';\nconst fromMe = payload.fromMe || false;\nconst chatId = payload.from || payload.chatId || '';\n\n// Clean phone number\nconst cleanPhone = phone.replace(/[^0-9]/g, '');\n\n// Normalize message\nconst normalizedMessage = message.toLowerCase().trim();\n\nreturn {\n  json: {\n    phone: cleanPhone,\n    message: message,\n    normalizedMessage: normalizedMessage,\n    fromMe: fromMe,\n    chatId: chatId,\n    timestamp: Date.now(),\n    originalPayload: payload\n  }\n};"
+            },
+            "id": "normalize-payload",
+            "name": "Normalize Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.fromMe }}",
+                            "operation": "equal",
+                            "value2": false
+                        }
+                    ],
+                    "string": [
+                        {
+                            "value1": "={{ $json.chatId }}",
+                            "operation": "notContains",
+                            "value2": "status@broadcast"
+                        },
+                        {
+                            "value1": "={{ $json.message }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "anti-loop-filter",
+            "name": "Anti-Loop Filter",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/rate-limit/check",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "rate-limit-check",
+            "name": "Rate Limit Check",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "rate-limit-passed",
+            "name": "Rate Limit Passed",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Intent Detection with Priority Order\nconst message = $json.normalizedMessage || '';\nconst phone = $json.phone || '';\n\n// Priority order for intent detection\nconst intents = [\n  { name: 'MENU', patterns: ['menu', 'bantuan', 'help', 'mulai', 'start', 'halo', 'hai', 'p'] },\n  { name: 'PIN_REQUEST', patterns: ['pin baru', 'pinbaru', 'lupa pin', 'reset pin', 'minta pin', 'kirim pin'] },\n  { name: 'TOGGLE', patterns: ['tutup lapak', 'buka lapak', 'tutuplapak', 'bukalapak'] },\n  { name: 'STATUS', patterns: ['status', 'cek berkas', 'nomor berkas', 'cek status', 'tracking'] },\n  { name: 'UMKM', patterns: ['umkm', 'produk', 'kerupuk', 'makanan', 'usaha', 'jual', 'beli', 'warung', 'toko'] },\n  { name: 'JASA', patterns: ['jasa', 'tukang', 'servis', 'service', 'perbaikan', 'montir', 'tukang piket'] },\n  { name: 'LOKER', patterns: ['loker', 'lowongan', 'kerja', 'pekerjaan', 'lamar', 'rekrut'] },\n  { name: 'SYARAT', patterns: ['syarat', 'ketentuan', 'prosedur', 'cara', 'bagaimana', 'aturan'] }\n];\n\nlet detectedIntent = 'UNKNOWN';\n\n// Check each intent in priority order\nfor (const intent of intents) {\n  for (const pattern of intent.patterns) {\n    if (message.includes(pattern)) {\n      detectedIntent = intent.name;\n      break;\n    }\n  }\n  if (detectedIntent !== 'UNKNOWN') break;\n}\n\n// Special handling for confirmation\nif (message === 'ya' || message === 'y') {\n  detectedIntent = 'CONFIRM';\n}\n\nif (message === 'tidak' || message === 't' || message === 'batal') {\n  detectedIntent = 'CANCEL';\n}\n\nreturn {\n  json: {\n    ...$json,\n    intent: detectedIntent,\n    confidence: detectedIntent !== 'UNKNOWN' ? 'high' : 'low'\n  }\n};"
+            },
+            "id": "intent-detection",
+            "name": "Intent Detection",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "MENU",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "MENU"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "TOGGLE",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "TOGGLE"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "PIN_REQUEST",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "PIN_REQUEST"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "STATUS",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "STATUS"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "UMKM",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "UMKM"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "JASA",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "JASA"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "LOKER",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "LOKER"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "SYARAT",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "SYARAT"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": false,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "CONFIRM",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "CONFIRM"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "intent-router",
+            "name": "Intent Router",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 1,
+            "position": [
+                1400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-menu",
+                "options": {}
+            },
+            "id": "execute-wf-menu",
+            "name": "Execute wf-menu",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-owner-toggle",
+                "options": {}
+            },
+            "id": "execute-wf-toggle",
+            "name": "Execute wf-owner-toggle",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                80
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-pin-request",
+                "options": {}
+            },
+            "id": "execute-wf-pin-request",
+            "name": "Execute wf-pin-request",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                140
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-status",
+                "options": {}
+            },
+            "id": "execute-wf-status",
+            "name": "Execute wf-status",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                160
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-umkm",
+                "options": {}
+            },
+            "id": "execute-wf-umkm",
+            "name": "Execute wf-umkm",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                240
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-jasa",
+                "options": {}
+            },
+            "id": "execute-wf-jasa",
+            "name": "Execute wf-jasa",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                320
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-loker",
+                "options": {}
+            },
+            "id": "execute-wf-loker",
+            "name": "Execute wf-loker",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-faq",
+                "options": {}
+            },
+            "id": "execute-wf-faq",
+            "name": "Execute wf-faq",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                480
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "wf-complaint",
+                "options": {}
+            },
+            "id": "execute-wf-complaint",
+            "name": "Execute wf-complaint",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                560
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "session",
+                            "value": "default"
+                        },
+                        {
+                            "name": "chatId",
+                            "value": "={{ $json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.reply }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-reply",
+            "name": "Send Reply",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1800,
+                280
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({ success: true, message: 'Processed' }) }}",
+                "options": {}
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                2000,
+                280
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "session",
+                            "value": "default"
+                        },
+                        {
+                            "name": "chatId",
+                            "value": "={{ $('Normalize Payload').item.json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "⚠️ Terlalu banyak permintaan. Silakan tunggu 1 menit sebelum mengirim pesan lagi."
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "rate-limit-response",
+            "name": "Rate Limit Response",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1000,
+                350
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Anti-Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Anti-Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Rate Limit Check",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Rate Limit Check": {
+            "main": [
+                [
+                    {
+                        "node": "Rate Limit Passed",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Rate Limit Passed": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Detection",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Rate Limit Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Intent Detection": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Intent Router": {
+            "main": [
+                [
+                    {
+                        "node": "Execute wf-menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-owner-toggle",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-pin-request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-umkm",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-jasa",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-loker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-faq",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-complaint",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Execute wf-complaint",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-menu": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-owner-toggle": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-pin-request": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-status": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-umkm": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-jasa": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-loker": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-faq": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute wf-complaint": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp",
+            "createdAt": "2026-02-13T00:00:00.000Z",
+            "updatedAt": "2026-02-13T00:00:00.000Z"
+        },
+        {
+            "name": "router",
+            "createdAt": "2026-02-13T00:00:00.000Z",
+            "updatedAt": "2026-02-13T00:00:00.000Z"
+        }
+    ],
+    "triggerCount": 1,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

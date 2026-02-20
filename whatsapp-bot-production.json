@@ -1,0 +1,272 @@
+{
+    "name": "WhatsApp Bot - PRODUCTION FINAL",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-besuk",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "WAHA Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const raw = items[0].json;\nif (!raw || raw.event !== 'message') {\n  return [];\n}\nreturn items;"
+            },
+            "id": "event-filter",
+            "name": "Event Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const raw = items[0].json;\nconst payload = raw.payload || {};\nconst chatId = payload.from || '';\nconst message = (payload.body || '').trim();\nconst fromMe = payload.fromMe || false;\nif (!chatId || !chatId.includes('@c.us')) {\n  return [];\n}\nreturn [{ json: { chatId, phone: chatId.replace('@c.us', ''), message, fromMe } }];"
+            },
+            "id": "normalize-validate",
+            "name": "Normalize & Validate",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                650,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.fromMe }}",
+                            "value2": false
+                        }
+                    ]
+                }
+            },
+            "id": "anti-loop",
+            "name": "Anti Loop Filter",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                850,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const text = $json.message.toLowerCase().trim();\nlet intent = 'UNKNOWN';\nif (/^(menu|start|halo|hai)$/.test(text)) intent = 'MENU';\nelse if (/^status/.test(text)) intent = 'STATUS';\nelse if (/^syarat/.test(text)) intent = 'SYARAT';\nelse if (/^umkm/.test(text)) intent = 'UMKM';\nelse if (/^jasa/.test(text)) intent = 'JASA';\nelse if (/^loker/.test(text)) intent = 'LOKER';\nelse if (/^pengaduan/.test(text)) intent = 'PENGADUAN';\nelse if (/^(tutup lapak|buka lapak)/i.test(text)) intent = 'TOGGLE';\nreturn [{ json: { ...$json, intent } }];"
+            },
+            "id": "intent-detection",
+            "name": "Intent Detection",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/whatsapp/handle",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 325d4279031e6f9e5e54be8d4bf305bf893880945bac59cb34107680ceb5687b"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ phone: $json.phone, message: $json.message, chatId: $json.chatId }) }}",
+                "options": {}
+            },
+            "id": "call-dashboard",
+            "name": "Call Dashboard API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const dashboardResponse = $input.first().json;\nconst chatId = $('Normalize & Validate').first().json.chatId;\nconst reply = dashboardResponse.reply || 'Maaf, terjadi kesalahan. Ketik MENU untuk bantuan.';\nreturn { json: { chatId, reply } };"
+            },
+            "id": "prepare-response",
+            "name": "Prepare Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.chatId }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "chatid-guard",
+            "name": "ChatId Guard",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.chatId, text: $json.reply }) }}",
+                "options": {}
+            },
+            "id": "send-whatsapp",
+            "name": "Send to WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1850,
+                250
+            ]
+        }
+    ],
+    "connections": {
+        "WAHA Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Event Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Event Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize & Validate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize & Validate": {
+            "main": [
+                [
+                    {
+                        "node": "Anti Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Anti Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Detection",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Intent Detection": {
+            "main": [
+                [
+                    {
+                        "node": "Call Dashboard API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Dashboard API": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Response": {
+            "main": [
+                [
+                    {
+                        "node": "ChatId Guard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ChatId Guard": {
+            "main": [
+                [
+                    {
+                        "node": "Send to WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

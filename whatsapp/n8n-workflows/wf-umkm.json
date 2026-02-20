@@ -1,0 +1,146 @@
+{
+    "name": "wf-umkm",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "// Extract search query from message\nconst message = $json.message || '';\n\n// Remove UMKM keyword and get search term\nlet query = message\n  .replace(/umkm/gi, '')\n  .replace(/produk/gi, '')\n  .replace(/cari/gi, '')\n  .trim();\n\n// If no query, use default\nif (!query || query.length < 2) {\n  query = ''; // Will return all\n}\n\nreturn {\n  json: {\n    ...$json,\n    query: query\n  }\n};"
+            },
+            "id": "extract-umkm-query",
+            "name": "Extract UMKM Query",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/umkm/search",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $json.query }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "search-umkm-api",
+            "name": "Search UMKM API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "umkm-found-check",
+            "name": "UMKM Found?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format UMKM results with phone masking\nconst data = $json.data || [];\nconst query = $('Extract UMKM Query').item.json.query;\n\n// Limit to 5 results\nconst results = data.slice(0, 5);\n\nif (results.length === 0) {\n  return {\n    json: {\n      phone: $('Extract UMKM Query').item.json.phone,\n      chatId: $('Extract UMKM Query').item.json.chatId,\n      reply: `❌ *TIDAK DITEMUKAN*\\n\\nTidak ada produk UMKM dengan kata kunci \"${query}\"\\n\\n💡 Coba kata kunci lain seperti:\\n• Kerupuk\\n• Makanan\\n• Minuman\\n• Kerajinan`\n    }\n  };\n}\n\n// Format each result\nlet replyText = `🛒 *HASIL PENCARIAN UMKM*\\n`;\nif (query) replyText += `Kata kunci: \"${query}\"\\n`;\nreplyText += `Ditemukan: ${data.length} produk\\n`;\nreplyText += `───────────────────\\n\\n`;\n\nresults.forEach((item, index) => {\n  // Mask phone number\n  const phone = item.whatsapp || item.phone || '';\n  const maskedPhone = phone.length > 8 \n    ? phone.substring(0, 4) + '****' + phone.substring(phone.length - 4)\n    : phone;\n  \n  // Generate WA link\n  const waLink = `https://wa.me/${phone.replace(/[^0-9]/g, '')}`;\n  \n  replyText += `${index + 1}. *${item.nama_usaha || item.name}*\\n`;\n  replyText += `   📍 ${item.desa || item.alamat || '-'}\\n`;\n  if (item.produk || item.product) {\n    replyText += `   📦 ${item.produk || item.product}\\n`;\n  }\n  replyText += `   📱 ${maskedPhone}\\n`;\n  replyText += `   🔗 [Hubungi via WA](${waLink})\\n\\n`;\n});\n\nif (data.length > 5) {\n  replyText += `_...dan ${data.length - 5} lainnya_\\n`;\n}\n\nreplyText += `\\n💡 Ketik UMKM <produk> untuk pencarian spesifik`;\n\nreturn {\n  json: {\n    phone: $('Extract UMKM Query').item.json.phone,\n    chatId: $('Extract UMKM Query').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "format-umkm-response",
+            "name": "Format UMKM Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Error or no results\nconst query = $('Extract UMKM Query').item.json.query;\n\nconst replyText = `❌ *ERROR*\\n\\nGagal mencari data UMKM. Silakan coba lagi nanti.\\n\\n💡 Ketik MENU untuk melihat daftar layanan.`;\n\nreturn {\n  json: {\n    phone: $('Extract UMKM Query').item.json.phone,\n    chatId: $('Extract UMKM Query').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "umkm-error",
+            "name": "UMKM Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Extract UMKM Query": {
+            "main": [
+                [
+                    {
+                        "node": "Search UMKM API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search UMKM API": {
+            "main": [
+                [
+                    {
+                        "node": "UMKM Found?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "UMKM Found?": {
+            "main": [
+                [
+                    {
+                        "node": "Format UMKM Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "UMKM Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "sub-workflow"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

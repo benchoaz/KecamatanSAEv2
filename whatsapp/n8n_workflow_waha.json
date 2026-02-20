@@ -1,0 +1,602 @@
+{
+    "name": "WAHA Bot Memori Cerdas",
+    "nodes": [
+        {
+            "parameters": {
+                "event": "message",
+                "session": "default"
+            },
+            "id": "waha-trigger",
+            "name": "WahaTrigger",
+            "type": "n8n-nodes-waha.wahaTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.payload.from }}",
+                            "operation": "notContains",
+                            "value2": "status@broadcast"
+                        }
+                    ]
+                }
+            },
+            "id": "filter-broadcast",
+            "name": "FilterBroadcast",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $json.payload.from }}"
+                        },
+                        {
+                            "name": "msg",
+                            "value": "={{ $json.payload.body }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "prepare-data",
+            "name": "PrepareData",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 2,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/history/add",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $json.chatId }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $jsongen.msg }}"
+                        },
+                        {
+                            "name": "role",
+                            "value": "user"
+                        }
+                    ]
+                }
+            },
+            "id": "add-history",
+            "name": "SimpanHistory",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "dataType": "string",
+                "value1": "={{ $node[\"PrepareData\"].json.msg.toLowerCase().trim() }}",
+                "rules": {
+                    "rules": [
+                        {
+                            "value2": ".*loker.*|.*kerja.*|3",
+                            "operation": "regex",
+                            "output": 3
+                        },
+                        {
+                            "value2": ".*umkm.*|.*pasar.*|2",
+                            "operation": "regex",
+                            "output": 2
+                        },
+                        {
+                            "value2": ".*cek.*|.*status.*|.*lapor.*|1",
+                            "operation": "regex",
+                            "output": 1
+                        }
+                    ]
+                },
+                "fallbackOutput": 0
+            },
+            "id": "main-router",
+            "name": "RouterUtama",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha:3000/api/sendText",
+                "sendBody": true,
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "👋 *Halo, Selamat Datang!*\nAda yang bisa kami bantu? \n\nSilakan balas dengan mengetik *Angka* (1, 2, atau 3):\n\n1️⃣ *Layanan & Cek Berkas*\n(Cek status surat atau lapor keluhan)\n\n2️⃣ *Pasar UMKM*\n(Cari produk jualan warga lokal)\n\n3️⃣ *Info Lowongan Kerja*\n(Cari info kerja terbaru)\n\n---\n💡 *Tips:* Bapak/Ibu juga bisa langsung ketik contoh: *UMKM Kerupuk* atau *Loker Supir*"
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                }
+            },
+            "id": "send-welcome",
+            "name": "SendWelcome",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/history/add",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $node[\"SendWelcome\"].parameter[\"bodyParameters\"][\"parameters\"][1][\"value\"] }}"
+                        },
+                        {
+                            "name": "role",
+                            "value": "bot"
+                        }
+                    ]
+                }
+            },
+            "id": "log-welcome",
+            "name": "LogWelcome",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1500,
+                0
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha:3000/api/sendText",
+                "sendBody": true,
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "📝 *Layanan & Cek Berkas*\n\nUntuk kenyamanan Bapak/Ibu, silakan pilih bantuan berikut:\n\n📌 *Cek Status Berkas*\nKetik pesan dengan format: *STATUS [Nomor Resi/UUID]*\nContoh: _STATUS 12345_\n\n📌 *Lapor Keluhan*\nBapak/Ibu bisa langsung menceritakan masalah/keluhan di sini. Admin kami akan segera memprosesnya ke sistem Dashboard Kecamatan.\n\n---\nKetik *MENU* untuk kembali ke awal."
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                }
+            },
+            "id": "send-service-info",
+            "name": "InfoLayanan",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/history/add",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $node[\"InfoLayanan\"].parameter[\"bodyParameters\"][\"parameters\"][1][\"value\"] }}"
+                        },
+                        {
+                            "name": "role",
+                            "value": "bot"
+                        }
+                    ]
+                }
+            },
+            "id": "log-service",
+            "name": "LogService",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1500,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/umkm/search",
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $node[\"PrepareData\"].json.msg.replace(/umkm|cari|pasar/gi, '').trim() || 'semua' }}"
+                        }
+                    ]
+                }
+            },
+            "id": "api-umkm",
+            "name": "CariUMKM",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/loker/search",
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $node[\"PrepareData\"].json.msg.replace(/loker|kerja|lowongan/gi, '').trim() || 'semua' }}"
+                        }
+                    ]
+                }
+            },
+            "id": "api-loker",
+            "name": "CariLoker",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha:3000/api/sendText",
+                "sendBody": true,
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ \n  $json.success && $json.data.length > 0 \n  ? \"🛍️ *Hasil Pencarian UMKM*\\n\\n\" + $json.data.map(i => \"📦 *\" + i.name + \"*\\n📝 \" + (i.product || \"Produk\") + \"\\n💰 Rp \" + (i.price || \"-\") + \"\\n📱 WA: wa.me/\" + i.contact_wa.replace(/[^0-9]/g, \"\") + \"\\n---\").join(\"\\n\\n\") + \"\\n\\nSilakan klik link WA di atas untuk langsung memesan ya! 😊\"\n  : \"🙏 *Maaf Bapak/Ibu...*\\n\\nData UMKM yang dicari belum ketemu. Coba ketik kata kunci lain yang lebih umum (misal: Bakso, Kerupuk, atau Madu).\"\n}}"
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                }
+            },
+            "id": "send-reply-umkm",
+            "name": "ReplyUMKM",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1500,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/history/add",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $node[\"CariUMKM\"].json.data.length > 0 ? 'Ditemukan hasil UMKM' : 'Data UMKM tidak ditemukan' }}"
+                        },
+                        {
+                            "name": "role",
+                            "value": "bot"
+                        }
+                    ]
+                }
+            },
+            "id": "log-umkm",
+            "name": "LogUMKM",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1750,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha:3000/api/sendText",
+                "sendBody": true,
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ \n  $json.success && $json.data.length > 0 \n  ? \"👷 *Info Lowongan Kerja*\\n\\n\" + $json.data.map(i => \"📌 *\" + i.title + \"*\\n📂 Kategori: \" + i.job_category + \"\\n🕒 Waktu: \" + (i.work_time || \"-\") + \"\\n📱 Hubungi: wa.me/\" + i.contact_wa.replace(/[^0-9]/g, \"\") + \"\\n---\").join(\"\\n\\n\") + \"\\n\\nSemoga Bapak/Ibu lekas mendapatkan pekerjaan yang cocok! ✨\"\n  : \"🙏 *Maaf Bapak/Ibu...*\\n\\nInformasi lowongan kerja untuk saat ini belum tersedia. Silakan cek lagi nanti atau coba ketik kata kunci lain (misal: Sopir, Admin, atau Sales).\"\n}}"
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                }
+            },
+            "id": "send-reply-loker",
+            "name": "ReplyLoker",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1500,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/history/add",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $node[\"PrepareData\"].json.chatId }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $node[\"CariLoker\"].json.data.length > 0 ? 'Ditemukan hasil Loker' : 'Data Loker tidak ditemukan' }}"
+                        },
+                        {
+                            "name": "role",
+                            "value": "bot"
+                        }
+                    ]
+                }
+            },
+            "id": "log-loker",
+            "name": "LogLoker",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1750,
+                600
+            ]
+        }
+    ],
+    "connections": {
+        "WahaTrigger": {
+            "main": [
+                [
+                    {
+                        "node": "FilterBroadcast",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "FilterBroadcast": {
+            "main": [
+                [
+                    {
+                        "node": "PrepareData",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PrepareData": {
+            "main": [
+                [
+                    {
+                        "node": "SimpanHistory",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SimpanHistory": {
+            "main": [
+                [
+                    {
+                        "node": "RouterUtama",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "RouterUtama": {
+            "main": [
+                [
+                    {
+                        "node": "SendWelcome",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "InfoLayanan",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "CariUMKM",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "CariLoker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SendWelcome": {
+            "main": [
+                [
+                    {
+                        "node": "LogWelcome",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "InfoLayanan": {
+            "main": [
+                [
+                    {
+                        "node": "LogService",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "CariUMKM": {
+            "main": [
+                [
+                    {
+                        "node": "ReplyUMKM",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ReplyUMKM": {
+            "main": [
+                [
+                    {
+                        "node": "LogUMKM",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "CariLoker": {
+            "main": [
+                [
+                    {
+                        "node": "ReplyLoker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ReplyLoker": {
+            "main": [
+                [
+                    {
+                        "node": "LogLoker",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

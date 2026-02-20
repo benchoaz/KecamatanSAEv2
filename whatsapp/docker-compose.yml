@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha-kecamatan
+    restart: unless-stopped
+    ports:
+      - "3099:3000"
+    volumes:
+      - waha_sessions:/app/sessions
+    environment:
+      - WAHA_PRINT_QR=true
+      - WAHA_LOG_LEVEL=info
+      - WAHA_AUTHENTICATION=API_KEY
+      # SHA512 API Key - sama dengan yang di-set ke n8n WAHA_API_KEY
+      - WAHA_API_KEY=sha512:cad598d3cd49c91511f4d34a28c094264f1c5d15eb3f1a0ba3080379406210a864f4cd3b88852a116df202846df788e6f369027d749d5da8b13d664b15bda6bf
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=admin123
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=admin123
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+    networks:
+      - gateway-net
+
+  n8n:
+    image: n8nio/n8n
+    container_name: n8n-kecamatan
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://n8n:5678/
+      # API Key untuk kirim pesan ke WAHA - diakses di workflow via $env.WAHA_API_KEY
+      - WAHA_API_KEY=62a72516dd1b418499d9dd22075ccfa0
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      # Token untuk akses Dashboard API - ambil dari .env file
+      - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - gateway-net
+
+  whatsapp-api:
+    build:
+      context: ./laravel-api
+      dockerfile: Dockerfile
+    container_name: whatsapp-api-gateway
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./laravel-api:/app
+    ports:
+      - "8001:8001"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DASHBOARD_API_URL=${DASHBOARD_API_URL:-http://host.docker.internal:8080}
+      - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - gateway-net
+    tty: true
+    stdin_open: true
+    command: php -S 0.0.0.0:8001 -t public
+
+volumes:
+  waha_sessions:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  gateway-net:
+    external: true

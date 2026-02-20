@@ -1,0 +1,146 @@
+{
+    "name": "wf-faq",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "// Extract FAQ query from message\nconst message = $json.message || '';\n\nlet query = message\n  .replace(/syarat/gi, '')\n  .replace(/ketentuan/gi, '')\n  .replace(/prosedur/gi, '')\n  .replace(/cara/gi, '')\n  .replace(/bagaimana/gi, '')\n  .replace(/aturan/gi, '')\n  .trim();\n\nif (!query || query.length < 2) {\n  query = 'info';\n}\n\nreturn {\n  json: {\n    ...$json,\n    query: query\n  }\n};"
+            },
+            "id": "extract-faq-query",
+            "name": "Extract FAQ Query",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/faq/search",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $json.query }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "search-faq-api",
+            "name": "Search FAQ API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "faq-found-check",
+            "name": "FAQ Found?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format FAQ response\nconst data = $json.data || {};\nconst query = $('Extract FAQ Query').item.json.query;\n\nif (!data.question && !data.answer) {\n  // No FAQ found, ask for complaint confirmation\n  return {\n    json: {\n      phone: $('Extract FAQ Query').item.json.phone,\n      chatId: $('Extract FAQ Query').item.json.chatId,\n      reply: `❓ *INFORMASI BELUM TERSEDIA*\\n\\nMaaf, tidak ditemukan informasi untuk \"${query}\"\\n\\nApakah pesan ini ingin dijadikan pengaduan resmi?\\n\\n✅ Balas *YA* untuk membuat pengaduan\\n❌ Balas *TIDAK* untuk membatalkan`,\n      needsConfirmation: true,\n      originalMessage: $('Extract FAQ Query').item.json.message\n    }\n  };\n}\n\nlet replyText = `📋 *INFORMASI*\\n\\n`;\nreplyText += `❓ *${data.question || query}*\\n\\n`;\nreplyText += `${data.answer || 'Informasi tidak tersedia'}\\n\\n`;\n\nif (data.requirements && data.requirements.length > 0) {\n  replyText += `📄 *Syarat:*\\n`;\n  data.requirements.forEach((req, i) => {\n    replyText += `${i + 1}. ${req}\\n`;\n  });\n  replyText += `\\n`;\n}\n\nif (data.steps && data.steps.length > 0) {\n  replyText += `📝 *Langkah-langkah:*\\n`;\n  data.steps.forEach((step, i) => {\n    replyText += `${i + 1}. ${step}\\n`;\n  });\n  replyText += `\\n`;\n}\n\nreplyText += `💡 Ketik MENU untuk layanan lain`;\n\nreturn {\n  json: {\n    phone: $('Extract FAQ Query').item.json.phone,\n    chatId: $('Extract FAQ Query').item.json.chatId,\n    reply: replyText,\n    needsConfirmation: false\n  }\n};"
+            },
+            "id": "format-faq-response",
+            "name": "Format FAQ Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Error response\nconst query = $('Extract FAQ Query').item.json.query;\n\nconst replyText = `❌ *ERROR*\\n\\nGagal mencari informasi. Silakan coba lagi nanti.\\n\\n💡 Ketik MENU untuk melihat daftar layanan.`;\n\nreturn {\n  json: {\n    phone: $('Extract FAQ Query').item.json.phone,\n    chatId: $('Extract FAQ Query').item.json.chatId,\n    reply: replyText,\n    needsConfirmation: false\n  }\n};"
+            },
+            "id": "faq-error",
+            "name": "FAQ Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Extract FAQ Query": {
+            "main": [
+                [
+                    {
+                        "node": "Search FAQ API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search FAQ API": {
+            "main": [
+                [
+                    {
+                        "node": "FAQ Found?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "FAQ Found?": {
+            "main": [
+                [
+                    {
+                        "node": "Format FAQ Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "FAQ Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "sub-workflow"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

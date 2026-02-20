@@ -1,0 +1,119 @@
+/* Premium Filament Customizations */
+
+/* Glassmorphism for Sidebar */
+.fi-sidebar {
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.fi-sidebar-header {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.fi-sidebar-nav-link {
+    border-radius: 8px !important;
+    margin: 4px 8px !important;
+    transition: all 0.2s ease !important;
+}
+
+.fi-sidebar-nav-link:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateX(4px);
+}
+
+.fi-sidebar-nav-link-active {
+    background: linear-gradient(90deg, #6366f1 0%, #4338ca 100%) !important;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Glassmorphism for Cards */
+.fi-ta-content,
+.fi-section,
+.fi-fo-wizard {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 16px !important;
+}
+
+/* Header & Topbar */
+.fi-topbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.fi-topbar-item {
+    border-radius: 8px !important;
+}
+
+/* Modal & Slide-over */
+.fi-modal-window {
+    border-radius: 20px !important;
+    overflow: hidden !important;
+}
+
+/* Buttons */
+.fi-btn {
+    border-radius: 10px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.fi-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Tables */
+.fi-ta-table {
+    border-spacing: 0 8px !important;
+    border-collapse: separate !important;
+}
+
+.fi-ta-row {
+    background: white !important;
+    transition: transform 0.2s ease !important;
+}
+
+.fi-ta-row:hover {
+    transform: scale(1.005);
+    background: #f8fafc !important;
+}
+
+/* Badges */
+.fi-badge {
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.025em !important;
+}
+
+/* Typography */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.2);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.4);
+}

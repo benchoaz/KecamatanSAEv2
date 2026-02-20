@@ -1,0 +1,198 @@
+{
+    "name": "WAHA to Kecamatan Gateway",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-incoming",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "id": "webhook-node-id",
+            "name": "Incoming WhatsApp (WAHA)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// ========================================\n// CRITICAL: Infinite Loop Prevention Filter\n// ROOT CAUSE of 143% CPU issue\n// ========================================\n\n// Get the payload\nconst payload = $input.item.json.payload || $input.item.json.body || $input.item.json;\n\n// Filter 1: Ignore broadcast messages (status@broadcast)\n// This is the MAIN cause of infinite loop\nif (payload.from === 'status@broadcast') {\n  return [];\n}\n\n// Filter 2: Ignore empty messages\nif (!payload.body && !payload.text) {\n  return [];\n}\n\nconst messageText = (payload.body || payload.text || '').trim();\nif (messageText === '') {\n  return [];\n}\n\n// Filter 3: Ignore own messages (fromMe = true)\nif (payload.fromMe === true) {\n  return [];\n}\n\n// Filter 4: Ignore messages with only media (no text)\nif (payload.hasMedia && !payload.body && !payload.text) {\n  return [];\n}\n\n// Filter 5: Ignore system messages\nif (payload.type && ['e2e_notification', 'notification_template'].includes(payload.type)) {\n  return [];\n}\n\n// If all filters pass, continue workflow\nreturn {\n  json: {\n    ...$input.item.json,\n    _filtered: false,\n    _timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "loop-filter-node",
+            "name": "🛡️ Loop Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "keepOnlySet": true,
+                "values": {
+                    "string": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.body?.from || $json.from}}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{$json.body?.text || $json.text}}"
+                        },
+                        {
+                            "name": "sender_name",
+                            "value": "={{$json.body?.name || 'Warga'}}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "set-node-id",
+            "name": "Normalize WhatsApp Payload",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 2,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const text = ($json.message || '').toLowerCase();\n\nlet category = 'pelayanan';\n\nif (/(lapor|keluhan|rusak|aduan|komplain|masalah)/.test(text)) {\n  category = 'pengaduan';\n} else if (/(usaha|jualan|produk|umkm|dagang|bisnis|toko)/.test(text)) {\n  category = 'umkm';\n} else if (/(lowongan|kerja|loker|pekerjaan|lamaran|vacancy)/.test(text)) {\n  category = 'loker';\n}\n\nreturn [{\n  json: {\n    phone: $json.phone,\n    sender_name: $json.sender_name,\n    message: $json.message,\n    category\n  }\n}];"
+            },
+            "id": "function-node-id",
+            "name": "Classify Category (Keyword)",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api-gateway:8001/api/webhook",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.phone}}"
+                        },
+                        {
+                            "name": "sender_name",
+                            "value": "={{$json.sender_name}}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{$json.message}}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{$json.category}}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "http-node-id",
+            "name": "Send to Kecamatan API Gateway",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "options": {
+                    "responseBody": "{\n  \"status\": \"received\",\n  \"message\": \"Pesan Anda sudah diterima oleh Kecamatan Besuk.\"\n}"
+                }
+            },
+            "id": "respond-node-id",
+            "name": "Acknowledge WAHA",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Incoming WhatsApp (WAHA)": {
+            "main": [
+                [
+                    {
+                        "node": "🛡️ Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "🛡️ Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize WhatsApp Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize WhatsApp Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Classify Category (Keyword)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Classify Category (Keyword)": {
+            "main": [
+                [
+                    {
+                        "node": "Send to Kecamatan API Gateway",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to Kecamatan API Gateway": {
+            "main": [
+                [
+                    {
+                        "node": "Acknowledge WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "hash": "07c39d96853e8e19e13a4df83445582c",
+    "id": "1"
+}

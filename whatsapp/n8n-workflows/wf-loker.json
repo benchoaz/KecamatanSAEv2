@@ -1,0 +1,146 @@
+{
+    "name": "wf-loker",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "// Extract search query from message\nconst message = $json.message || '';\n\nlet query = message\n  .replace(/loker/gi, '')\n  .replace(/lowongan/gi, '')\n  .replace(/kerja/gi, '')\n  .replace(/cari/gi, '')\n  .trim();\n\nif (!query || query.length < 2) {\n  query = '';\n}\n\nreturn {\n  json: {\n    ...$json,\n    query: query\n  }\n};"
+            },
+            "id": "extract-loker-query",
+            "name": "Extract Loker Query",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/loker/search",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $json.query }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "search-loker-api",
+            "name": "Search Loker API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "loker-found-check",
+            "name": "Loker Found?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format Loker results\nconst data = $json.data || [];\nconst query = $('Extract Loker Query').item.json.query;\n\nconst results = data.slice(0, 5);\n\nif (results.length === 0) {\n  return {\n    json: {\n      phone: $('Extract Loker Query').item.json.phone,\n      chatId: $('Extract Loker Query').item.json.chatId,\n      reply: `❌ *TIDAK DITEMUKAN*\\n\\nTidak ada lowongan kerja dengan kata kunci \"${query}\"\\n\\n💡 Coba kata kunci lain seperti:\\n• Sopir\\n• Admin\\n• Karyawan\\n• Operator`\n    }\n  };\n}\n\nlet replyText = `💼 *HASIL PENCARIAN LOWONGAN KERJA*\\n`;\nif (query) replyText += `Kata kunci: \"${query}\"\\n`;\nreplyText += `Ditemukan: ${data.length} lowongan\\n`;\nreplyText += `───────────────────\\n\\n`;\n\nresults.forEach((item, index) => {\n  const phone = item.whatsapp || item.phone || '';\n  const maskedPhone = phone.length > 8 \n    ? phone.substring(0, 4) + '****' + phone.substring(phone.length - 4)\n    : phone;\n  \n  replyText += `${index + 1}. *${item.judul || item.title || item.posisi}*\\n`;\n  replyText += `   🏢 ${item.perusahaan || item.company || '-'}\\n`;\n  replyText += `   📍 ${item.lokasi || item.desa || '-'}\\n`;\n  if (item.gaji || item.salary) {\n    replyText += `   💰 ${item.gaji || item.salary}\\n`;\n  }\n  if (item.tipe || item.type) {\n    replyText += `   ⏰ ${item.tipe || item.type}\\n`;\n  }\n  replyText += `   📱 ${maskedPhone}\\n\\n`;\n});\n\nif (data.length > 5) {\n  replyText += `_...dan ${data.length - 5} lainnya_\\n`;\n}\n\nreplyText += `\\n💡 Ketik LOKER <posisi> untuk pencarian spesifik`;\n\nreturn {\n  json: {\n    phone: $('Extract Loker Query').item.json.phone,\n    chatId: $('Extract Loker Query').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "format-loker-response",
+            "name": "Format Loker Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const replyText = `❌ *ERROR*\\n\\nGagal mencari data lowongan kerja. Silakan coba lagi nanti.\\n\\n💡 Ketik MENU untuk melihat daftar layanan.`;\n\nreturn {\n  json: {\n    phone: $('Extract Loker Query').item.json.phone,\n    chatId: $('Extract Loker Query').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "loker-error",
+            "name": "Loker Error",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Extract Loker Query": {
+            "main": [
+                [
+                    {
+                        "node": "Search Loker API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search Loker API": {
+            "main": [
+                [
+                    {
+                        "node": "Loker Found?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loker Found?": {
+            "main": [
+                [
+                    {
+                        "node": "Format Loker Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Loker Error",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "sub-workflow"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

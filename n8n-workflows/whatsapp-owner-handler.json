@@ -1,0 +1,525 @@
+{
+    "name": "whatsapp-owner-handler",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-owner",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "node-webhook",
+            "name": "Owner Handler Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "webhookId": "whatsapp-owner"
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 2: EVENT FILTER\nconst raw = $input.first().json;\n\nif (!raw || raw.event !== 'message') {\n  return [];\n}\n\nreturn $input.all();"
+            },
+            "id": "node-event-filter",
+            "name": "Event Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                280,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 3: NORMALIZE & VALIDATE\nconst raw = $input.first().json;\nconst payload = raw.payload || {};\n\nconst chatId = (payload.from || '').trim();\nconst message = (payload.body || '').trim();\nconst fromMe = payload.fromMe === true;\n\n// Validasi wajib\nif (!chatId || !chatId.includes('@c.us')) return [];\nif (!message) return [];\nif (fromMe) return [];\n\nconst phone = chatId.replace('@c.us', '');\n\nreturn [{ json: { chatId, phone, message, timestamp: new Date().toISOString() } }];"
+            },
+            "id": "node-normalize",
+            "name": "Normalize & Validate",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Detect TOGGLE intent\nconst text = ($json.message || '').toLowerCase().trim();\nconst isToggle = /^(tutup lapak|buka lapak|tutuplapak|bukalapak)$/i.test(text);\n\nif (!isToggle) return [];\n\nconst action = text.includes('tutup') ? 'close' : 'open';\nconst actionLabel = action === 'close' ? 'TUTUP' : 'BUKA';\n\nreturn [{ json: { ...$json, action, actionLabel } }];"
+            },
+            "id": "node-toggle-filter",
+            "name": "Toggle Intent Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Request PIN prompt\nconst actionLabel = $json.actionLabel || 'UBAH';\nconst replyText = `🔐 Anda akan *${actionLabel} LAPAK*.\n\nMasukkan PIN Owner Anda (6 digit):\n\n_Ketik MENU untuk batal_`;\n\nreturn [{ json: { ...$json, replyText, step: 'awaiting_pin' } }];"
+            },
+            "id": "node-request-pin",
+            "name": "Request PIN Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                840,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Detect PIN submission (6 digits)\nconst text = ($json.message || '').trim();\nconst isPinSubmit = /^\\d{6}$/.test(text);\n\nif (!isPinSubmit) return [];\n\nreturn [{ json: { ...$json, pin: text } }];"
+            },
+            "id": "node-pin-detect",
+            "name": "PIN Submit Detect",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                840,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/v1/external/owner/verify-pin",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ phone: $json.phone, pin: $json.pin }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-verify-pin",
+            "name": "Verify PIN API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1040,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "pin-valid-check",
+                            "leftValue": "={{ $json.success }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "node-pin-valid",
+            "name": "PIN Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1240,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/v1/external/owner/toggle-listing",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ phone: $('Normalize & Validate').first().json.phone, pin: $('PIN Submit Detect').first().json.pin, action: $('Toggle Intent Filter').first().json.action }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-toggle-api",
+            "name": "Toggle Listing API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1440,
+                340
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Toggle success response\nconst apiMsg = $json.message || '';\nconst action = $('Toggle Intent Filter').first()?.json?.action;\nconst actionLabel = action === 'close' ? 'TUTUP' : 'BUKA';\nconst chatId = $('Normalize & Validate').first().json.chatId;\n\nconst replyText = `✅ Lapak berhasil di-${actionLabel}!\n\n${apiMsg}\n\n_Ketik MENU untuk kembali_`;\n\nreturn [{ json: { chatId, replyText } }];"
+            },
+            "id": "node-toggle-success",
+            "name": "Toggle Success",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// PIN invalid response\nconst chatId = $('Normalize & Validate').first().json.chatId;\nconst replyText = `❌ PIN salah.\n\nSilakan coba lagi atau hubungi admin.\n\n_Ketik MENU untuk kembali_`;\n\nreturn [{ json: { chatId, replyText } }];"
+            },
+            "id": "node-pin-invalid",
+            "name": "PIN Invalid Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1440,
+                480
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "chatid-guard",
+                            "leftValue": "={{ $json.chatId }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEquals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "node-chatid-guard",
+            "name": "ChatId Guard",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1840,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "={{ $env.WAHA_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.chatId, text: $json.replyText }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-send-pin-prompt",
+            "name": "Send PIN Prompt",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1060,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "={{ $env.WAHA_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.chatId, text: $json.replyText }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-send-final",
+            "name": "SendText WAHA Final",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                2040,
+                360
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"status\": \"ok\" }",
+                "options": {}
+            },
+            "id": "node-respond",
+            "name": "Respond 200",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                2040,
+                460
+            ]
+        }
+    ],
+    "connections": {
+        "Owner Handler Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Event Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Event Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize & Validate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize & Validate": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Intent Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Intent Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Request PIN Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "PIN Submit Detect",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Request PIN Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Send PIN Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PIN Submit Detect": {
+            "main": [
+                [
+                    {
+                        "node": "Verify PIN API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verify PIN API": {
+            "main": [
+                [
+                    {
+                        "node": "PIN Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PIN Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Listing API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "PIN Invalid Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Listing API": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Success": {
+            "main": [
+                [
+                    {
+                        "node": "ChatId Guard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PIN Invalid Response": {
+            "main": [
+                [
+                    {
+                        "node": "ChatId Guard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ChatId Guard": {
+            "main": [
+                [
+                    {
+                        "node": "SendText WAHA Final",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond 200",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SendText WAHA Final": {
+            "main": [
+                [
+                    {
+                        "node": "Respond 200",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "errorWorkflow": "whatsapp-error-handler"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "production"
+        },
+        {
+            "name": "owner"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-20T00:43:00.000Z",
+    "versionId": "1"
+}

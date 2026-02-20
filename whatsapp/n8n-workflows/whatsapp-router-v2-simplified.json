@@ -1,0 +1,196 @@
+{
+    "name": "WhatsApp Bot - Simplified Router v2",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "WAHA Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.fromMe }}",
+                            "operation": "notEqual",
+                            "value2": "true"
+                        },
+                        {
+                            "value1": "={{ $json.payload?.from || $json.from }}",
+                            "operation": "notContains",
+                            "value2": "@newsletter"
+                        },
+                        {
+                            "value1": "={{ $json.payload?.from || $json.from }}",
+                            "operation": "notContains",
+                            "value2": "@broadcast"
+                        }
+                    ]
+                }
+            },
+            "id": "filter-loop",
+            "name": "Anti-Loop Filter",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/whatsapp/handle",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 325d4279031e6f9e5e54be8d4bf305bf893880945bac59cb34107680ceb5687b"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ ($json.payload?.from || $json.from || '').replace('@c.us', '') }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $json.payload?.body || $json.body || '' }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 10000
+                }
+            },
+            "id": "call-dashboard",
+            "name": "Call Dashboard API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ {\n  \"session\": \"default\",\n  \"chatId\": $json.from,\n  \"text\": $('Call Dashboard API').item.json.reply\n} }}",
+                "options": {
+                    "timeout": 5000
+                }
+            },
+            "id": "send-whatsapp",
+            "name": "Send to WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                850,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "WAHA Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Anti-Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Anti-Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Call Dashboard API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Dashboard API": {
+            "main": [
+                [
+                    {
+                        "node": "Send to WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "v2-simplified",
+    "id": "whatsapp-bot-router-v2",
+    "meta": {
+        "instanceId": "dashboard-kecamatan"
+    },
+    "tags": []
+}

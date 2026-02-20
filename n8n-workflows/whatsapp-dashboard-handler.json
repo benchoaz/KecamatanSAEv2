@@ -1,0 +1,324 @@
+{
+    "name": "whatsapp-dashboard-handler",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-dashboard",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "node-webhook",
+            "name": "Dashboard Handler Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "webhookId": "whatsapp-dashboard"
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 2: EVENT FILTER\nconst raw = $input.first().json;\n\nif (!raw || raw.event !== 'message') {\n  return [];\n}\n\nreturn $input.all();"
+            },
+            "id": "node-event-filter",
+            "name": "Event Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                280,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 3: NORMALIZE & VALIDATE\nconst raw = $input.first().json;\nconst payload = raw.payload || {};\n\nconst chatId = (payload.from || '').trim();\nconst message = (payload.body || '').trim();\nconst fromMe = payload.fromMe === true;\n\n// Validasi wajib\nif (!chatId || !chatId.includes('@c.us')) return [];\nif (!message) return [];\nif (fromMe) return [];\n\nconst phone = chatId.replace('@c.us', '');\n\nreturn [{ json: { chatId, phone, message, timestamp: new Date().toISOString() } }];"
+            },
+            "id": "node-normalize",
+            "name": "Normalize & Validate",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Detect STATUS intent\nconst text = ($json.message || '').toLowerCase().trim();\nconst isStatus = /^status$/.test(text);\n\nif (!isStatus) return [];\n\nreturn [{ json: $json }];"
+            },
+            "id": "node-status-filter",
+            "name": "Status Intent Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/cek-berkas",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ phone: $json.phone }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-cek-berkas",
+            "name": "Cek Berkas API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format status berkas response\nconst apiResult = $json;\nconst chatId = $('Normalize & Validate').first().json.chatId;\n\nlet replyText;\n\nif (!apiResult || apiResult.status === 'not_found' || apiResult.error) {\n  replyText = `📄 *CEK STATUS BERKAS*\n\nMaaf, tidak ada data berkas yang ditemukan untuk nomor ini.\n\nJika Anda baru mendaftar, silakan tunggu 1x24 jam.\nAtau hubungi kantor kecamatan langsung.\n\n_Ketik MENU untuk kembali_`;\n} else {\n  const items = Array.isArray(apiResult.data) ? apiResult.data : [apiResult.data];\n  replyText = `📄 *STATUS BERKAS ANDA*\n\n`;\n  items.forEach((item, i) => {\n    const statusEmoji = item.status === 'selesai' ? '✅' : item.status === 'proses' ? '🔄' : '⏳';\n    replyText += `${i + 1}. *${item.jenis_layanan || item.layanan || '-'}*\n`;\n    replyText += `   ${statusEmoji} Status: ${item.status || '-'}\n`;\n    replyText += `   📅 Tgl: ${item.tanggal || '-'}\n`;\n    if (item.catatan) replyText += `   📝 ${item.catatan}\\n`;\n    replyText += `\n`;\n  });\n  replyText += `_Ketik MENU untuk kembali_`;\n}\n\nreturn [{ json: { chatId, replyText } }];"
+            },
+            "id": "node-format-status",
+            "name": "Format Status Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1040,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "chatid-guard",
+                            "leftValue": "={{ $json.chatId }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEquals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "node-chatid-guard",
+            "name": "ChatId Guard",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                1240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "={{ $env.WAHA_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.chatId, text: $json.replyText }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-send-text",
+            "name": "SendText WAHA",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1440,
+                260
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"status\": \"ok\" }",
+                "options": {}
+            },
+            "id": "node-respond",
+            "name": "Respond 200",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1440,
+                380
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Error catch - log dan kirim pesan fallback\nconst error = $json.error || {};\nconsole.error('Dashboard API Error:', JSON.stringify(error));\n\n// Ambil chatId dari context sebelumnya jika tersedia\nconst chatId = $('Normalize & Validate').first()?.json?.chatId || '';\n\nif (!chatId) return [];\n\nreturn [{ json: {\n  chatId,\n  replyText: '⚠️ Maaf, layanan sedang gangguan. Silakan coba beberapa saat lagi.'\n} }];"
+            },
+            "id": "node-error-handler",
+            "name": "Error Handler",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1040,
+                460
+            ]
+        }
+    ],
+    "connections": {
+        "Dashboard Handler Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Event Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Event Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize & Validate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize & Validate": {
+            "main": [
+                [
+                    {
+                        "node": "Status Intent Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Status Intent Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Cek Berkas API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Cek Berkas API": {
+            "main": [
+                [
+                    {
+                        "node": "Format Status Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Status Response": {
+            "main": [
+                [
+                    {
+                        "node": "ChatId Guard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ChatId Guard": {
+            "main": [
+                [
+                    {
+                        "node": "SendText WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond 200",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SendText WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "Respond 200",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "errorWorkflow": "whatsapp-error-handler"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "production"
+        },
+        {
+            "name": "dashboard"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-20T00:43:00.000Z",
+    "versionId": "1"
+}

@@ -1,0 +1,327 @@
+{
+    "name": "WhatsApp Message Classifier with Auto-Reply",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-incoming",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-waha",
+            "name": "Webhook WAHA",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "whatsapp-incoming"
+        },
+        {
+            "parameters": {
+                "functionCode": "// Extract message data from WAHA webhook\nconst body = $input.item.json.body;\n\n// Determine if it's a group or private chat\nconst isGroup = body.from && body.from.includes('@g.us');\nconst chatId = body.from || '';\nconst phone = isGroup ? chatId.replace('@g.us', '') : chatId.replace('@c.us', '');\n\nreturn {\n  phone: phone,\n  chatId: chatId,\n  isGroup: isGroup,\n  message: body.body || body.text || '',\n  sender_name: body.notifyName || body.pushName || phone,\n  timestamp: body.timestamp || Date.now(),\n  message_type: body.type || 'text',\n  raw_data: body\n};"
+            },
+            "id": "extract-data",
+            "name": "Extract Message Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(keluhan|lapor|masalah|rusak|komplain|aduan)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "pengaduan"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(surat|ktp|kk|administrasi|layanan|akta|nikah|cerai|domisili)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "pelayanan"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(usaha|jualan|produk|umkm|dagang|bisnis|toko)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "umkm"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(lowongan|kerja|loker|pekerjaan|lamaran|vacancy)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "loker"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "classify-message",
+            "name": "Classify Message",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Set category based on output\nconst outputName = $node[\"Classify Message\"].outputName;\nconst category = outputName === 'extra' ? 'pelayanan' : outputName;\n\n// Set auto-reply message based on category\nlet autoReply = '';\nswitch(category) {\n  case 'pengaduan':\n    autoReply = '📋 *Laporan Diterima*\\n\\nTerima kasih atas laporan Anda. Kami akan segera menindaklanjuti dan memberikan informasi selanjutnya.';\n    break;\n  case 'pelayanan':\n    autoReply = '📝 *Permohonan Diterima*\\n\\nPermohonan layanan Anda sedang diproses. Mohon tunggu informasi selanjutnya dari petugas kami.';\n    break;\n  case 'umkm':\n    autoReply = '🏪 *UMKM Rakyat*\\n\\nTerima kasih atas minat Anda terhadap program UMKM. Kami akan menghubungi Anda segera.';\n    break;\n  case 'loker':\n    autoReply = '💼 *Lowongan Kerja*\\n\\nInformasi lowongan kerja telah kami terima. Kami akan memproses permintaan Anda.';\n    break;\n  default:\n    autoReply = '✅ *Pesan Diterima*\\n\\nTerima kasih! Pesan Anda telah diterima dan sedang diproses.';\n}\n\nreturn {\n  ...$json,\n  category: category,\n  autoReply: autoReply\n};"
+            },
+            "id": "set-category",
+            "name": "Set Category & Auto-Reply",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://whatsapp-api-gateway:8001/api/webhook",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.phone}}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{$json.message}}"
+                        },
+                        {
+                            "name": "sender_name",
+                            "value": "={{$json.sender_name}}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{$json.category}}"
+                        },
+                        {
+                            "name": "timestamp",
+                            "value": "={{$json.timestamp}}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "send-to-api",
+            "name": "Send to WhatsApp API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "session",
+                            "value": "default"
+                        },
+                        {
+                            "name": "chatId",
+                            "value": "={{$json.chatId}}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{$json.autoReply}}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "send-autoreply",
+            "name": "Send Auto-Reply",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { success: true, message: 'Message processed and auto-reply sent', category: $json.category } }}",
+                "options": {}
+            },
+            "id": "respond-success",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1450,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Message Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Message Data": {
+            "main": [
+                [
+                    {
+                        "node": "Classify Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Classify Message": {
+            "main": [
+                [
+                    {
+                        "node": "Set Category & Auto-Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category & Auto-Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category & Auto-Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category & Auto-Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category & Auto-Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Category & Auto-Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Send to WhatsApp API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to WhatsApp API": {
+            "main": [
+                [
+                    {
+                        "node": "Send Auto-Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Auto-Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-11T13:45:00.000Z",
+    "versionId": "2"
+}

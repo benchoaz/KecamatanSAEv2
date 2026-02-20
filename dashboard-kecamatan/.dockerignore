@@ -1,0 +1,12 @@
+.git
+.agent
+vendor
+node_modules
+storage/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*.php
+.env
+.phpunit.result.cache
+.config
+.composer

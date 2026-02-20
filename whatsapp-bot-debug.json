@@ -1,0 +1,185 @@
+{
+    "name": "WhatsApp Bot - DEBUG VERSION",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "WAHA Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// DEBUG VERSION - Log all incoming data\nconst raw = items[0].json;\n\n// Log the entire incoming data structure\nconsole.log('=== DEBUG: Full webhook data ===');\nconsole.log(JSON.stringify(raw, null, 2));\nconsole.log('Event type:', raw.event);\nconsole.log('Payload:', raw.payload);\n\n// Check if it's a message event\nif (raw.event !== 'message') {\n  console.log('SKIPPED: Not a message event, event =', raw.event);\n  // Return empty to stop workflow for non-message events\n  return [];\n}\n\n// Extract payload\nconst payload = raw.payload || {};\nconst chatId = payload.from || '';\nconst message = (payload.body || '').trim();\nconst fromMe = payload.fromMe || false;\n\nconsole.log('Extracted:', { chatId, message, fromMe });\n\n// Validate chatId\nif (!chatId) {\n  console.log('SKIPPED: chatId is empty');\n  return [];\n}\n\nif (!chatId.includes('@c.us')) {\n  console.log('SKIPPED: chatId does not contain @c.us, chatId =', chatId);\n  return [];\n}\n\n// Skip messages from bot itself\nif (fromMe === true) {\n  console.log('SKIPPED: Message from me (bot)');\n  return [];\n}\n\nconsole.log('SUCCESS: Valid message, proceeding...');\n\nreturn [{ json: { chatId, message, fromMe } }];"
+            },
+            "id": "extract-data",
+            "name": "Extract Message Only",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/whatsapp/handle",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "Bearer 325d4279031e6f9e5e54be8d4bf305bf893880945bac59cb34107680ceb5687b"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ phone: $json.chatId.replace('@c.us', ''), message: $json.message, chatId: $json.chatId }) }}",
+                "options": {}
+            },
+            "id": "call-dashboard",
+            "name": "Call Dashboard API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const extractData = $('Extract Message Only').first().json;\nconst chatId = extractData.chatId;\nconst dashboardResponse = $input.first().json;\nconst reply = dashboardResponse.reply || 'Maaf, terjadi kesalahan.';\nconsole.log('Prepare Response - chatId:', chatId);\nconsole.log('Prepare Response - reply:', reply.substring(0, 50) + '...');\nreturn { json: { chatId, reply } };"
+            },
+            "id": "prepare-response",
+            "name": "Prepare Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "authentication": "none",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.chatId, text: $json.reply }) }}",
+                "options": {}
+            },
+            "id": "send-whatsapp",
+            "name": "Send to WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "id": "respond-webhook",
+            "name": "Respond OK",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "WAHA Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Message Only",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Message Only": {
+            "main": [
+                [
+                    {
+                        "node": "Call Dashboard API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Dashboard API": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send to WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Respond OK",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

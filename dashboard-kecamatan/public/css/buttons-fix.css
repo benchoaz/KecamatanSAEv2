@@ -1,0 +1,127 @@
+/* 
+ * CRITICAL BUTTONS FIX
+ * Ensures all buttons are visible even if Bootstrap fails to load
+ */
+
+/* Primary Buttons */
+.btn-primary,
+.btn.btn-primary,
+button.btn-primary {
+    background-color: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.375rem !important;
+    border: 1px solid !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.btn-primary:hover {
+    background-color: #4338ca !important;
+    border-color: #4338ca !important;
+}
+
+/* Danger Buttons */
+.btn-danger {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.375rem !important;
+    cursor: pointer !important;
+}
+
+/* Icon Buttons in Tables */
+.btn-icon {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+}
+
+/* Light Buttons */
+.btn-light {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    color: #334155 !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.375rem !important;
+    cursor: pointer !important;
+}
+
+/* Teal Buttons */
+.btn-teal {
+    background-color: #14b8a6 !important;
+    border-color: #14b8a6 !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.375rem !important;
+    cursor: pointer !important;
+}
+
+/* Ensure all buttons are visible */
+.btn,
+button:not([type="submit"]):not([type="button"]):not([type="reset"]) {
+    min-height: 36px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+/* Dropdown Menu Buttons */
+.dropdown-item {
+    padding: 0.5rem 1rem !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    color: #334155 !important;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Modal Buttons */
+.modal-footer .btn {
+    min-width: 100px !important;
+}
+
+/* Button Sizes */
+.btn-lg {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
+}
+
+/* Rounded Buttons */
+.rounded-circle {
+    border-radius: 50% !important;
+}
+
+.rounded-3 {
+    border-radius: 0.75rem !important;
+}
+
+/* Width utilities */
+.w-100 {
+    width: 100% !important;
+}
+
+/* Ensure icons are visible inside buttons */
+.btn i,
+.btn .fas,
+.btn .fa {
+    opacity: 1 !important;
+    visibility: visible !important;
+}

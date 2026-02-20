@@ -1,0 +1,36 @@
+{
+    "name": "wf-menu",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "// Generate static menu response\nconst menuText = `🤖 *BOT LAYANAN KECAMATAN BESUK*\n\nSelamat datang di layanan WhatsApp Kecamatan Besuk!\n\n📋 *MENU LAYANAN:*\n\n1️⃣ *STATUS* - Cek status berkas/pengajuan\n   Ketik: STATUS <nomor HP>\n   Contoh: STATUS 081234567890\n\n2️⃣ *UMKM* - Cari produk UMKM lokal\n   Ketik: UMKM <nama produk>\n   Contoh: UMKM kerupuk\n\n3️⃣ *JASA* - Cari jasa/layanan\n   Ketik: JASA <jenis jasa>\n   Contoh: JASA tukang\n\n4️⃣ *LOKER* - Cari lowongan kerja\n   Ketik: LOKER <jenis pekerjaan>\n   Contoh: LOKER sopir\n\n5️⃣ *SYARAT* - Info syarat & prosedur\n   Ketik: SYARAT <jenis layanan>\n   Contoh: SYARAT KTP\n\n📌 *UNTUK OWNER UMKM/JASA:*\n• TUTUP LAPAK - Sembunyikan listing\n• BUKA LAPAK - Tampilkan listing\n• PIN BARU - Minta PIN baru\n\n📞 *KONTAK:*\nKantor Kecamatan Besuk\nSenin-Jumat: 08.00-15.00 WIB\n\n_Ketik MENU kapan saja untuk melihat daftar ini_`;\n\nreturn {\n  json: {\n    phone: $json.phone,\n    chatId: $json.chatId,\n    reply: menuText\n  }\n};"
+            },
+            "id": "generate-menu",
+            "name": "Generate Menu",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        }
+    ],
+    "connections": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp",
+            "createdAt": "2026-02-13T00:00:00.000Z"
+        },
+        {
+            "name": "sub-workflow",
+            "createdAt": "2026-02-13T00:00:00.000Z"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

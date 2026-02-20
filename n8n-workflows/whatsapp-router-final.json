@@ -1,0 +1,251 @@
+{
+    "name": "whatsapp-router",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-besuk",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "id": "node-webhook",
+            "name": "WAHA Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                300
+            ],
+            "webhookId": "whatsapp-besuk"
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 2: EVENT FILTER - FIXED FOR N8N WEBHOOK FULL-REQUEST FORMAT\n// n8n webhook returns: { headers, params, query, body: { event, session, payload } }\nconst raw = $input.first().json;\nif (!raw) return [];\n\n// Ambil data dari raw.body (n8n webhook format) atau langsung dari raw\nconst data = raw.body || raw;\nconsole.log('[EventFilter] event:', data.event, '| keys:', Object.keys(data));\n\nconst event = (data.event || '').toLowerCase();\nconst payload = data.payload || {};\n\n// Tolak event non-pesan eksplisit\nconst BLOCKED = ['message.ack', 'message.reaction', 'presence', 'session.status', 'state.change'];\nif (BLOCKED.some(e => event.includes(e))) {\n  console.log('[EventFilter] BLOCKED event:', event);\n  return [];\n}\n\n// Lolos: event 'message' atau ada payload.from\nconst isMsg = event.includes('message') || event === '';\nconst hasFrom = !!(payload.from || data.from);\n\nif (!isMsg && !hasFrom) {\n  console.log('[EventFilter] DROPPED: bukan message, from:', payload.from);\n  return [];\n}\n\nconsole.log('[EventFilter] PASSED:', event, 'from:', payload.from);\nreturn $input.all();"
+            },
+            "id": "node-event-filter",
+            "name": "Event Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                280,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 3: NORMALIZE & VALIDATE - FIXED FOR N8N WEBHOOK FORMAT\n// n8n webhook: { headers, params, query, body: { event, session, payload: { from, body, fromMe } } }\nconst raw = $input.first().json;\n\n// Ambil data dari raw.body (n8n full-request) atau raw langsung\nconst data = raw.body || raw;\nconst payload = data.payload || {};\n\n// DEBUG\nconsole.log('[Normalize] event:', data.event);\nconsole.log('[Normalize] from:', payload.from, '| fromMe:', payload.fromMe, '| body:', payload.body);\n\nconst chatId = (payload.from || data.from || '').trim();\nconst message = (payload.body || payload.text || data.body || '').trim();\n\n// Handle fromMe: boolean atau string\nconst rawFromMe = payload.fromMe;\nconst fromMe = rawFromMe === true || rawFromMe === 'true';\n\nconst pushName = payload.pushName || payload.notifyName || '';\n\n// VALIDASI\nif (!chatId || !chatId.includes('@c.us')) {\n  console.log('[Normalize] DROPPED: chatId invalid:', chatId);\n  return [];\n}\nif (!message) {\n  console.log('[Normalize] DROPPED: empty message');\n  return [];\n}\n\nconst phone = chatId.replace('@c.us', '');\nconsole.log('[Normalize] OK:', chatId, '| fromMe:', fromMe, '| msg:', message);\n\nreturn [{ json: { chatId, phone, message, fromMe, pushName, timestamp: new Date().toISOString() } }];"
+            },
+            "id": "node-normalize",
+            "name": "Normalize & Validate",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// NODE 4: ANTI-LOOP FILTER (Code node - lebih reliable dari IF)\n// Blokir pesan yang dikirim BOT sendiri (fromMe = true)\nconst fromMe = $json.fromMe;\nconsole.log('[AntiLoop] fromMe raw value:', fromMe, typeof fromMe);\n\n// Cek apakah pesan dari bot (type-safe)\nif (fromMe === true || fromMe === 'true') {\n  console.log('[AntiLoop] BLOCKED - fromMe is true, anti-loop aktif');\n  return [];\n}\n\nconsole.log('[AntiLoop] PASSED - bukan dari bot, lanjut proses');\nreturn $input.all();"
+            },
+            "id": "node-anti-loop",
+            "name": "Anti-Loop Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://dashboard-kecamatan-nginx/api/whatsapp/handle",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        },
+                        {
+                            "name": "Accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $json.message }}"
+                        },
+                        {
+                            "name": "chatId",
+                            "value": "={{ $json.chatId }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 15000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-dashboard-api",
+            "name": "Call Dashboard API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                860,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "={{ $env.WAHA_API_KEY }}"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ session: 'default', chatId: $json.chatId, text: $json.reply }) }}",
+                "options": {
+                    "timeout": 10000,
+                    "retry": {
+                        "enabled": true,
+                        "maxTries": 2
+                    }
+                }
+            },
+            "id": "node-send-text",
+            "name": "SendText WAHA",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1080,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"status\": \"ok\" }",
+                "options": {}
+            },
+            "id": "node-respond",
+            "name": "Respond 200",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1080,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "WAHA Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Event Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Event Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize & Validate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize & Validate": {
+            "main": [
+                [
+                    {
+                        "node": "Anti-Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Anti-Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Call Dashboard API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Call Dashboard API": {
+            "main": [
+                [
+                    {
+                        "node": "SendText WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SendText WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "Respond 200",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1",
+        "errorWorkflow": "whatsapp-error-handler"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "production"
+        },
+        {
+            "name": "kecamatan-besuk"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-20T00:43:00.000Z",
+    "versionId": "3"
+}

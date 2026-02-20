@@ -1,0 +1,299 @@
+{
+  "updatedAt": "2026-02-20T12:30:16.635Z",
+  "createdAt": "2026-02-12T18:27:06.506Z",
+  "id": "xpCZiro_YG8zh2xTn-Yx3",
+  "name": "WhatsApp Bot - Simplified Router v2",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "WAHA Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.fromMe }}",
+              "operation": "notEqual",
+              "value2": "true"
+            },
+            {
+              "value1": "={{ $json.payload?.from || $json.from }}",
+              "operation": "notContains",
+              "value2": "@newsletter"
+            },
+            {
+              "value1": "={{ $json.payload?.from || $json.from }}",
+              "operation": "notContains",
+              "value2": "@broadcast"
+            }
+          ]
+        }
+      },
+      "id": "filter-loop",
+      "name": "Anti-Loop Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://dashboard-kecamatan-nginx/api/whatsapp/handle",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 325d4279031e6f9e5e54be8d4bf305bf893880945bac59cb34107680ceb5687b"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ ($json.payload?.from || $json.from || '').replace('@c.us', '') }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.payload?.body || $json.body || '' }}"
+            },
+            {
+              "name": "chatId",
+              "value": "={{ $json.payload?.from || $json.from }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "call-dashboard",
+      "name": "Call Dashboard API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha-kecamatan:3000/api/sendText",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Api-Key",
+              "value": "62a72516dd1b418499d9dd22075ccfa0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"session\": \"default\", \"chatId\": $('WAHA Webhook').item.json.payload?.from || $('WAHA Webhook').item.json.from, \"text\": $json.reply } }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "send-whatsapp",
+      "name": "Send to WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "WAHA Webhook": {
+      "main": [
+        [
+          {
+            "node": "Anti-Loop Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anti-Loop Filter": {
+      "main": [
+        [
+          {
+            "node": "Call Dashboard API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Dashboard API": {
+      "main": [
+        [
+          {
+            "node": "Send to WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "da1cb7bb-b942-4706-8902-f8aac0177b0e",
+  "activeVersionId": null,
+  "versionCounter": 340,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-02-12T18:27:06.517Z",
+      "createdAt": "2026-02-12T18:27:06.517Z",
+      "role": "workflow:owner",
+      "workflowId": "xpCZiro_YG8zh2xTn-Yx3",
+      "projectId": "Ld5fifVUAbeHPgGj",
+      "project": {
+        "updatedAt": "2026-02-11T06:36:01.543Z",
+        "createdAt": "2026-02-11T03:49:40.713Z",
+        "id": "Ld5fifVUAbeHPgGj",
+        "name": "Beni wijaya <beni.solo.leveling@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "884d9bd4-c068-4c56-a6a0-4d4aee344069",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-11T03:49:40.714Z",
+            "createdAt": "2026-02-11T03:49:40.714Z",
+            "userId": "884d9bd4-c068-4c56-a6a0-4d4aee344069",
+            "projectId": "Ld5fifVUAbeHPgGj",
+            "user": {
+              "updatedAt": "2026-02-20T12:28:58.000Z",
+              "createdAt": "2026-02-11T03:49:39.065Z",
+              "id": "884d9bd4-c068-4c56-a6a0-4d4aee344069",
+              "email": "beni.solo.leveling@gmail.com",
+              "firstName": "Beni",
+              "lastName": "wijaya",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-11T06:36:40.700Z",
+                "personalization_survey_n8n_version": "2.6.4",
+                "automationGoalDevops": [],
+                "companyIndustryExtended": [
+                  "it-industry",
+                  "government",
+                  "marketing-industry"
+                ],
+                "companySize": "100-499",
+                "companyType": "other",
+                "role": "it",
+                "reportedSource": "youtube"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "rzdrYrg-g258egmSTUh2K",
+                "userActivatedAt": 1770913661476,
+                "easyAIWorkflowOnboarded": true,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1771198519234
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-20",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [
+    {
+      "updatedAt": "2026-02-15T13:41:51.209Z",
+      "createdAt": "2026-02-15T13:41:51.209Z",
+      "id": "1XqasfK4NeFOtIPi",
+      "name": "whatsapp"
+    },
+    {
+      "updatedAt": "2026-02-15T13:41:51.214Z",
+      "createdAt": "2026-02-15T13:41:51.214Z",
+      "id": "8Y0FMWrR9OcMM9wk",
+      "name": "kecamatan-besuk"
+    },
+    {
+      "updatedAt": "2026-02-16T09:44:52.197Z",
+      "createdAt": "2026-02-16T09:44:52.197Z",
+      "id": "naEJNv5qkmu2GdlE",
+      "name": "sub-workflow"
+    }
+  ],
+  "activeVersion": null
+}

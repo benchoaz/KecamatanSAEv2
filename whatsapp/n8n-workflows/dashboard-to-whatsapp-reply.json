@@ -1,0 +1,188 @@
+{
+    "name": "Dashboard to WhatsApp Reply",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "dashboard-reply",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-dashboard",
+            "name": "Webhook from Dashboard",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "dashboard-reply"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ========================================\n// CRITICAL: Infinite Loop Prevention Filter\n// ROOT CAUSE of 143% CPU issue\n// ========================================\n\n// Get the payload\nconst payload = $input.item.json.payload || $input.item.json.body || $input.item.json;\n\n// Filter 1: Ignore broadcast messages (status@broadcast)\n// This is the MAIN cause of infinite loop\nif (payload.from === 'status@broadcast') {\n  return [];\n}\n\n// Filter 2: Ignore empty messages\nif (!payload.body && !payload.text && !payload.message) {\n  return [];\n}\n\nconst messageText = (payload.body || payload.text || payload.message || '').trim();\nif (messageText === '') {\n  return [];\n}\n\n// Filter 3: Ignore own messages (fromMe = true)\nif (payload.fromMe === true) {\n  return [];\n}\n\n// Filter 4: Ignore messages with only media (no text)\nif (payload.hasMedia && !payload.body && !payload.text && !payload.message) {\n  return [];\n}\n\n// Filter 5: Ignore system messages\nif (payload.type && ['e2e_notification', 'notification_template'].includes(payload.type)) {\n  return [];\n}\n\n// If all filters pass, continue workflow\nreturn {\n  json: {\n    ...$input.item.json,\n    _filtered: false,\n    _timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "loop-filter-node",
+            "name": "🛡️ Loop Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Validate and normalize payload\nconst phone = $json.phone || '';\nconst message = $json.message || '';\nconst type = $json.type || 'manual_reply';\n\nif (!phone || !message) {\n  throw new Error('Phone and message are required');\n}\n\n// Normalize phone number\nlet normalizedPhone = phone.replace(/[^0-9]/g, '');\nif (normalizedPhone.startsWith('0')) {\n  normalizedPhone = '62' + normalizedPhone.substring(1);\n}\n\nreturn {\n  phone: normalizedPhone,\n  message: message,\n  type: type,\n  service_id: $json.service_id || null,\n  uuid: $json.uuid || null,\n  timestamp: $json.timestamp || new Date().toISOString()\n};"
+            },
+            "id": "validate-payload",
+            "name": "Validate Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://waha:3099/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{$json.phone}}@c.us"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{$json.message}}"
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "send-to-waha",
+            "name": "Send to WAHA",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Log successful send\nreturn {\n  success: true,\n  phone: $('Validate Payload').item.json.phone,\n  type: $('Validate Payload').item.json.type,\n  service_id: $('Validate Payload').item.json.service_id,\n  uuid: $('Validate Payload').item.json.uuid,\n  sent_at: new Date().toISOString(),\n  waha_response: $json\n};"
+            },
+            "id": "log-success",
+            "name": "Log Success",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{$json}}",
+                "options": {}
+            },
+            "id": "respond-success",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook from Dashboard": {
+            "main": [
+                [
+                    {
+                        "node": "🛡️ Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "🛡️ Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Validate Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Validate Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Send to WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "Log Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Log Success": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-11T14:00:00.000Z",
+    "versionId": "1"
+}

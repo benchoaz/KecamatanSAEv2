@@ -1,0 +1,464 @@
+{
+    "name": "WhatsApp Service Bot - Complete",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-bot",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-waha",
+            "name": "Webhook WAHA",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "whatsapp-bot"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "dashboard-reply",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-dashboard",
+            "name": "Webhook Dashboard",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                600
+            ],
+            "webhookId": "dashboard-reply"
+        },
+        {
+            "parameters": {
+                "jsCode": "// ========================================\n// CRITICAL: Infinite Loop Prevention Filter\n// ROOT CAUSE of 143% CPU issue\n// ========================================\n\n// Get the payload\nconst payload = $input.item.json.payload || $input.item.json.body || $input.item.json;\n\n// Filter 1: Ignore broadcast messages (status@broadcast)\n// This is the MAIN cause of infinite loop\nif (payload.from === 'status@broadcast') {\n  return [];\n}\n\n// Filter 2: Ignore empty messages\nif (!payload.body && !payload.text) {\n  return [];\n}\n\nconst messageText = (payload.body || payload.text || '').trim();\nif (messageText === '') {\n  return [];\n}\n\n// Filter 3: Ignore own messages (fromMe = true)\nif (payload.fromMe === true) {\n  return [];\n}\n\n// Filter 4: Ignore messages with only media (no text)\nif (payload.hasMedia && !payload.body && !payload.text) {\n  return [];\n}\n\n// Filter 5: Ignore system messages\nif (payload.type && ['e2e_notification', 'notification_template'].includes(payload.type)) {\n  return [];\n}\n\n// If all filters pass, continue workflow\nreturn {\n  json: {\n    ...$input.item.json,\n    _filtered: false,\n    _timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "loop-filter-node",
+            "name": "🛡️ Loop Filter",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Extract message data from WAHA webhook\nconst body = $input.item.json.body || $input.item.json;\n\nreturn {\n  phone: body.from || '',\n  message: body.body || body.text || '',\n  sender_name: body.notifyName || body.from || 'Warga',\n  timestamp: body.timestamp || Date.now(),\n  source: 'whatsapp',\n  raw_data: body\n};"
+            },
+            "id": "extract-whatsapp",
+            "name": "Extract WhatsApp",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Validate and normalize payload\nconst phone = $input.item.json.phone || '';\nconst message = $input.item.json.message || '';\nconst type = $input.item.json.type || 'manual_reply';\n\nif (!phone || !message) {\n  throw new Error('Phone and message are required');\n}\n\n// Normalize phone number\nlet normalizedPhone = phone.replace(/[^0-9]/g, '');\nif (normalizedPhone.startsWith('0')) {\n  normalizedPhone = '62' + normalizedPhone.substring(1);\n}\n\nreturn {\n  phone: normalizedPhone,\n  message: message,\n  type: type,\n  source: 'dashboard',\n  timestamp: new Date().toISOString()\n};"
+            },
+            "id": "extract-dashboard",
+            "name": "Extract Dashboard",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Check for commands\nconst message = ($json.message || '').toLowerCase().trim();\n\nif (message.startsWith('/status')) {\n  const parts = $json.message.split(' ');\n  return { ...$json, command: 'status', uuid: parts[1] || null };\n} else if (message.startsWith('/help')) {\n  return { ...$json, command: 'help' };\n} else if (message.startsWith('/faq')) {\n  return { ...$json, command: 'faq', keyword: $json.message.replace('/faq', '').trim() };\n} else if (message.startsWith('/')) {\n  return { ...$json, command: 'unknown' };\n}\n\nreturn { ...$json, command: 'normal' };"
+            },
+            "id": "check-commands",
+            "name": "Check Commands",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Build status message\nconst data = $json.data || $json;\n\nif (!data.found) {\n  return {\n    phone: $('Extract WhatsApp').item.json.phone,\n    message: '❌ *Laporan tidak ditemukan*\\n\\nPastikan ID atau nomor WhatsApp yang Anda masukkan sudah benar.\\n\\n💡 Gunakan format: `/status {uuid}` atau ketik `/help` untuk bantuan',\n    type: 'status_reply'\n  };\n}\n\nlet msg = '📊 *Status Laporan*\\n\\n';\nmsg += `🆔 ID: \\`${data.uuid}\\`\\n`;\nmsg += `📂 Layanan: ${data.jenis_layanan}\\n`;\nmsg += `📊 Status: *${data.status_label}*\\n`;\nmsg += `📅 Dibuat: ${data.created_at}\\n\\n`;\n\nif (data.public_response) {\n  msg += `📝 *Respon:*\\n${data.public_response}\\n\\n`;\n}\n\nmsg += '💡 Ketik `/status ' + data.uuid + '` untuk cek status kapan saja.';\n\nreturn {\n  phone: $('Extract WhatsApp').item.json.phone,\n  message: msg,\n  type: 'status_reply'\n};"
+            },
+            "id": "build-status",
+            "name": "Build Status",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Build help message\nconst helpMsg = `🤖 *Bot Pelayanan Kecamatan*\\n\\n📋 *Perintah:*\\n` +\n  `• /status {uuid} - Cek status laporan\\n` +\n  `• /faq {keyword} - Cari FAQ\\n` +\n  `• /help - Tampilkan bantuan\\n\\n` +\n  `💡 Kirim pesan langsung untuk bertanya atau melaporkan.`;\n\nreturn {\n  phone: $('Extract WhatsApp').item.json.phone,\n  message: helpMsg,\n  type: 'help_reply'\n};"
+            },
+            "id": "build-help",
+            "name": "Build Help",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Build FAQ message\nconst data = $json.data || $json;\n\nif (!data.found) {\n  return {\n    phone: $('Extract WhatsApp').item.json.phone,\n    message: '❌ *Informasi tidak ditemukan*\\n\\nCoba kata kunci lain atau ketik `/help` untuk bantuan.',\n    type: 'faq_reply'\n  };\n}\n\nlet msg = '📋 *Jawaban*\\n\\n';\nif (data.question) msg += `❓ ${data.question}\\n\\n`;\nmsg += `✅ ${data.answer}\\n\\n`;\nmsg += '💡 Ketik `/faq {keyword}` untuk info lain.';\n\nreturn {\n  phone: $('Extract WhatsApp').item.json.phone,\n  message: msg,\n  type: 'faq_reply'\n};"
+            },
+            "id": "build-faq",
+            "name": "Build FAQ",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Build unknown command message\nreturn {\n  phone: $('Extract WhatsApp').item.json.phone,\n  message: '❌ *Perintah tidak dikenali*\\n\\nKetik `/help` untuk melihat perintah yang tersedia.',\n  type: 'unknown_reply'\n};"
+            },
+            "id": "build-unknown",
+            "name": "Build Unknown",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Classify category\nconst text = ($json.message || '').toLowerCase();\n\nlet category = 'pelayanan';\nif (/(lapor|keluhan|rusak|aduan|komplain|masalah)/.test(text)) category = 'pengaduan';\nelse if (/(usaha|jualan|produk|umkm|dagang|bisnis|toko)/.test(text)) category = 'umkm';\nelse if (/(lowongan|kerja|loker|pekerjaan|lamaran)/.test(text)) category = 'loker';\n\nreturn {\n  ...$json,\n  category,\n  sender_name: $('Extract WhatsApp').item.json.sender_name\n};"
+            },
+            "id": "classify",
+            "name": "Classify",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://whatsapp-api-gateway:8001/api/webhook",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.phone}}"
+                        },
+                        {
+                            "name": "sender_name",
+                            "value": "={{$json.sender_name}}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{$json.message}}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{$json.category}}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "send-to-dashboard",
+            "name": "Send to Dashboard",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Build inbox reply\nconst data = $json.data || {};\nconst uuid = data.uuid || 'NEW';\n\nlet msg = '✅ *Laporan Diterima*\\n\\n';\nmsg += `🆔 ID: \\`${uuid}\\`\\n`;\nmsg += `📂 Kategori: ${$json.category}\\n`;\nmsg += `📊 Status: Menunggu Verifikasi\\n\\n`;\nmsg += '💡 Ketik `/status ' + uuid + '` untuk cek status.';\n\nreturn {\n  phone: $('Extract WhatsApp').item.json.phone,\n  message: msg,\n  type: 'inbox_reply',\n  uuid\n};"
+            },
+            "id": "build-inbox-reply",
+            "name": "Build Inbox Reply",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1450,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://waha:3099/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        },
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{$json.phone}}@c.us"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{$json.message}}"
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "send-whatsapp",
+            "name": "Send WhatsApp",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1650,
+                350
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "{\"status\": \"success\"}",
+                "options": {}
+            },
+            "id": "respond",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1850,
+                350
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "🛡️ Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook Dashboard": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Dashboard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "🛡️ Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Extract WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Check Commands",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Dashboard": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Commands": {
+            "main": [
+                [
+                    {
+                        "node": "Build Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Build Help",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Build FAQ",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Build Unknown",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Classify",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Status": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Help": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build FAQ": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Unknown": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Classify": {
+            "main": [
+                [
+                    {
+                        "node": "Send to Dashboard",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to Dashboard": {
+            "main": [
+                [
+                    {
+                        "node": "Build Inbox Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Inbox Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send WhatsApp": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "active": true
+}

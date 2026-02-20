@@ -1,0 +1,23 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "id": "office_kecamatan_besuk",
+                "name": "Kantor Kecamatan Besuk",
+                "role": "office",
+                "aria_label": "Kantor Kecamatan Besuk Kabupaten Probolinggo",
+                "map_url": "https://maps.google.com/?q=Kantor+Kecamatan+Besuk",
+                "zoom_hint": 15
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    113.4835,
+                    -7.7895
+                ]
+            }
+        }
+    ]
+}

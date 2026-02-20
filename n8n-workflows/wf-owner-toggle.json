@@ -1,0 +1,292 @@
+{
+    "name": "wf-owner-toggle",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "owner-toggle",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "c1b2c3d4-0001-4000-8000-000000000001",
+            "name": "Owner Toggle Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "owner-toggle-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Parse request\nconst message = $input.first().json.body?.body || $input.first().json.body?.message || '';\nconst from = $input.first().json.body?.from || $input.first().json.body?.sender || '';\n\n// Determine action\nconst action = message.toLowerCase().includes('tutup') ? 'close' : 'open';\n\n// Check if message contains PIN (6 digits)\nconst pinMatch = message.match(/\\d{6}/);\nconst pin = pinMatch ? pinMatch[0] : null;\n\nreturn {\n  from: from,\n  message: message,\n  action: action,\n  pin: pin,\n  needsPin: !pin\n};"
+            },
+            "id": "c1b2c3d4-0002-4000-8000-000000000002",
+            "name": "Parse Request",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "type": "boolean"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.needsPin }}",
+                                        "rightValue": true,
+                                        "operator": {
+                                            "type": "boolean",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "need_pin"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "type": "boolean"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.needsPin }}",
+                                        "rightValue": false,
+                                        "operator": {
+                                            "type": "boolean",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "verify_pin"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "c1b2c3d4-0003-4000-8000-000000000003",
+            "name": "Check PIN Status",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Request PIN\nconst action = $input.first().json.action === 'close' ? 'TUTUP' : 'BUKA';\n\nreturn {\n  to: $input.first().json.from,\n  message: `Anda akan ${action} LAPAK.\\nMasukkan PIN Owner Anda (6 digit):`\n};"
+            },
+            "id": "c1b2c3d4-0004-4000-8000-000000000004",
+            "name": "Request PIN",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://dashboard-kecamatan-nginx/api/v1/external/owner/verify-pin",
+                "method": "POST",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ { \"phone\": $json.from, \"pin\": $json.pin } }}",
+                "options": {}
+            },
+            "id": "c1b2c3d4-0005-4000-8000-000000000005",
+            "name": "Verify PIN API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                850,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Handle verification result\nconst success = $input.first().json.success;\n\nif (!success) {\n  return {\n    to: $input.first().json.from,\n    message: 'PIN salah. Silakan coba lagi.\\n\\nKetik MENU untuk kembali.'\n  };\n}\n\n// PIN verified, now toggle the listing\nconst listingId = $input.first().json.data?.listing_id;\nconst listingType = $input.first().json.data?.listing_type;\nconst listingName = $input.first().json.data?.listing_name;\nconst action = $input.first().json.action;\n\nreturn {\n  to: $input.first().json.from,\n  pin: $input.first().json.pin,\n  listing_id: listingId,\n  listing_type: listingType,\n  listing_name: listingName,\n  action: action,\n  verified: true\n};"
+            },
+            "id": "c1b2c3d4-0006-4000-8000-000000000006",
+            "name": "Handle Verification",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1050,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://dashboard-kecamatan-nginx/api/v1/external/owner/toggle-listing",
+                "method": "POST",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ { \"phone\": $json.to, \"pin\": $json.pin, \"listing_id\": $json.listing_id, \"listing_type\": $json.listing_type, \"action\": $json.action } }}",
+                "options": {}
+            },
+            "id": "c1b2c3d4-0007-4000-8000-000000000007",
+            "name": "Toggle Listing API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1250,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format toggle response\nconst message = $input.first().json.message || 'Lapak berhasil diubah.';\n\nreturn {\n  to: $input.first().json.to,\n  message: message + '\\n\\nKetik MENU untuk kembali.'\n};"
+            },
+            "id": "c1b2c3d4-0008-4000-8000-000000000008",
+            "name": "Format Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1450,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"to\": $json.to, \"message\": $json.message } }}",
+                "options": {}
+            },
+            "id": "c1b2c3d4-0009-4000-8000-000000000009",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Owner Toggle Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Request",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Request": {
+            "main": [
+                [
+                    {
+                        "node": "Check PIN Status",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check PIN Status": {
+            "main": [
+                [
+                    {
+                        "node": "Request PIN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Verify PIN API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Request PIN": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verify PIN API": {
+            "main": [
+                [
+                    {
+                        "node": "Handle Verification",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Handle Verification": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Listing API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Listing API": {
+            "main": [
+                [
+                    {
+                        "node": "Format Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Response": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "callerPolicy": "workflowsFromSameOwner",
+        "availableInMCP": false
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": {}
+}

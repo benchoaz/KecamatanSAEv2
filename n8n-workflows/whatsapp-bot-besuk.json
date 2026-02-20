@@ -1,0 +1,785 @@
+{
+    "name": "whatsapp-bot-besuk",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                400
+            ],
+            "webhookId": "whatsapp-webhook"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Debug: Log raw input first\nconst input = $input.first().json || {};\n\n// Always return something for debugging - remove all filters temporarily\nconst payload = input.payload ?? input;\n\n// Try multiple possible field names\nconst message = payload.body || payload.message || payload.text || '';\nconst from = payload.from || payload.chatId || payload.sender || '';\nconst fromMe = payload.fromMe === true;\nconst type = payload.type || 'chat';\n\n// Extract phone from chatId format\nlet phone = from;\nif (from && from.includes('@')) {\n  phone = from.split('@')[0];\n}\n\n// For now, skip ALL filters and just pass through for debugging\n// Only skip if fromMe (to prevent loop)\nif (fromMe) {\n  return [];\n}\n\n// Return normalized data\nreturn [{\n  json: {\n    phone: phone,\n    chatId: from,\n    message: String(message).trim(),\n    fromMe: fromMe,\n    type: type,\n    rawInput: JSON.stringify(input).substring(0, 500),\n    timestamp: new Date().toISOString()\n  }\n}];"
+            },
+            "id": "normalize-payload",
+            "name": "Normalize Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                280,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Intent Resolver - Single source of truth for intent detection\nconst input = $input.first().json;\n\nconst text = (input.message || '').toLowerCase().trim();\nconst chatId = input.chatId || '';\n\nlet intent = 'UNKNOWN';\n\n// Priority order: specific patterns first\nif (/^(status|cek berkas|cek status|tracking|1)$/.test(text)) {\n  intent = 'STATUS';\n}\nelse if (/^(umkm|jasa|produk|tukang|usaha|2)$/.test(text)) {\n  intent = 'UMKM_JASA';\n}\nelse if (/^(loker|lowongan|kerja|pekerjaan|3)$/.test(text)) {\n  intent = 'LOKER';\n}\nelse if (/^(pengaduan|lapor|keluhan|komplain|4)$/.test(text)) {\n  intent = 'COMPLAINT';\n}\nelse if (/^(tutup lapak|buka lapak|tutuplapak|bukalapak)$/.test(text)) {\n  intent = 'TOGGLE';\n}\nelse if (/pin baru|lupa pin|reset pin|minta pin/i.test(text)) {\n  intent = 'PIN_REQUEST';\n}\nelse if (/^(menu|bantuan|help|mulai|start|halo|hai|p)$/.test(text)) {\n  intent = 'MENU';\n}\n\nreturn [{\n  json: {\n    chatId: chatId,\n    phone: input.phone,\n    message: input.message,\n    intent: intent,\n    timestamp: new Date().toISOString()\n  }\n}];"
+            },
+            "id": "intent-detection",
+            "name": "Intent Resolver",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                640,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "STATUS"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "status"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "UMKM_JASA"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "umkm_jasa"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "LOKER"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "loker"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "COMPLAINT"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "complaint"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "TOGGLE"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "toggle"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "MENU"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "menu"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "intent-router",
+            "name": "Intent Router",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                820,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Menu Response - 4 Main Options\nconst menuText = `📌 MENU KECAMATAN BESUK\n\n1️⃣ Layanan Administrasi\n2️⃣ UMKM & Jasa\n3️⃣ Lowongan Kerja\n4️⃣ Pengaduan\n\nKetik angka atau kata kunci.\n\n📞 Kantor Kecamatan Besuk\nSenin-Jumat: 08.00-15.00 WIB\n\n_Ketik MENU kapan saja untuk kembali_`;\n\nreturn {\n  json: {\n    to: $json.chatId,\n    message: menuText\n  }\n};"
+            },
+            "id": "menu-response",
+            "name": "Menu Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Detect UMKM or Jasa search\nconst message = $json.message || '';\nconst chatId = $json.chatId || '';\n\nconst isJasa = message.toLowerCase().includes('jasa') || \n               message.toLowerCase().includes('tukang');\n\nconst endpoint = isJasa ? '/jasa/search' : '/umkm/search';\n\n// Extract keyword\nlet keyword = message;\nconst prefixes = ['umkm', 'jasa', 'produk', 'tukang', 'usaha', '2'];\nfor (const prefix of prefixes) {\n  if (keyword.toLowerCase().startsWith(prefix)) {\n    keyword = keyword.substring(prefix.length).trim();\n    break;\n  }\n}\n\nreturn {\n  json: {\n    chatId: chatId,\n    searchType: isJasa ? 'JASA' : 'UMKM',\n    endpoint: endpoint,\n    keyword: keyword || 'semua'\n  }\n};"
+            },
+            "id": "umkm-jasa-prepare",
+            "name": "Prepare UMKM/Jasa Search",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{'http://dashboard-kecamatan-nginx/api/v1/external' + $json.endpoint + '?q=' + encodeURIComponent($json.keyword)}}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "umkm-jasa-api",
+            "name": "Search UMKM/Jasa API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1180,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format UMKM/Jasa results\nconst data = $json.data || [];\nconst count = $json.count || 0;\nconst prevNode = $input.first().json;\nconst searchType = prevNode.searchType || 'UMKM';\nconst websiteLink = $json.website_link || '';\n\nif (count === 0) {\n  return {\n    json: {\n      to: prevNode.chatId,\n      message: '🙏 Maaf, data belum ditemukan.\\n\\nSilakan coba kata kunci lain.\\nContoh: Bakso, Madu, Tukang Piket\\n\\nKetik MENU untuk kembali.'\n    }\n  };\n}\n\nlet message = searchType === 'JASA' \n  ? '🛠️ Hasil Pencarian Jasa:\\n\\n'\n  : '🛍️ Hasil Pencarian UMKM:\\n\\n';\n\ndata.forEach((item, index) => {\n  message += `${index + 1}️⃣ ${item.name}\\n`;\n  message += `📦 Produk: ${item.product}\\n`;\n  message += `📍 ${item.address}\\n`;\n  message += `📱 WA: ${item.contact_link}\\n\\n`;\n});\n\nif (websiteLink) {\n  message += `🔎 Lihat lebih banyak di:\\n${websiteLink}\\n\\n`;\n}\n\nmessage += 'Ketik MENU untuk kembali.';\n\nreturn {\n  json: {\n    to: prevNode.chatId,\n    message: message\n  }\n};"
+            },
+            "id": "umkm-jasa-format",
+            "name": "Format UMKM/Jasa Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1360,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Prepare Loker search\nconst message = $json.message || '';\nconst chatId = $json.chatId || '';\n\n// Extract keyword\nlet keyword = message;\nconst prefixes = ['loker', 'lowongan', 'kerja', 'pekerjaan', '3'];\nfor (const prefix of prefixes) {\n  if (keyword.toLowerCase().startsWith(prefix)) {\n    keyword = keyword.substring(prefix.length).trim();\n    break;\n  }\n}\n\nreturn {\n  json: {\n    chatId: chatId,\n    keyword: keyword || 'semua'\n  }\n};"
+            },
+            "id": "loker-prepare",
+            "name": "Prepare Loker Search",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{'http://dashboard-kecamatan-nginx/api/v1/external/loker/search?q=' + encodeURIComponent($json.keyword)}}",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "loker-api",
+            "name": "Search Loker API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1180,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format Loker results\nconst data = $json.data || [];\nconst count = $json.count || 0;\nconst prevNode = $input.first().json;\nconst websiteLink = $json.website_link || '';\n\nif (count === 0) {\n  return {\n    json: {\n      to: prevNode.chatId,\n      message: '🙏 Maaf, lowongan tidak ditemukan.\\n\\nSilakan coba kata kunci lain.\\nContoh: Sopir, Admin, Sales\\n\\nKetik MENU untuk kembali.'\n    }\n  };\n}\n\nlet message = '👷 Info Lowongan:\\n\\n';\n\ndata.forEach((item, index) => {\n  message += `${index + 1}️⃣ ${item.title}\\n`;\n  message += `🏢 ${item.company}\\n`;\n  message += `📍 ${item.location}\\n`;\n  message += `📱 WA: ${item.contact_link}\\n\\n`;\n});\n\nif (websiteLink) {\n  message += `📌 Lihat semua lowongan di:\\n${websiteLink}\\n\\n`;\n}\n\nmessage += 'Semoga lekas mendapat pekerjaan yang cocok ✨\\n\\nKetik MENU untuk kembali.';\n\nreturn {\n  json: {\n    to: prevNode.chatId,\n    message: message\n  }\n};"
+            },
+            "id": "loker-format",
+            "name": "Format Loker Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1360,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Status check prompt\nconst promptText = `📄 CEK STATUS BERKAS\n\nSilakan ketik nomor HP yang terdaftar.\nContoh: 081234567890\n\nKetik MENU untuk kembali.`;\n\nreturn {\n  json: {\n    to: $json.chatId,\n    message: promptText\n  }\n};"
+            },
+            "id": "status-prompt",
+            "name": "Status Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Owner Toggle - Hidden Feature\nconst message = $json.message || '';\nconst chatId = $json.chatId || '';\n\n// Determine action\nconst action = message.toLowerCase().includes('tutup') ? 'close' : 'open';\n\n// Check if message contains PIN (6 digits)\nconst pinMatch = message.match(/\\d{6}/);\nconst pin = pinMatch ? pinMatch[0] : null;\n\nif (pin) {\n  // Has PIN - need to verify\n  return {\n    json: {\n      to: chatId,\n      action: action,\n      pin: pin,\n      needsPin: false\n    }\n  };\n}\n\n// No PIN - request it\nconst actionText = action === 'close' ? 'TUTUP' : 'BUKA';\nreturn {\n  json: {\n    to: chatId,\n    message: `Anda akan ${actionText} LAPAK.\\nMasukkan PIN Owner Anda (6 digit):`,\n    needsPin: true\n  }\n};"
+            },
+            "id": "toggle-handler",
+            "name": "Handle Toggle",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{$json.needsPin}}",
+                            "value2": false
+                        }
+                    ]
+                }
+            },
+            "id": "check-pin-status",
+            "name": "Has PIN?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1180,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://dashboard-kecamatan-nginx/api/v1/external/owner/verify-pin",
+                "method": "POST",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.to}}"
+                        },
+                        {
+                            "name": "pin",
+                            "value": "={{$json.pin}}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "verify-pin-api",
+            "name": "Verify PIN API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1360,
+                450
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{$json.success}}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "pin-valid-check",
+            "name": "PIN Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1540,
+                450
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://dashboard-kecamatan-nginx/api/v1/external/owner/toggle-listing",
+                "method": "POST",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.to}}"
+                        },
+                        {
+                            "name": "pin",
+                            "value": "={{$json.pin}}"
+                        },
+                        {
+                            "name": "action",
+                            "value": "={{$json.action}}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "toggle-listing-api",
+            "name": "Toggle Listing API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1720,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Success response\nconst message = $json.message || 'Lapak berhasil diubah.';\n\nreturn {\n  json: {\n    to: $input.first().json.to,\n    message: message + '\\n\\nKetik MENU untuk kembali.'\n  }\n};"
+            },
+            "id": "toggle-success",
+            "name": "Toggle Success",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1900,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Invalid PIN response\nreturn {\n  json: {\n    to: $input.first().json.to,\n    message: 'PIN salah. Silakan coba lagi.\\n\\nKetik MENU untuk kembali.'\n  }\n};"
+            },
+            "id": "toggle-invalid-pin",
+            "name": "Invalid PIN",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1720,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Complaint prompt\nconst promptText = `📝 PENGADUAN RESMI\n\nSilakan tuliskan keluhan atau laporan Anda secara jelas.\nContoh:\n- Jalan rusak di Desa Sumberanyar\n- Lampu jalan mati di Dusun Krajan\n\nSetelah dikirim, sistem akan meminta konfirmasi.`;\n\nreturn {\n  json: {\n    to: $json.chatId,\n    message: promptText\n  }\n};"
+            },
+            "id": "complaint-prompt",
+            "name": "Complaint Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                600
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Unknown command response\nreturn {\n  json: {\n    to: $json.chatId,\n    message: 'Maaf, perintah tidak dikenali.\\n\\nKetik MENU untuk melihat daftar layanan.'\n  }\n};"
+            },
+            "id": "unknown-response",
+            "name": "Unknown Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                700
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://host.docker.internal:3099/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ chatId: $json.to, text: $json.message, session: 'default' }) }}",
+                "options": {}
+            },
+            "id": "send-whatsapp-message",
+            "name": "Send WhatsApp Message",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                2100,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Resolver",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Intent Resolver": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Intent Router": {
+            "main": [
+                [
+                    {
+                        "node": "Status Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare UMKM/Jasa Search",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Prepare Loker Search",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Complaint Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Handle Toggle",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Menu Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Unknown Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Menu Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare UMKM/Jasa Search": {
+            "main": [
+                [
+                    {
+                        "node": "Search UMKM/Jasa API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search UMKM/Jasa API": {
+            "main": [
+                [
+                    {
+                        "node": "Format UMKM/Jasa Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format UMKM/Jasa Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Loker Search": {
+            "main": [
+                [
+                    {
+                        "node": "Search Loker API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Search Loker API": {
+            "main": [
+                [
+                    {
+                        "node": "Format Loker Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Loker Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Status Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Handle Toggle": {
+            "main": [
+                [
+                    {
+                        "node": "Has PIN?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has PIN?": {
+            "main": [
+                [
+                    {
+                        "node": "Verify PIN API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verify PIN API": {
+            "main": [
+                [
+                    {
+                        "node": "PIN Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PIN Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Listing API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Invalid PIN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Listing API": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Success": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Invalid PIN": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Complaint Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Unknown Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send WhatsApp Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp",
+            "createdAt": "2026-02-15T00:00:00.000Z"
+        },
+        {
+            "name": "kecamatan-besuk",
+            "createdAt": "2026-02-15T00:00:00.000Z"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-15T00:00:00.000Z",
+    "versionId": "1"
+}

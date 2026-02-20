@@ -1,0 +1,146 @@
+{
+    "name": "wf-status",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "// Extract phone number or ticket number from message\nconst message = $json.message || '';\nconst phone = $json.phone || '';\n\n// Try to extract identifier from message\n// Format: STATUS 081234567890 or STATUS TKT-2026-00123\nlet identifier = phone; // Default to sender's phone\n\nconst parts = message.split(/\\s+/);\nif (parts.length > 1) {\n  // Check if second part looks like phone or ticket number\n  const possibleId = parts[1].replace(/[^0-9a-zA-Z-]/g, '');\n  if (possibleId.length >= 6) {\n    identifier = possibleId;\n  }\n}\n\nreturn {\n  json: {\n    ...$json,\n    identifier: identifier\n  }\n};"
+            },
+            "id": "extract-identifier",
+            "name": "Extract Identifier",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/status/check",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "identifier",
+                            "value": "={{ $json.identifier }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "check-status-api",
+            "name": "Check Status API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "status-found-check",
+            "name": "Status Found?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Format status response\nconst data = $json.data;\n\nconst statusEmoji = {\n  'menunggu_verifikasi': '⏳',\n  'diproses': '🔄',\n  'selesai': '✅',\n  'ditolak': '❌'\n};\n\nconst emoji = statusEmoji[data.status] || '📋';\n\nconst replyText = `${emoji} *STATUS BERKAS*\n\n📄 No. Tiket: ${data.ticket || '-'}\n📋 Jenis: ${data.jenis_layanan || '-'}\n📅 Tgl Pengajuan: ${data.tanggal_pengajuan || '-'}\n\n📊 Status: *${data.status?.toUpperCase() || 'TIDAK DIKETAHUI'}*\n${data.perkiraan_selesai ? `📅 Perkiraan Selesai: ${data.perkiraan_selesai}` : ''}\n${data.catatan ? `\\n📝 Catatan: ${data.catatan}` : ''}\n\n💡 Untuk info lebih lanjut, hubungi kantor kecamatan.`;\n\nreturn {\n  json: {\n    phone: $('Extract Identifier').item.json.phone,\n    chatId: $('Extract Identifier').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "format-status-response",
+            "name": "Format Status Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Status not found response\nconst identifier = $('Extract Identifier').item.json.identifier;\n\nconst replyText = `❌ *DATA TIDAK DITEMUKAN*\n\nTidak ada data dengan identifier: ${identifier}\n\nPastikan nomor HP atau nomor tiket sudah benar.\n\n💡 Format:\n• STATUS 081234567890\n• STATUS TKT-2026-00123`;\n\nreturn {\n  json: {\n    phone: $('Extract Identifier').item.json.phone,\n    chatId: $('Extract Identifier').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "status-not-found",
+            "name": "Status Not Found",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Extract Identifier": {
+            "main": [
+                [
+                    {
+                        "node": "Check Status API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Status API": {
+            "main": [
+                [
+                    {
+                        "node": "Status Found?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Status Found?": {
+            "main": [
+                [
+                    {
+                        "node": "Format Status Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Status Not Found",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "sub-workflow"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

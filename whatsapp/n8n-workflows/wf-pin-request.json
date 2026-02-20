@@ -1,0 +1,152 @@
+{
+    "name": "WF-PIN-Request",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "trigger",
+            "name": "Workflow Trigger",
+            "type": "n8n-nodes-base.manualTrigger",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://laravel-api/api/owner/request-pin",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "request-pin-api",
+            "name": "Request New PIN",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "check-success",
+            "name": "Check Success",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Build success message with PIN\nconst data = $json.data;\nconst listings = data.listings || [];\n\nlet listingsText = listings.map(l => {\n  const typeLabel = l.type === 'umkm' ? 'UMKM' : 'Jasa';\n  return '• ' + typeLabel + ' #' + l.id;\n}).join('\\n');\n\nconst message = `🔐 *PIN BARU BERHASIL DIBUAT*\n\nPIN baru Anda: *${data.pin}*\n\n📋 Listing Anda:\n${listingsText}\n\n⚠️ Simpan PIN ini dengan aman!\nGunakan PIN untuk:\n• TUTUP LAPAK - tutup listing sementara\n• BUKA LAPAK - buka kembali listing\n\n_Hormat kami,_\n_Bot Kecamatan Besuk_`;\n\nreturn {\n  json: {\n    reply: message,\n    chatId: $('Workflow Trigger').item.json.chatId || data.phone + '@s.whatsapp.net'\n  }\n};"
+            },
+            "id": "build-success-message",
+            "name": "Build Success Message",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Build error message\nconst message = $json.message || 'Nomor Anda tidak terdaftar sebagai owner UMKM/Jasa.';\n\nconst reply = `❌ *GAGAL MEMBUAT PIN*\n\n${message}\n\nPastikan nomor WhatsApp Anda terdaftar sebagai pemilik UMKM atau Jasa di sistem kami.\n\nKetik *MENU* untuk bantuan.`;\n\nreturn {\n  json: {\n    reply: reply,\n    chatId: $('Workflow Trigger').item.json.chatId\n  }\n};"
+            },
+            "id": "build-error-message",
+            "name": "Build Error Message",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Workflow Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Request New PIN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Request New PIN": {
+            "main": [
+                [
+                    {
+                        "node": "Check Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Success": {
+            "main": [
+                [
+                    {
+                        "node": "Build Success Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Build Error Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp",
+            "createdAt": "2026-02-13T00:00:00.000Z",
+            "updatedAt": "2026-02-13T00:00:00.000Z"
+        },
+        {
+            "name": "owner",
+            "createdAt": "2026-02-13T00:00:00.000Z",
+            "updatedAt": "2026-02-13T00:00:00.000Z"
+        },
+        {
+            "name": "pin",
+            "createdAt": "2026-02-13T00:00:00.000Z",
+            "updatedAt": "2026-02-13T00:00:00.000Z"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

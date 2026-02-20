@@ -1,0 +1,14 @@
+{
+    "name": "default",
+    "config": {
+        "webhooks": [
+            {
+                "url": "http://n8n-kecamatan:5678/webhook/whatsapp-bot",
+                "events": [
+                    "message",
+                    "message.any"
+                ]
+            }
+        ]
+    }
+}

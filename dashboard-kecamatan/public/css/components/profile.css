@@ -1,0 +1,201 @@
+/* ==========================================================================
+   Component: User Profile (Standardized Enterprise Component)
+   Architecture: BEM (Block Element Modifier)
+   ========================================================================== */
+
+:root {
+    --gp-teal: #14b8a6;
+    --gp-teal-light: rgba(20, 184, 166, 0.08);
+    --gp-teal-border: rgba(20, 184, 166, 0.2);
+    --gp-slate-700: #334155;
+    --gp-slate-800: #1e293b;
+    --gp-slate-500: #64748b;
+    --gp-white: #ffffff;
+    --gp-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --gp-radius: 50px;
+    --gp-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --gp-z-index: 9999;
+}
+
+/* Block */
+.gov-profile {
+    position: relative;
+    display: inline-block;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Trigger Element */
+.gov-profile__trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 16px 4px 4px;
+    background: var(--gp-teal-light);
+    border: 1px solid var(--gp-teal-border);
+    border-radius: var(--gp-radius);
+    cursor: pointer;
+    transition: var(--gp-transition);
+    height: 42px;
+    outline: none;
+    user-select: none;
+}
+
+.gov-profile__trigger:hover,
+.gov-profile__trigger:focus-visible {
+    background: rgba(20, 184, 166, 0.15);
+    border-color: rgba(20, 184, 166, 0.4);
+    transform: translateY(-1px);
+}
+
+.gov-profile__trigger:active {
+    transform: translateY(0);
+}
+
+/* Avatar Element */
+.gov-profile__avatar {
+    width: 34px;
+    height: 34px;
+    background: var(--gp-teal);
+    color: var(--gp-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 13px;
+    box-shadow: 0 2px 4px rgba(20, 184, 166, 0.2);
+    flex-shrink: 0;
+}
+
+/* Name Element */
+.gov-profile__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gp-slate-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+/* Chevron Element */
+.gov-profile__chevron {
+    font-size: 11px;
+    color: var(--gp-teal);
+    transition: transform 0.3s ease;
+}
+
+.gov-profile.is-active .gov-profile__chevron {
+    transform: rotate(180deg);
+}
+
+/* Menu Block (Dropdown) */
+.gov-profile__menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 280px;
+    background: var(--gp-white);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: var(--gp-shadow);
+    z-index: var(--gp-z-index);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: var(--gp-transition);
+    overflow: hidden;
+}
+
+.gov-profile.is-active .gov-profile__menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Header Section in Menu */
+.gov-profile__header {
+    padding: 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.gov-profile__avatar--large {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+    border-radius: 12px;
+}
+
+.gov-profile__details h6 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gp-slate-800);
+}
+
+.gov-profile__role {
+    font-size: 11px;
+    color: var(--gp-slate-500);
+    display: block;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* List Element */
+.gov-profile__list {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+}
+
+/* Item Element */
+.gov-profile__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--gp-slate-700);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: var(--gp-transition);
+}
+
+.gov-profile__item:hover {
+    background: #f0fdfa;
+    color: var(--gp-teal);
+}
+
+.gov-profile__item i {
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+    color: #94a3b8;
+}
+
+.gov-profile__item:hover i {
+    color: var(--gp-teal);
+}
+
+/* Logout Variant */
+.gov-profile__item--logout {
+    color: #ef4444;
+    margin-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    border-radius: 0 0 8px 8px;
+}
+
+.gov-profile__item--logout:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.gov-profile__item--logout i {
+    color: #fca5a5;
+}

@@ -1,0 +1,376 @@
+{
+    "name": "whatsapp-router",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-node",
+            "name": "WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "whatsapp-webhook"
+        },
+        {
+            "parameters": {
+                "functionCode": "// Intent Detection with stricter regex\nconst message = $json.body?.body || $json.body?.message || '';\nconst from = $json.body?.from || $json.body?.sender || '';\n\nconst intents = [\n  { name: 'MENU', patterns: [/^(menu|bantuan|help|mulai|start|halo|hai|p)$/i] },\n  { name: 'PIN_REQUEST', patterns: [/pin baru|lupa pin|reset pin|minta pin/i] },\n  { name: 'TOGGLE', patterns: [/^(tutup lapak|buka lapak|tutuplapak|bukalapak)$/i] },\n  { name: 'STATUS', patterns: [/^(status|cek berkas|cek status|tracking)/i] },\n  { name: 'UMKM_JASA', patterns: [/^(umkm|jasa|produk|tukang|usaha)/i] },\n  { name: 'LOKER', patterns: [/^(loker|lowongan|kerja|pekerjaan)/i] },\n  { name: 'SYARAT', patterns: [/^(syarat|ketentuan|prosedur|cara)/i] },\n  { name: 'COMPLAINT', patterns: [/^(pengaduan|lapor|keluhan|komplain)/i] }\n];\n\nlet detectedIntent = 'UNKNOWN';\n\nfor (const intent of intents) {\n  for (const pattern of intent.patterns) {\n    if (pattern.test(message)) {\n      detectedIntent = intent.name;\n      break;\n    }\n  }\n  if (detectedIntent !== 'UNKNOWN') break;\n}\n\nreturn {\n  json: {\n    from: from,\n    message: message,\n    intent: detectedIntent,\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "intent-detection",
+            "name": "Detect Intent",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "MENU"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "menu"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "UMKM_JASA"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "umkm_jasa"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "LOKER"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "loker"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "TOGGLE"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "toggle"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "STATUS"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "status"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.intent}}",
+                                        "operation": "equals",
+                                        "value2": "COMPLAINT"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "complaint"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "switch-node",
+            "name": "Route by Intent",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Menu Response - 4 Main Options\nconst menuText = `📌 MENU KECAMATAN BESUK\n1️⃣ Layanan Administrasi\n2️⃣ UMKM & Jasa\n3️⃣ Lowongan Kerja\n4️⃣ Pengaduan\n\nKetik angka atau kata kunci.\n📞 Kantor Kecamatan Besuk\nSenin-Jumat: 08.00-15.00 WIB\n_Ketik MENU kapan saja untuk kembali_`;\n\nreturn {\n  json: {\n    to: $json.from,\n    message: menuText\n  }\n};"
+            },
+            "id": "menu-response",
+            "name": "Send Menu",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                150
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// UMKM & Jasa Prompt\nconst promptText = `🛍️ UMKM & JASA KECAMATAN BESUK\n\nSilakan ketik produk atau jasa yang dicari.\nContoh:\n- UMKM Kerupuk\n- Jasa Tukang Piket\n- UMKM Madu\n\nKetik MENU untuk kembali.`;\n\nreturn {\n  json: {\n    to: $json.from,\n    message: promptText\n  }\n};"
+            },
+            "id": "umkm-jasa-prompt",
+            "name": "UMKM & Jasa Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                250
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Loker Prompt\nconst promptText = `🏗️ LOWONGAN KERJA KECAMATAN BESUK\n\nSilakan ketik jenis pekerjaan yang dicari.\nContoh:\n- Loker Sopir\n- Loker Admin\n- Kerja Sales\n\nKetik MENU untuk kembali.`;\n\nreturn {\n  json: {\n    to: $json.from,\n    message: promptText\n  }\n};"
+            },
+            "id": "loker-prompt",
+            "name": "Loker Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                350
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Owner Toggle - Hidden Feature\nconst promptText = `Anda akan TUTUP LAPAK.\\nMasukkan PIN Owner Anda (6 digit):`;\n\n// Check if message is a PIN (6 digits)\nconst message = $json.message || '';\nif (/^\\d{6}$/.test(message)) {\n  return {\n    json: {\n      to: $json.from,\n      action: 'verify_pin',\n      pin: message\n    }\n  };\n}\n\nreturn {\n  json: {\n    to: $json.from,\n    message: promptText,\n    action: 'request_pin'\n  }\n};"
+            },
+            "id": "toggle-handler",
+            "name": "Handle Toggle",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                450
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Status Check Prompt\nconst promptText = `📄 CEK STATUS BERKAS\\n\\nSilakan ketik nomor HP yang terdaftar.\\nContoh: 081234567890\\n\\nKetik MENU untuk kembali.`;\n\nreturn {\n  json: {\n    to: $json.from,\n    message: promptText\n  }\n};"
+            },
+            "id": "status-prompt",
+            "name": "Status Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                550
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Complaint Prompt\nconst promptText = `📝 PENGADUAN RESMI\\n\\nSilakan tuliskan keluhan atau laporan Anda secara jelas.\\nContoh:\\n- Jalan rusak di Desa Sumberanyar\\n- Lampu jalan mati di Dusun Krajan\\n\\nSetelah dikirim, sistem akan meminta konfirmasi.`;\n\nreturn {\n  json: {\n    to: $json.from,\n    message: promptText\n  }\n};"
+            },
+            "id": "complaint-prompt",
+            "name": "Complaint Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                650
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ { \"to\": $json.to, \"message\": $json.message } }}",
+                "options": {}
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Detect Intent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Detect Intent": {
+            "main": [
+                [
+                    {
+                        "node": "Route by Intent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route by Intent": {
+            "main": [
+                [
+                    {
+                        "node": "Send Menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "UMKM & Jasa Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Loker Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Handle Toggle",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Status Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Complaint Prompt",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Menu": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "UMKM & Jasa Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loker Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Handle Toggle": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Status Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Complaint Prompt": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-15T00:00:00.000Z",
+    "versionId": "1"
+}

@@ -1,0 +1,232 @@
+/* ==========================================================================
+   Shared Menu Page Styles - Modern High-Authority Theme
+   ========================================================================== */
+
+:root {
+    --indigo-50: #eef2ff;
+    --indigo-100: #e0e7ff;
+    --indigo-600: #4f46e5;
+    --indigo-700: #4338ca;
+
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+
+    --rose-50: #fff1f2;
+    --rose-100: #ffe4e6;
+    --rose-500: #f43f5e;
+    --rose-600: #e11d48;
+    --rose-700: #be123c;
+
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-500: #f59e0b;
+    --amber-600: #d97706;
+    --amber-700: #b45309;
+
+    --sky-50: #f0f9ff;
+    --sky-100: #e0f2fe;
+    --sky-500: #0ea5e9;
+    --sky-600: #0284c7;
+    --sky-700: #0369a1;
+
+    --premium-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --premium-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Utilities */
+.text-slate-500 {
+    color: var(--slate-500) !important;
+}
+
+.text-slate-600 {
+    color: var(--slate-600) !important;
+}
+
+.text-slate-700 {
+    color: var(--slate-700) !important;
+}
+
+.text-slate-800 {
+    color: var(--slate-800) !important;
+}
+
+.text-slate-900 {
+    color: var(--slate-900) !important;
+}
+
+.bg-slate-50 {
+    background-color: var(--slate-50) !important;
+}
+
+.bg-slate-100 {
+    background-color: var(--slate-100) !important;
+}
+
+.border-slate-100 {
+    border-color: var(--slate-100) !important;
+}
+
+.border-slate-200 {
+    border-color: var(--slate-200) !important;
+}
+
+/* Cards */
+.card-premium {
+    background: white;
+    border: 1px solid var(--slate-200) !important;
+    border-radius: 1.25rem;
+    box-shadow: var(--premium-shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.card-premium:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--premium-shadow) !important;
+}
+
+/* Icons */
+.icon-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.icon-box-indigo {
+    background: var(--indigo-50);
+    color: var(--indigo-600);
+}
+
+.icon-box-emerald {
+    background: var(--emerald-50);
+    color: var(--emerald-600);
+}
+
+.icon-box-rose {
+    background: var(--rose-50);
+    color: var(--rose-600);
+}
+
+.icon-box-amber {
+    background: var(--amber-50);
+    color: var(--amber-600);
+}
+
+.icon-box-sky {
+    background: var(--sky-50);
+    color: var(--sky-600);
+}
+
+/* Badges */
+.badge-pill-premium {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 50rem;
+    font-weight: 700;
+    font-size: 0.75rem;
+    border: 1px solid transparent;
+}
+
+.badge-indigo {
+    background: var(--indigo-50);
+    color: var(--indigo-700);
+    border-color: var(--indigo-100);
+}
+
+.badge-emerald {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    border-color: var(--emerald-100);
+}
+
+.badge-rose {
+    background: var(--rose-50);
+    color: var(--rose-700);
+    border-color: var(--rose-100);
+}
+
+.badge-amber {
+    background: var(--amber-50);
+    color: var(--amber-700);
+    border-color: var(--amber-100);
+}
+
+.badge-sky {
+    background: var(--sky-50);
+    color: var(--sky-700);
+    border-color: var(--sky-100);
+}
+
+/* Tables */
+.table-premium thead th {
+    background: var(--slate-50);
+    color: var(--slate-500);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--slate-200);
+}
+
+.table-premium tbody td {
+    padding: 1.25rem 1rem;
+    color: var(--slate-700);
+    border-bottom: 1px solid var(--slate-100);
+}
+
+.table-premium tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-premium tr:hover td {
+    background-color: var(--slate-50);
+}
+
+/* Sections */
+.section-header-premium {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.section-header-premium h4,
+.section-header-premium h5 {
+    font-weight: 800;
+    color: var(--slate-900);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.section-divider {
+    flex-grow: 1;
+    height: 1px;
+    background: var(--slate-200);
+}
+
+.header-accent {
+    width: 4rem;
+    height: 4px;
+    background: var(--indigo-600);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+}

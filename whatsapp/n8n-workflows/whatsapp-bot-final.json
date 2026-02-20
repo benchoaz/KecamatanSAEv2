@@ -1,0 +1,114 @@
+{
+    "meta": {
+        "instanceId": "unique_id_here"
+    },
+    "name": "WhatsApp Bot Final",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-bot",
+                "options": {}
+            },
+            "id": "webhook-node",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                100,
+                200
+            ],
+            "webhookId": "whatsapp-bot-webhook"
+        },
+        {
+            "parameters": {
+                "functionCode": "// Extract message from WAHA webhook payload\nconst payload = items[0].json;\n\n// Log the full payload for debugging\nconsole.log('Full payload:', JSON.stringify(payload, null, 2));\n\n// Extract the message based on WAHA payload structure\nlet message = '';\nlet sender = '';\nlet chatId = '';\n\nif (payload.event === 'message') {\n  // New message format\n  const data = payload.data || payload;\n  \n  // Get sender and chatId\n  sender = data.sender || data.from || '';\n  chatId = data.chatId || data.from || sender;\n  \n  // Extract message text\n  if (data.text && data.text.body) {\n    message = data.text.body;\n  } else if (data.text) {\n    message = data.text;\n  } else if (data.message && data.message.text) {\n    message = data.message.text;\n  } else if (data.messageData && data.messageData.textMessage) {\n    message = data.messageData.textMessage;\n  }\n}\n\n// Return extracted data\nreturn {\n  json: {\n    message: message,\n    sender: sender,\n    chatId: chatId,\n    payload: payload\n  }\n};"
+            },
+            "id": "code-extract",
+            "name": "Extract Message",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                300,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:3099/api/sendText",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "httpHeaderAuth",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ chatId: $json.chatId, text: \"Terima kasih! Pesan Anda telah diterima: \" + $json.message }) }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "fullResponse": true
+                        }
+                    }
+                }
+            },
+            "id": "http-reply",
+            "name": "Send Reply",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                500,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "id": "respond-ok",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                700,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Message": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "staticData": null
+}

@@ -1,0 +1,301 @@
+{
+    "name": "wf-owner-toggle",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "const message = ($json.message || '').toLowerCase();\nconst phone = $json.phone || '';\n\nlet action = '';\nif (message.includes('tutup')) {\n  action = 'close';\n} else if (message.includes('buka')) {\n  action = 'open';\n}\n\nreturn {\n  json: {\n    ...$json,\n    action: action,\n    needsPin: true\n  }\n};"
+            },
+            "id": "determine-action",
+            "name": "Determine Action",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const message = ($json.message || '').trim();\nconst isPin = /^\\d{6}$/.test(message);\n\nreturn {\n  json: {\n    ...$json,\n    isPin: isPin,\n    pin: isPin ? message : null\n  }\n};"
+            },
+            "id": "check-if-pin",
+            "name": "Check if PIN",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.isPin }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "is-pin-check",
+            "name": "Is PIN?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/owner/verify-pin",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "pin",
+                            "value": "={{ $json.pin }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "verify-pin",
+            "name": "Verify PIN",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.success }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "pin-valid-check",
+            "name": "PIN Valid?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const listings = $json.data?.listings || [];\n\nif (listings.length === 0) {\n  return {\n    json: {\n      phone: $('Check if PIN').item.json.phone,\n      chatId: $('Check if PIN').item.json.chatId,\n      reply: 'Tidak ada lapak terdaftar untuk nomor Anda.'\n    }\n  };\n}\n\nconst listing = listings[0];\n\nreturn {\n  json: {\n    phone: $('Check if PIN').item.json.phone,\n    chatId: $('Check if PIN').item.json.chatId,\n    listingId: listing.id,\n    listingType: listing.type,\n    listingName: listing.name,\n    pin: $('Check if PIN').item.json.pin,\n    action: $('Determine Action').item.json.action\n  }\n};"
+            },
+            "id": "get-listing",
+            "name": "Get Listing",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                50
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/owner/toggle-listing",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "pin",
+                            "value": "={{ $json.pin }}"
+                        },
+                        {
+                            "name": "listing_id",
+                            "value": "={{ $json.listingId }}"
+                        },
+                        {
+                            "name": "listing_type",
+                            "value": "={{ $json.listingType }}"
+                        },
+                        {
+                            "name": "action",
+                            "value": "={{ $json.action }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "toggle-listing",
+            "name": "Toggle Listing",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1400,
+                50
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const action = $json.action;\nconst listingName = $('Get Listing').item.json.listingName;\nconst actionText = action === 'close' ? 'ditutup' : 'dibuka';\n\nconst replyText = `Lapak \"${listingName}\" telah ${actionText}.`;\n\nreturn {\n  json: {\n    phone: $('Get Listing').item.json.phone,\n    chatId: $('Get Listing').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "success-response",
+            "name": "Success Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1600,
+                50
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const replyText = 'PIN salah. Silakan coba lagi.';\n\nreturn {\n  json: {\n    phone: $('Check if PIN').item.json.phone,\n    chatId: $('Check if PIN').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "invalid-pin-response",
+            "name": "Invalid PIN Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const action = $json.action;\nconst actionText = action === 'close' ? 'TUTUP LAPAK' : 'BUKA LAPAK';\n\nconst replyText = `Anda akan ${actionText}. Masukkan PIN Owner Anda (6 digit):`;\n\nreturn {\n  json: {\n    phone: $json.phone,\n    chatId: $json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "request-pin",
+            "name": "Request PIN",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Determine Action": {
+            "main": [
+                [
+                    {
+                        "node": "Check if PIN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check if PIN": {
+            "main": [
+                [
+                    {
+                        "node": "Is PIN?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is PIN?": {
+            "main": [
+                [
+                    {
+                        "node": "Verify PIN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Request PIN",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Verify PIN": {
+            "main": [
+                [
+                    {
+                        "node": "PIN Valid?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "PIN Valid?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Listing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Invalid PIN Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Listing": {
+            "main": [
+                [
+                    {
+                        "node": "Toggle Listing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Toggle Listing": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "sub-workflow"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}

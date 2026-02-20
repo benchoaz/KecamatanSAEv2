@@ -1,0 +1,477 @@
+{
+    "name": "whatsapp-router",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-layanan",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-trigger",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ],
+            "webhookId": "whatsapp-layanan"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Normalize WAHA webhook payload\nconst input = $input.first().json;\n\n// WAHA structure: input.payload contains the actual message data\nconst wahaPayload = input.payload || input;\n\n// Extract from WAHA structure\nconst phone = wahaPayload.from || '';\nconst message = wahaPayload.body || wahaPayload.caption || '';\nconst fromMe = wahaPayload.fromMe || false;\nconst chatId = wahaPayload.from || '';\n\n// Clean phone number (remove @c.us suffix and non-digits)\nconst cleanPhone = phone.replace(/@c\\.us$/, '').replace(/@.*$/, '').replace(/[^0-9]/g, '');\n\n// Normalize message\nconst normalizedMessage = String(message).toLowerCase().trim();\n\n// Debug output\nconsole.log('NORMALIZE DEBUG:', {\n  rawInput: input,\n  extractedFrom: phone,\n  extractedBody: message,\n  normalizedMessage: normalizedMessage,\n  cleanPhone: cleanPhone,\n  fromMe: fromMe,\n  chatId: chatId\n});\n\nreturn {\n  json: {\n    phone: cleanPhone,\n    message: message,\n    normalizedMessage: normalizedMessage,\n    fromMe: fromMe,\n    chatId: chatId,\n    timestamp: Date.now(),\n    originalPayload: input\n  }\n};"
+            },
+            "id": "normalize-payload",
+            "name": "Normalize Payload",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.fromMe }}",
+                            "operation": "equal",
+                            "value2": false
+                        }
+                    ],
+                    "string": [
+                        {
+                            "value1": "={{ $json.chatId }}",
+                            "operation": "notContains",
+                            "value2": "status@broadcast"
+                        },
+                        {
+                            "value1": "={{ $json.message }}",
+                            "operation": "isNotEmpty"
+                        }
+                    ]
+                }
+            },
+            "id": "anti-loop-filter",
+            "name": "Anti-Loop Filter",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Intent Detection with EXACT MATCH FIRST, then partial\nconst message = $json.normalizedMessage || '';\nconst phone = $json.phone || '';\n\n// Debug\nconsole.log('INTENT DETECTION - Input:', message);\n\nlet detectedIntent = 'UNKNOWN';\n\n// EXACT MATCH (highest priority)\nif (message === 'menu' || message === 'bantuan' || message === 'help' || message === 'mulai' || message === 'start' || message === 'halo' || message === 'hai' || message === 'p') {\n  detectedIntent = 'MENU';\n} \n// PIN REQUEST\nelse if (message.includes('pin baru') || message.includes('pinbaru') || message.includes('lupa pin') || message.includes('reset pin') || message.includes('minta pin') || message.includes('kirim pin')) {\n  detectedIntent = 'PIN_REQUEST';\n}\n// TOGGLE (exact phrases)\nelse if (message.includes('tutup lapak') || message.includes('buka lapak') || message.includes('tutuplapak') || message.includes('bukalapak')) {\n  detectedIntent = 'TOGGLE';\n}\n// STATUS (specific keywords)\nelse if (message.includes('status') || message.includes('cek berkas') || message.includes('nomor berkas') || message.includes('cek status') || message.includes('tracking')) {\n  detectedIntent = 'STATUS';\n}\n// UMKM\nelse if (message.includes('umkm') || message.includes('produk') || message.includes('kerupuk') || message.includes('makanan') || message.includes('usaha') || message.includes('jual') || message.includes('beli') || message.includes('warung') || message.includes('toko')) {\n  detectedIntent = 'UMKM';\n}\n// JASA\nelse if (message.includes('jasa') || message.includes('tukang') || message.includes('servis') || message.includes('service') || message.includes('perbaikan') || message.includes('montir')) {\n  detectedIntent = 'JASA';\n}\n// LOKER\nelse if (message.includes('loker') || message.includes('lowongan') || message.includes('kerja') || message.includes('pekerjaan') || message.includes('lamar') || message.includes('rekrut')) {\n  detectedIntent = 'LOKER';\n}\n// SYARAT/FAQ\nelse if (message.includes('syarat') || message.includes('ketentuan') || message.includes('prosedur') || message.includes('cara') || message.includes('bagaimana') || message.includes('aturan')) {\n  detectedIntent = 'SYARAT';\n}\n// CONFIRMATION\nelse if (message === 'ya' || message === 'y') {\n  detectedIntent = 'CONFIRM';\n}\nelse if (message === 'tidak' || message === 't' || message === 'batal') {\n  detectedIntent = 'CANCEL';\n}\n\n// Debug output\nconsole.log('INTENT DETECTED:', detectedIntent);\n\nreturn {\n  json: {\n    ...$json,\n    intent: detectedIntent,\n    confidence: detectedIntent !== 'UNKNOWN' ? 'high' : 'low'\n  }\n};"
+            },
+            "id": "intent-detection",
+            "name": "Intent Detection",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "MENU",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "MENU"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "TOGGLE",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "TOGGLE"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "PIN_REQUEST",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "PIN_REQUEST"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "STATUS",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "STATUS"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "UMKM",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "UMKM"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "JASA",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "JASA"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "LOKER",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "LOKER"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "SYARAT",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "SYARAT"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ $json.intent }}",
+                                        "rightValue": "CONFIRM",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        }
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "CONFIRM"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "intent-router",
+            "name": "Intent Router",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                1000,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "workflowId": "={{ $execution.workflow.id }}",
+                "options": {}
+            },
+            "id": "execute-wf-menu",
+            "name": "wf-menu",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+                1200,
+                0
+            ],
+            "notes": "Replace workflowId with actual ID after import"
+        },
+        {
+            "parameters": {
+                "jsCode": "return {\n  json: {\n    phone: $json.phone,\n    chatId: $json.chatId,\n    reply: `🤖 *BOT LAYANAN KECAMATAN BESUK*\\n\\nSelamat datang di layanan WhatsApp Kecamatan Besuk!\\n\\n📋 *MENU LAYANAN:*\\n\\n1️⃣ *STATUS* - Cek status berkas/pengajuan\\n   Ketik: STATUS <nomor HP>\\n   Contoh: STATUS 081234567890\\n\\n2️⃣ *UMKM* - Cari produk UMKM lokal\\n   Ketik: UMKM <nama produk>\\n   Contoh: UMKM kerupuk\\n\\n3️⃣ *JASA* - Cari jasa/layanan\\n   Ketik: JASA <jenis jasa>\\n   Contoh: JASA tukang\\n\\n4️⃣ *LOKER* - Cari lowongan kerja\\n   Ketik: LOKER <jenis pekerjaan>\\n   Contoh: LOKER sopir\\n\\n5️⃣ *SYARAT* - Info syarat & prosedur\\n   Ketik: SYARAT <jenis layanan>\\n   Contoh: SYARAT KTP\\n\\n📌 *UNTUK OWNER UMKM/JASA:*\\n• TUTUP LAPAK - Sembunyikan listing\\n• BUKA LAPAK - Tampilkan listing\\n• PIN BARU - Minta PIN baru\\n\\n📞 *KONTAK:*\\nKantor Kecamatan Besuk\\nSenin-Jumat: 08.00-15.00 WIB\\n\\n_Ketik MENU kapan saja untuk melihat daftar ini_`\n  }\n};"
+            },
+            "id": "fallback-menu",
+            "name": "Fallback Menu",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                400
+            ],
+            "notes": "Shown if routing fails"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://waha-kecamatan:3000/api/sendText",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "session",
+                            "value": "default"
+                        },
+                        {
+                            "name": "chatId",
+                            "value": "={{ $json.chatId }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.reply }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "send-reply",
+            "name": "Send Reply",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({ success: true, message: 'Processed', intent: $('intent-detection').item.json.intent }) }}",
+                "options": {}
+            },
+            "id": "respond-webhook",
+            "name": "Respond to Webhook",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                200
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Normalize Payload",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Normalize Payload": {
+            "main": [
+                [
+                    {
+                        "node": "Anti-Loop Filter",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Anti-Loop Filter": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Detection",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Intent Detection": {
+            "main": [
+                [
+                    {
+                        "node": "Intent Router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Intent Router": {
+            "main": [
+                [
+                    {
+                        "node": "wf-menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [
+                    {
+                        "node": "Fallback Menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "wf-menu": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fallback Menu": {
+            "main": [
+                [
+                    {
+                        "node": "Send Reply",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send Reply": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-16T00:00:00.000Z",
+    "versionId": "2"
+}

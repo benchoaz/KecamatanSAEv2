@@ -1,0 +1,479 @@
+{
+    "name": "WhatsApp Service Bot - Improved",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-bot",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "id": "webhook-id",
+            "name": "WhatsApp Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Extract sender info from WAHA webhook payload\nconst payload = $json;\nconst from = payload.from || '';\nconst isGroup = from.includes('@g.us');\nconst isBroadcast = from.includes('@broadcast');\nconst isFromMe = payload.fromMe === true;\nconst hasMedia = payload.hasMedia === true;\nconst body = payload.body || '';\nconst senderName = payload.name || 'Warga';\n\n// Filter: Only process personal messages (@c.us) that are NOT from self\nif (isGroup || isBroadcast || isFromMe) {\n  return []; // Skip this message - not a personal message\n}\n\nreturn [{\n  json: {\n    phone: from.replace('@c.us', ''),\n    fullPhone: from,\n    senderName: senderName,\n    hasMedia: hasMedia,\n    body: body,\n    isMediaOnly: hasMedia && body === ''\n  }\n}];"
+            },
+            "id": "filter-id",
+            "name": "Filter Personal Messages",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Check if this is a media-only message\nconst isMediaOnly = $json.isMediaOnly === true;\n\nif (isMediaOnly) {\n  // Send media handling response\n  return [{\n    json: {\n      phone: $json.phone,\n      fullPhone: $json.fullPhone,\n      message: \"🤖 Maaf, saya hanya bisa menerima pesan teks.\\n\\nKetik:\\n- /help - Tampilkan bantuan\\n- /faq {keyword} - Cari FAQ\"\n    }\n  }];\n}\n\n// Pass through for text messages\nreturn [{\n  json: {\n    phone: $json.phone,\n    fullPhone: $json.fullPhone,\n    senderName: $json.senderName,\n    message: $json.body\n  }\n}];"
+            },
+            "id": "media-check-id",
+            "name": "Check Media vs Text",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Send media handling response\nconst helpText = \"🤖 Maaf, saya hanya bisa menerima pesan teks.\\n\\nKetik:\\n- /help - Tampilkan bantuan\\n- /faq {keyword} - Cari FAQ\";\n\nreturn [{\n  json: {\n    phone: $json.phone,\n    fullPhone: $json.fullPhone,\n    message: helpText\n  }\n}];"
+            },
+            "id": "media-response-id",
+            "name": "Media Response",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                850,
+                150
+            ]
+        },
+        {
+            "parameters": {
+                "mode": "switch",
+                "value": "={{ $json.message }}",
+                "cases": {
+                    "string": [
+                        {
+                            "operation": "equal",
+                            "value": "/help"
+                        },
+                        {
+                            "operation": "regex",
+                            "value": "^/status\\s+.+"
+                        },
+                        {
+                            "operation": "regex",
+                            "value": "^/faq\\s+.+"
+                        }
+                    ]
+                },
+                "default": "other"
+            },
+            "id": "route-command-id",
+            "name": "Route by Command",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const helpText = \"🔍 *Bot Pelayanan Kecamatan*\\n\\n*Perintah yang tersedia:*\\n• /help - Tampilkan pesan ini\\n• /status [uuid] - Cek status pengajuan\\n• /faq [keyword] - Cari informasi FAQ\\n\\n*Atau langsung ketik pertanyaan Anda!*\";\n\nreturn [{\n  json: {\n    phone: $json.phone,\n    fullPhone: $json.fullPhone,\n    message: helpText\n  }\n}];"
+            },
+            "id": "help-response-id",
+            "name": "Help Response",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                1050,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://localhost:8000/api/faq/search",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $json.message.split(' ').slice(1).join(' ') }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "faq-http-id",
+            "name": "Query FAQ",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://localhost:8000/api/status/check",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "uuid",
+                            "value": "={{ $json.message.split(' ')[1] }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "status-http-id",
+            "name": "Check Status",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://localhost:8000/api/faq/search",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Accept",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "value": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "default-faq-http-id",
+            "name": "Query FAQ (Default)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1050,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const faqData = $input.first().json;\nconst originalMessage = $json.message;\n\nlet replyMessage = '';\n\nif (faqData && faqData.answer) {\n  replyMessage = \"🔍 *Hasil Pencarian:*\\n\\n\" + faqData.answer + \"\\n\\n---\\n*Ketik /help untuk bantuan*\";\n} else {\n  replyMessage = \"❓ *Tidak ditemukan FAQ untuk \\\"\" + originalMessage + \"*\\n\\nSilakan coba kata kunci lain atau ketik /help untuk bantuan.\";\n}\n\nreturn [{\n  json: {\n    phone: $json.phone,\n    fullPhone: $json.fullPhone,\n    message: replyMessage\n  }\n}];"
+            },
+            "id": "faq-format-id",
+            "name": "Format FAQ Response",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const statusData = $input.first().json;\nconst uuid = $json.message.split(' ')[1];\n\nlet replyMessage = '';\n\nif (statusData && statusData.status) {\n  replyMessage = \"📋 *Status Pengajuan:*\\n\\n• UUID: \" + uuid + \"\\n• Status: \" + statusData.status + \"\\n• Tanggal: \" + (statusData.date || 'N/A') + \"\\n\\n*Ketik /help untuk bantuan*\";\n} else {\n  replyMessage = \"❓ *Status tidak ditemukan*\\n\\nUUID yang Anda masukkan tidak valid. Silakan periksa kembali atau ketik /help untuk bantuan.\";\n}\n\nreturn [{\n  json: {\n    phone: $json.phone,\n    fullPhone: $json.fullPhone,\n    message: replyMessage\n  }\n}];"
+            },
+            "id": "status-format-id",
+            "name": "Format Status Response",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "const faqData = $input.first().json;\nconst originalMessage = $json.message;\n\nlet replyMessage = '';\n\nif (faqData && faqData.answer) {\n  replyMessage = \"🔍 *Hasil Pencarian:*\\n\\n\" + faqData.answer + \"\\n\\n---\\n*Ketik /help untuk bantuan*\";\n} else {\n  replyMessage = \"❓ *Tidak ditemukan informasi untuk \\\"\" + originalMessage + \"*\\n\\nSilakan:\\n1. Coba kata kunci lain\\n2. Ketik /help untuk bantuan\";\n}\n\nreturn [{\n  json: {\n    phone: $json.phone,\n    fullPhone: $json.fullPhone,\n    message: replyMessage\n  }\n}];"
+            },
+            "id": "default-format-id",
+            "name": "Format Default Response",
+            "type": "n8n-nodes-base.function",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://localhost:3099/api/sendText",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "X-Api-Key",
+                            "value": "62a72516dd1b418499d9dd22075ccfa0"
+                        },
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "chatId",
+                            "value": "={{ $json.fullPhone }}"
+                        },
+                        {
+                            "name": "text",
+                            "value": "={{ $json.message }}"
+                        },
+                        {
+                            "name": "session",
+                            "value": "default"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "waha-send-id",
+            "name": "Send via WAHA",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4,
+            "position": [
+                1450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "options": {
+                    "responseBody": "{\n  \"status\": \"received\",\n  \"message\": \"Pesan telah diterima\"\n}"
+                }
+            },
+            "id": "acknowledge-id",
+            "name": "Acknowledge",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1650,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "WhatsApp Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Filter Personal Messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filter Personal Messages": {
+            "main": [
+                [
+                    {
+                        "node": "Check Media vs Text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Media vs Text": {
+            "main": [
+                [
+                    {
+                        "node": "Media Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Route by Command",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Media Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send via WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route by Command": {
+            "main": [
+                [
+                    {
+                        "node": "Help Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Check Status",
+                        "type": "main",
+                        "index": 1
+                    }
+                ],
+                [
+                    {
+                        "node": "Query FAQ",
+                        "type": "main",
+                        "index": 2
+                    }
+                ],
+                [
+                    {
+                        "node": "Query FAQ (Default)",
+                        "type": "main",
+                        "index": 3
+                    }
+                ]
+            ]
+        },
+        "Help Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send via WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Query FAQ": {
+            "main": [
+                [
+                    {
+                        "node": "Format FAQ Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format FAQ Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send via WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Status": {
+            "main": [
+                [
+                    {
+                        "node": "Format Status Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Status Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send via WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Query FAQ (Default)": {
+            "main": [
+                [
+                    {
+                        "node": "Format Default Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Format Default Response": {
+            "main": [
+                [
+                    {
+                        "node": "Send via WAHA",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send via WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "Acknowledge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {},
+    "hash": "whatsapp-bot-improved-v1",
+    "id": "3"
+}

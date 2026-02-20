@@ -1,0 +1,269 @@
+{
+    "name": "WhatsApp Message Classifier",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-incoming",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "webhook-waha",
+            "name": "Webhook WAHA",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ],
+            "webhookId": "whatsapp-incoming"
+        },
+        {
+            "parameters": {
+                "functionCode": "// Extract message data from WAHA webhook\nconst body = $input.item.json.body;\n\nreturn {\n  phone: body.from || '',\n  message: body.body || '',\n  sender_name: body.notifyName || body.from || 'Unknown',\n  timestamp: body.timestamp || Date.now(),\n  raw_data: body\n};"
+            },
+            "id": "extract-data",
+            "name": "Extract Message Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(keluhan|lapor|masalah|rusak|komplain|aduan)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "pengaduan"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(surat|ktp|kk|administrasi|layanan|akta|nikah|cerai|domisili)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "pelayanan"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(usaha|jualan|produk|umkm|dagang|bisnis|toko)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "umkm"
+                        },
+                        {
+                            "conditions": {
+                                "string": [
+                                    {
+                                        "value1": "={{$json.message.toLowerCase()}}",
+                                        "operation": "regex",
+                                        "value2": "/(lowongan|kerja|loker|pekerjaan|lamaran|vacancy)/"
+                                    }
+                                ]
+                            },
+                            "renameOutput": true,
+                            "outputKey": "loker"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "classify-message",
+            "name": "Classify Message",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "functionCode": "// Set category based on output\nconst outputName = $node[\"Classify Message\"].outputName;\nconst category = outputName === 'extra' ? 'pelayanan' : outputName;\n\nreturn {\n  ...$ json,\n  category: category\n};"
+            },
+            "id": "set-category",
+            "name": "Set Category",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://whatsapp-api:8001/api/webhook/n8n",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{$json.phone}}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{$json.message}}"
+                        },
+                        {
+                            "name": "sender_name",
+                            "value": "={{$json.sender_name}}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{$json.category}}"
+                        },
+                        {
+                            "name": "timestamp",
+                            "value": "={{$json.timestamp}}"
+                        }
+                    ]
+                },
+                "options": {
+                    "timeout": 30000
+                }
+            },
+            "id": "send-to-api",
+            "name": "Send to WhatsApp API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1050,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ $json }}",
+                "options": {}
+            },
+            "id": "respond-success",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+                1250,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook WAHA": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Message Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Message Data": {
+            "main": [
+                [
+                    {
+                        "node": "Classify Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Classify Message": {
+            "main": [
+                [
+                    {
+                        "node": "Set Category",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Set Category",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Category": {
+            "main": [
+                [
+                    {
+                        "node": "Send to WhatsApp API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Send to WhatsApp API": {
+            "main": [
+                [
+                    {
+                        "node": "Respond Success",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-10T16:24:00.000Z",
+    "versionId": "1"
+}

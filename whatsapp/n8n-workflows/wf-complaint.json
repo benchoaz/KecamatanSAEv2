@@ -1,0 +1,313 @@
+{
+    "name": "wf-complaint",
+    "nodes": [
+        {
+            "parameters": {
+                "jsCode": "const message = ($json.message || '').toLowerCase().trim();\nconst phone = $json.phone || '';\nconst chatId = $json.chatId || '';\n\n// Check if this is a confirmation\nconst isConfirm = message === 'ya' || message === 'y';\nconst isCancel = message === 'tidak' || message === 't' || message === 'batal';\n\nreturn {\n  json: {\n    ...$json,\n    isConfirm: isConfirm,\n    isCancel: isCancel\n  }\n};"
+            },
+            "id": "check-confirmation",
+            "name": "Check Confirmation",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                200,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.isConfirm }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "is-confirm-check",
+            "name": "Is Confirm?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://whatsapp-api:8001/api/complaint/pending",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-pending",
+            "name": "Get Pending Complaint",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                600,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [
+                        {
+                            "value1": "={{ $json.has_pending }}",
+                            "operation": "equal",
+                            "value2": true
+                        }
+                    ]
+                }
+            },
+            "id": "has-pending-check",
+            "name": "Has Pending?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                800,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/complaint/confirm",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "confirmation_id",
+                            "value": "={{ $json.data.confirmation_id }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "confirm-complaint",
+            "name": "Confirm Complaint",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                1000,
+                50
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const ticketNumber = $json.data?.ticket_number || '';\n\nconst replyText = `Pengaduan berhasil dibuat.\\n\\nNo. Tiket: ${ticketNumber}\\n\\nSimpan nomor tiket ini untuk melacak status pengaduan Anda.`;\n\nreturn {\n  json: {\n    phone: $('Get Pending Complaint').item.json.phone,\n    chatId: $('Get Pending Complaint').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "success-response",
+            "name": "Success Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                50
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const replyText = 'Tidak ada pengaduan yang menunggu konfirmasi.';\n\nreturn {\n  json: {\n    phone: $('Get Pending Complaint').item.json.phone,\n    chatId: $('Get Pending Complaint').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "no-pending-response",
+            "name": "No Pending Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1000,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/complaint/pending",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "phone",
+                            "value": "={{ $json.phone }}"
+                        },
+                        {
+                            "name": "message",
+                            "value": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "store-pending",
+            "name": "Store Pending Complaint",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const replyText = 'Pesan Anda akan dijadikan pengaduan resmi. Balas YA untuk melanjutkan atau TIDAK untuk membatalkan.';\n\nreturn {\n  json: {\n    phone: $('Store Pending Complaint').item.json.phone,\n    chatId: $('Store Pending Complaint').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "ask-confirmation",
+            "name": "Ask Confirmation",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://whatsapp-api:8001/api/complaint/cancel",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "confirmation_id",
+                            "value": "={{ $json.data.confirmation_id }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "cancel-complaint",
+            "name": "Cancel Complaint",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                600,
+                450
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const replyText = 'Pengaduan dibatalkan.';\n\nreturn {\n  json: {\n    phone: $('Check Confirmation').item.json.phone,\n    chatId: $('Check Confirmation').item.json.chatId,\n    reply: replyText\n  }\n};"
+            },
+            "id": "cancel-response",
+            "name": "Cancel Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                800,
+                450
+            ]
+        }
+    ],
+    "connections": {
+        "Check Confirmation": {
+            "main": [
+                [
+                    {
+                        "node": "Is Confirm?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is Confirm?": {
+            "main": [
+                [
+                    {
+                        "node": "Get Pending Complaint",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Store Pending Complaint",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Pending Complaint": {
+            "main": [
+                [
+                    {
+                        "node": "Has Pending?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Has Pending?": {
+            "main": [
+                [
+                    {
+                        "node": "Confirm Complaint",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "No Pending Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Confirm Complaint": {
+            "main": [
+                [
+                    {
+                        "node": "Success Response",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Store Pending Complaint": {
+            "main": [
+                [
+                    {
+                        "node": "Ask Confirmation",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "staticData": null,
+    "tags": [
+        {
+            "name": "whatsapp"
+        },
+        {
+            "name": "sub-workflow"
+        }
+    ],
+    "triggerCount": 0,
+    "updatedAt": "2026-02-13T00:00:00.000Z",
+    "versionId": "1"
+}
