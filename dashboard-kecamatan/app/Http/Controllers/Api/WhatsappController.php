@@ -29,75 +29,6 @@ class WhatsappController extends Controller
     public function handle(Request $request): JsonResponse
     {
         // =====================================================
-        // EMERGENCY DEBUG - Log everything before any processing
-        // This uses emergency level to ensure it's always logged
-        // =====================================================
-        \Log::emergency('WhatsApp API Request Debug', [
-            'raw_body' => $request->getContent(),
-            'all_input' => $request->all(),
-            'has_data_from' => $request->has('data.from'),
-            'has_data_body' => $request->has('data.body'),
-            'data_value' => $request->input('data'),
-            'phone_direct' => $request->input('phone'),
-            'message_direct' => $request->input('message'),
-        ]);
-
-        // =====================================================
-        // DETAILED WAHA WEBHOOK LOGGING FOR DEBUGGING
-        // =====================================================
-
-        // 1. Log raw request body
-        $rawContent = $request->getContent();
-        \Log::info('=== WAHA WEBHOOK - RAW REQUEST BODY ===', [
-            'raw_content' => $rawContent,
-            'content_length' => strlen($rawContent),
-        ]);
-
-        // 2. Log all headers
-        \Log::info('=== WAHA WEBHOOK - HEADERS ===', [
-            'headers' => $request->headers->all(),
-            'content_type' => $request->header('Content-Type'),
-            'user_agent' => $request->header('User-Agent'),
-        ]);
-
-        // 3. Log JSON payload structure
-        $jsonPayload = json_decode($rawContent, true);
-        \Log::info('=== WAHA WEBHOOK - JSON PAYLOAD STRUCTURE ===', [
-            'json_decode_success' => $jsonPayload !== null,
-            'json_error' => json_last_error_msg(),
-            'payload_keys' => is_array($jsonPayload) ? array_keys($jsonPayload) : 'NOT AN ARRAY',
-            'full_payload' => $jsonPayload,
-        ]);
-
-        // 4. Log Laravel request data
-        \Log::info('=== WAHA WEBHOOK - LARAVEL REQUEST DATA ===', [
-            'request_all' => $request->all(),
-            'request_input' => $request->input(),
-            'request_method' => $request->method(),
-            'request_url' => $request->url(),
-            'request_ip' => $request->ip(),
-        ]);
-
-        // 5. Log specific fields we expect from WAHA
-        \Log::info('=== WAHA WEBHOOK - EXPECTED FIELDS ===', [
-            'phone_field' => $request->input('phone'),
-            'message_field' => $request->input('message'),
-            'from_field' => $request->input('from'),
-            'body_field' => $request->input('body'),
-            'text_field' => $request->input('text'),
-            'data_field' => $request->input('data'),
-            'event_field' => $request->input('event'),
-            'session_field' => $request->input('session'),
-        ]);
-
-        // =====================================================
-        // END DETAILED LOGGING
-        // =====================================================
-
-        // Log the incoming request for debugging
-        \Log::info('WhatsApp API Request:', $request->all());
-
-        // =====================================================
         // TRANSFORM WAHA WEBHOOK FORMAT
         // n8n sends: { phone: null, message: { payload: { from, body } } }
         // We need: { phone: string, message: string }
@@ -162,6 +93,8 @@ class WhatsappController extends Controller
         $phone = $request->input('phone');
         $message = trim($request->input('message'));
 
+        $startTime = microtime(true);
+
         try {
             // Check maintenance mode
             if ($this->isMaintenanceMode()) {
@@ -192,9 +125,12 @@ class WhatsappController extends Controller
                 $response = $this->intentHandler->handle($phone, $message);
             }
 
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+
             \Log::info('Bot Handler Response', [
                 'intent' => $response['intent'] ?? 'N/A',
                 'state_update' => $response['state_update'] ?? 'N/A',
+                'duration_ms' => $duration . 'ms',
                 'reply_preview' => isset($response['reply']) ? substr($response['reply'], 0, 50) . '...' : 'NULL'
             ]);
 

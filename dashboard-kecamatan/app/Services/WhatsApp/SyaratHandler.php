@@ -12,6 +12,7 @@ class SyaratHandler
     public function search(string $query): array
     {
         $query = trim(strtolower($query));
+        \Log::info('SyaratHandler searching for: ' . $query);
 
         // If empty query, show available categories
         if (empty($query)) {
@@ -49,7 +50,7 @@ class SyaratHandler
      */
     protected function findMatchingFaq(string $query): ?PelayananFaq
     {
-        // Direct keyword match
+        // 1. Exact match in keywords (with commas) or question
         $faq = PelayananFaq::where('is_active', true)
             ->where(function ($q) use ($query) {
                 $q->whereRaw('LOWER(keywords) LIKE ?', ["%{$query}%"])
@@ -58,17 +59,36 @@ class SyaratHandler
             ->orderBy('priority', 'desc')
             ->first();
 
-        if ($faq) {
+        if ($faq)
             return $faq;
+
+        // 2. Try matching individual words if the query has multiple words
+        $words = explode(' ', $query);
+        if (count($words) > 1) {
+            foreach ($words as $word) {
+                if (strlen($word) < 3)
+                    continue; // Skip short words
+                $faq = PelayananFaq::where('is_active', true)
+                    ->whereRaw('LOWER(keywords) LIKE ?', ["%{$word}%"])
+                    ->orderBy('priority', 'desc')
+                    ->first();
+                if ($faq)
+                    return $faq;
+            }
         }
 
-        // Fuzzy match - check each keyword
-        $faqs = PelayananFaq::where('is_active', true)->get();
+        // 3. Last resort: Fuzzy match - only check top 50 by priority to avoid O(N) lag
+        $faqs = PelayananFaq::where('is_active', true)
+            ->orderBy('priority', 'desc')
+            ->limit(50)
+            ->get();
 
         foreach ($faqs as $faq) {
             $keywords = explode(',', strtolower($faq->keywords));
             foreach ($keywords as $keyword) {
                 $keyword = trim($keyword);
+                if (empty($keyword))
+                    continue;
                 if (str_contains($query, $keyword) || str_contains($keyword, $query)) {
                     return $faq;
                 }

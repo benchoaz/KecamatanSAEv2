@@ -42,10 +42,20 @@ class StateHandler
     {
         $messageLower = strtolower(trim($message));
 
-        // Global commands
-        if ($messageLower === 'menu') {
+        // Global commands & Keyword Overrides
+        if (
+            $messageLower === 'menu' ||
+            str_starts_with($messageLower, 'syarat') ||
+            str_starts_with($messageLower, 'umkm') ||
+            str_starts_with($messageLower, 'jasa') ||
+            str_starts_with($messageLower, 'loker') ||
+            str_starts_with($messageLower, 'pengaduan') ||
+            str_starts_with($messageLower, 'cek') ||
+            str_starts_with($messageLower, 'status')
+        ) {
+            \Log::info('StateHandler Keyword Override Triggered', ['message' => $message]);
             $session->clear();
-            return $this->intentHandler->handle($session->phone, 'menu');
+            return $this->intentHandler->handle($session->phone, $message);
         }
 
         return match ($session->state) {
