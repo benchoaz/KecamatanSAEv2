@@ -13,24 +13,40 @@ class OwnerHandler
      */
     public function initiate(string $phone): array
     {
-        // Check if phone owns any UMKM or JASA (UmkmLocal model handles both)
-        $owner = UmkmLocal::where('contact_wa', 'LIKE', "%{$phone}%")->first();
+        // Clean phone for lookup
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
-        if (!$owner) {
+        // Check if phone owns any UMKM/JASA
+        $umkm = UmkmLocal::where('contact_wa', 'LIKE', "%{$cleanPhone}%")->first();
+
+        // Check if phone owns any LOKER
+        $loker = Loker::where('contact_wa', 'LIKE', "%{$cleanPhone}%")->first();
+
+        if (!$umkm && !$loker) {
             return [
                 'success' => true,
                 'intent' => 'owner_not_found',
-                'reply' => "Nomor Anda tidak terdaftar sebagai pemilik UMKM atau penyedia jasa di sistem kami.\n\n" .
-                    "Pastikan nomor WhatsApp ini sama dengan yang didaftarkan saat registrasi.",
+                'reply' => "Nomor Anda tidak terdaftar sebagai pemilik UMKM, Penyedia Jasa, atau Pemasang Loker di sistem kami.\n\n" .
+                    "Pastikan nomor WhatsApp ini ({$phone}) sesuai dengan yang terdaftar di database.",
                 'state_update' => null,
             ];
+        }
+
+        // Store detected items for PIN verification
+        $session = WhatsappSession::getOrCreate($phone);
+        if ($umkm) {
+            $session->setTempValue('owner_umkm_id', $umkm->id);
+        }
+        if ($loker) {
+            $session->setTempValue('owner_loker_id', $loker->id);
         }
 
         return [
             'success' => true,
             'intent' => 'owner_request_pin',
-            'reply' => "🔐 *KELOLA LAPAK/JASA*\n\n" .
-                "Untuk keamanan, silakan masukkan PIN Anda.\n\n" .
+            'reply' => "🔐 *KELOLA DATA ANDA*\n\n" .
+                "Ditemukan data terdaftar untuk nomor ini.\n" .
+                "Silakan masukkan PIN Anda untuk melanjutkan.\n\n" .
                 "Ketik *BATAL* untuk membatalkan.",
             'state_update' => 'WAITING_OWNER_PIN',
         ];
@@ -51,14 +67,13 @@ class OwnerHandler
             ];
         }
 
-        $phone = $session->phone;
+        $umkmId = $session->getTempValue('owner_umkm_id');
+        $lokerId = $session->getTempValue('owner_loker_id');
 
-        // Verify PIN
-        $owner = UmkmLocal::where('contact_wa', 'LIKE', "%{$phone}%")
-            ->where('owner_pin', $message)
-            ->first();
+        $umkm = $umkmId ? UmkmLocal::where('id', $umkmId)->where('owner_pin', $message)->first() : null;
+        $loker = $lokerId ? Loker::where('id', $lokerId)->where('owner_pin', $message)->first() : null;
 
-        if (!$owner) {
+        if (!$umkm && !$loker) {
             return [
                 'success' => true,
                 'intent' => 'owner_pin_invalid',
@@ -67,24 +82,36 @@ class OwnerHandler
             ];
         }
 
-        // Store owner info in session
-        $session->setTempValue('owner_id', $owner->id);
-        $session->setTempValue('owner_name', $owner->name);
-
-        $currentStatus = $owner->is_active ? 'AKTIF' : 'NONAKTIF';
-
         $session->updateState('WAITING_OWNER_ACTION');
+
+        $reply = "✅ PIN benar!\n\n";
+        $reply .= "Silakan pilih data yang ingin dikelola:\n";
+
+        if ($umkm) {
+            $status = $umkm->is_active ? '✅ AKTIF' : '❌ NONAKTIF';
+            $reply .= "• UMKM/JASA: *{$umkm->name}* ({$status})\n";
+            $session->setTempValue('target_type', 'umkm');
+        }
+
+        if ($loker) {
+            $status = ($loker->status === 'aktif') ? '✅ AKTIF' : '❌ NONAKTIF';
+            $reply .= "• LOKER: *{$loker->title}* ({$status})\n";
+            // If both exist, we might need a selection step. 
+            // For now, prioritize the one they typed if ambiguous, or handle both as a toggle.
+            // Simplified: Toggle whatever is available.
+            if (!$umkm)
+                $session->setTempValue('target_type', 'loker');
+        }
+
+        $reply .= "\nPilih aksi:\n";
+        $reply .= "1️⃣ Ketik *AKTIF* untuk mengaktifkan\n";
+        $reply .= "2️⃣ Ketik *NONAKTIF* untuk mematikan (tidak bisa dicari)\n";
+        $reply .= "3️⃣ Ketik *BATAL* untuk keluar";
 
         return [
             'success' => true,
             'intent' => 'owner_pin_valid',
-            'reply' => "✅ PIN benar!\n\n" .
-                "📍 *{$owner->name}*\n" .
-                "Status saat ini: *{$currentStatus}*\n\n" .
-                "Pilih aksi:\n" .
-                "1️⃣ Ketik *AKTIF* untuk mengaktifkan lapak\n" .
-                "2️⃣ Ketik *NONAKTIF* untuk menonaktifkan lapak\n" .
-                "3️⃣ Ketik *BATAL* untuk keluar",
+            'reply' => $reply,
             'state_update' => 'WAITING_OWNER_ACTION',
         ];
     }
@@ -106,44 +133,39 @@ class OwnerHandler
             ];
         }
 
-        $ownerId = $session->getTempValue('owner_id');
-        $owner = UmkmLocal::find($ownerId);
+        $umkmId = $session->getTempValue('owner_umkm_id');
+        $lokerId = $session->getTempValue('owner_loker_id');
 
-        if (!$owner) {
-            $session->clear();
-            return $this->errorResponse();
+        $action = ($messageLower === 'aktif');
+        $newStatus = $action ? 'AKTIF' : 'NONAKTIF';
+
+        $summary = "✅ *STATUS DIPERBARUI*\n\n";
+
+        if ($umkmId) {
+            $umkm = UmkmLocal::find($umkmId);
+            if ($umkm) {
+                $umkm->update(['is_active' => $action, 'last_toggle_at' => now()]);
+                $summary .= "📍 *{$umkm->name}* -> *{$newStatus}*\n";
+            }
         }
 
-        if ($messageLower === 'aktif') {
-            $owner->update([
-                'is_active' => true,
-                'last_toggle_at' => now(),
-            ]);
-            $newStatus = 'AKTIF';
-        } elseif ($messageLower === 'nonaktif') {
-            $owner->update([
-                'is_active' => false,
-                'last_toggle_at' => now(),
-            ]);
-            $newStatus = 'NONAKTIF';
-        } else {
-            return [
-                'success' => true,
-                'intent' => 'owner_invalid_action',
-                'reply' => "Pilihan tidak valid. Ketik *AKTIF*, *NONAKTIF*, atau *BATAL*.",
-                'state_update' => 'WAITING_OWNER_ACTION',
-            ];
+        if ($lokerId) {
+            $loker = Loker::find($lokerId);
+            if ($loker) {
+                $lokerStatus = $action ? 'aktif' : 'nonaktif';
+                $loker->update(['status' => $lokerStatus, 'last_toggle_at' => now()]);
+                $summary .= "💼 *{$loker->title}* -> *{$newStatus}*\n";
+            }
         }
+
+        $summary .= "\nData telah diperbarui dan perubahan langsung berlaku di pencarian warga.";
 
         $session->clear();
 
         return [
             'success' => true,
             'intent' => 'owner_toggled',
-            'reply' => "✅ *STATUS DIPERBARUI*\n\n" .
-                "📍 *{$owner->name}*\n" .
-                "Status baru: *{$newStatus}*\n\n" .
-                "Perubahan telah disimpan dan segera tayang di aplikasi web.",
+            'reply' => $summary,
             'state_update' => null,
         ];
     }

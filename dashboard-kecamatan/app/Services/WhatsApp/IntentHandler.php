@@ -37,19 +37,68 @@ class IntentHandler
      */
     public function handle(string $phone, string $message): array
     {
-        $messageLower = strtolower($message);
+        $messageLower = strtolower(trim($message));
 
         // Menu intent
         if ($this->matchesIntent($messageLower, ['menu', 'help', 'bantuan'])) {
             return $this->menuIntent();
         }
 
+        // --- NUMERIC SELECTION (Top Level) ---
+        if ($messageLower === '1') {
+            return [
+                'success' => true,
+                'intent' => 'menu_admin',
+                'reply' => "📄 *LAYANAN ADMINISTRASI*\n\n" .
+                    "Silakan pilih:\n" .
+                    "1️⃣ *Syarat* - Info syarat pembuatan berkas\n" .
+                    "2️⃣ *Status* - Cek status berkas Anda\n\n" .
+                    "Ketik *MENU* untuk kembali.",
+                'state_update' => 'MENU_ADMIN',
+            ];
+        }
+
+        if ($messageLower === '2') {
+            return [
+                'success' => true,
+                'intent' => 'menu_ekonomi',
+                'reply' => "💰 *LOKER & UMKM*\n\n" .
+                    "Silakan pilih:\n" .
+                    "1️⃣ *UMKM* - Cari produk unggulan desa\n" .
+                    "2️⃣ *Loker* - Cari lowongan kerja\n\n" .
+                    "Ketik *MENU* untuk kembali.",
+                'state_update' => 'MENU_EKONOMI',
+            ];
+        }
+
+        if ($messageLower === '3') {
+            return [
+                'success' => true,
+                'intent' => 'jasa_prompt',
+                'reply' => "🔧 *LAYANAN JASA*\n\n" .
+                    "Ketik jasa yang Anda butuhkan.\n" .
+                    "Contoh: _jasa tukang_, _jasa pijat_\n\n" .
+                    "Ketik *MENU* untuk kembali.",
+                'state_update' => 'MENU_JASA',
+            ];
+        }
+
+        if ($messageLower === '4') {
+            return $this->complaintHandler->initiate($phone);
+        }
+
+        if ($messageLower === '5') {
+            return $this->ownerHandler->initiate($phone);
+        }
+
+        // --- KEYWORD FALLBACKS ---
+
         // Status check intent
         if ($this->matchesIntent($messageLower, ['status', 'cek', 'lacak'])) {
             return $this->statusHandler->handle($phone);
         }
 
-        // SYARAT (requirements) intent - NEW!
+        // SYARAT (requirements) intent
         if (str_starts_with($messageLower, 'syarat') || $this->matchesIntent($messageLower, ['persyaratan', 'ketentuan'])) {
             $query = str_replace(['syarat', 'persyaratan', 'ketentuan'], '', $messageLower);
             $query = trim($query);
@@ -81,7 +130,7 @@ class IntentHandler
         }
 
         // Owner toggle intent
-        if ($this->matchesIntent($messageLower, ['toggle', 'aktif', 'nonaktif', 'on', 'off'])) {
+        if ($this->matchesIntent($messageLower, ['toggle', 'aktif', 'nonaktif', 'on', 'off', 'kelola'])) {
             return $this->ownerHandler->initiate($phone);
         }
 
@@ -113,18 +162,13 @@ class IntentHandler
     protected function menuIntent(): array
     {
         $menu = "🏛️ *MENU LAYANAN KECAMATAN BESUK*\n\n";
-        $menu .= "Silakan pilih layanan yang Anda butuhkan:\n\n";
-        $menu .= "1️⃣ *STATUS* - Cek status berkas layanan\n";
-        $menu .= "2️⃣ *SYARAT* - Informasi persyaratan layanan\n";
-        $menu .= "   Contoh: _syarat kk_, _syarat ktp_\n\n";
-        $menu .= "3️⃣ *UMKM [kata kunci]* - Cari produk UMKM\n";
-        $menu .= "   Contoh: _umkm bakso_\n\n";
-        $menu .= "4️⃣ *JASA [kata kunci]* - Cari penyedia jasa\n";
-        $menu .= "   Contoh: _jasa tukang_\n\n";
-        $menu .= "5️⃣ *LOKER* - Lihat lowongan kerja\n";
-        $menu .= "6️⃣ *PENGADUAN* - Sampaikan keluhan/aduan\n";
-        $menu .= "7️⃣ *TOGGLE* - Kelola status lapak/jasa Anda\n\n";
-        $menu .= "Ketik *MENU* kapan saja untuk kembali ke menu ini.";
+        $menu .= "Silakan pilih layanan (Ketik angka):\n\n";
+        $menu .= "1️⃣ *Administrasi* (Syarat & Status Berkas)\n";
+        $menu .= "2️⃣ *Loker & UMKM* (Kerja & Produk Desa)\n";
+        $menu .= "3️⃣ *Jasa* (Cari Tukang/Servis)\n";
+        $menu .= "4️⃣ *Pengaduan* (Aspirasi Warga)\n";
+        $menu .= "5️⃣ *Kelola Data* (Aktif/Nonaktifkan Data Anda)\n\n";
+        $menu .= "Ketik *MENU* kapan saja untuk kembali.";
 
         // Clear any active session
         WhatsappSession::where('phone', request()->input('phone'))
@@ -143,6 +187,6 @@ class IntentHandler
      */
     protected function getUnknownIntentMessage(): string
     {
-        return "Maaf, saya tidak mengerti pesan Anda. Ketik *MENU* untuk melihat daftar layanan yang tersedia.";
+        return "Maaf, saya tidak mengerti pesan Anda. Ketik *MENU* untuk melihat daftar layanan (1-5).";
     }
 }
