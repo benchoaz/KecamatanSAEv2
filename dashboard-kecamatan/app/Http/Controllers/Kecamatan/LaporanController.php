@@ -121,6 +121,47 @@ class LaporanController extends Controller
         return view('kecamatan.laporan.trantibum', compact('reports', 'year', 'desaId'));
     }
 
+    /**
+     * Rekapitulasi Pelayanan & Pengaduan Masyarakat
+     */
+    public function pelayanan(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        $desaId = $request->get('desa_id');
+
+        // Total Stats
+        $stats = [
+            'total' => \App\Models\PublicService::whereYear('created_at', $year)
+                ->when($desaId, fn($q) => $q->where('desa_id', $desaId))
+                ->count(),
+            'by_status' => \App\Models\PublicService::whereYear('created_at', $year)
+                ->when($desaId, fn($q) => $q->where('desa_id', $desaId))
+                ->select(\Illuminate\Support\Facades\DB::raw('status, count(*) as count'))
+                ->groupBy('status')
+                ->pluck('count', 'status'),
+            'by_category' => \App\Models\PublicService::whereYear('created_at', $year)
+                ->when($desaId, fn($q) => $q->where('desa_id', $desaId))
+                ->select(\Illuminate\Support\Facades\DB::raw('category, count(*) as count'))
+                ->groupBy('category')
+                ->pluck('count', 'category'),
+            'by_village' => \App\Models\PublicService::whereYear('created_at', $year)
+                ->when($desaId, fn($q) => $q->where('desa_id', $desaId))
+                ->select(\Illuminate\Support\Facades\DB::raw('desa_id, count(*) as count'))
+                ->with('desa')
+                ->groupBy('desa_id')
+                ->get(),
+        ];
+
+        // Monthly Trend
+        $trend = \App\Models\PublicService::whereYear('created_at', $year)
+            ->when($desaId, fn($q) => $q->where('desa_id', $desaId))
+            ->select(\Illuminate\Support\Facades\DB::raw('MONTH(created_at) as month, count(*) as count'))
+            ->groupBy('month')
+            ->pluck('count', 'month');
+
+        return view('kecamatan.laporan.pelayanan', compact('stats', 'trend', 'year', 'desaId'));
+    }
+
     public function export(Request $request)
     {
         // Handle PDF/Excel export logic

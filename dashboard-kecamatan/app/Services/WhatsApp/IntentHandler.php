@@ -52,7 +52,8 @@ class IntentHandler
                 'reply' => "📄 *LAYANAN ADMINISTRASI*\n\n" .
                     "Silakan pilih:\n" .
                     "1️⃣ *Syarat* - Info syarat pembuatan berkas\n" .
-                    "2️⃣ *Status* - Cek status berkas Anda\n\n" .
+                    "2️⃣ *Status* - Cek status berkas Anda\n" .
+                    "3️⃣ *Permohonan* - Kirim permohonan berkas baru\n\n" .
                     "Ketik *MENU* untuk kembali.",
                 'state_update' => 'MENU_ADMIN',
             ];
@@ -84,7 +85,7 @@ class IntentHandler
         }
 
         if ($this->isSelection($messageLower, '4')) {
-            return $this->complaintHandler->initiate($phone);
+            return $this->complaintHandler->initiate($phone, 'pengaduan');
         }
 
         if ($this->isSelection($messageLower, '5')) {
@@ -93,9 +94,15 @@ class IntentHandler
 
         // --- KEYWORD FALLBACKS ---
 
+        // Direct PIN check (6 digits)
+        if (preg_match('/^[0-9]{6}$/', $messageLower)) {
+            return $this->statusHandler->handle($phone, $messageLower);
+        }
+
         // Status check intent
         if ($this->matchesIntent($messageLower, ['status', 'cek', 'lacak'])) {
-            return $this->statusHandler->handle($phone);
+            $query = trim(str_replace(['status', 'cek', 'lacak'], '', $messageLower));
+            return $this->statusHandler->handle($phone, $query ?: null);
         }
 
         // SYARAT (requirements) intent
@@ -127,6 +134,20 @@ class IntentHandler
         // Complaint submission intent
         if ($this->matchesIntent($messageLower, ['pengaduan', 'lapor', 'aduan', 'complaint'])) {
             return $this->complaintHandler->initiate($phone);
+        }
+
+        // --- STATE BASED HANDLING ---
+        $session = WhatsappSession::where('phone', $phone)->first();
+        if ($session && $session->state === 'MENU_ADMIN') {
+            if ($this->isSelection($messageLower, '1')) {
+                return $this->syaratHandler->search(null);
+            }
+            if ($this->isSelection($messageLower, '2')) {
+                return $this->statusHandler->handle($phone, null);
+            }
+            if ($this->isSelection($messageLower, '3')) {
+                return $this->complaintHandler->initiate($phone, 'pelayanan');
+            }
         }
 
         // Owner toggle intent

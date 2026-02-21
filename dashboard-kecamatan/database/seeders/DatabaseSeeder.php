@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             LokerSeeder::class,
             PublicServiceSeeder::class,
             WhatsAppSettingsSeeder::class,
+            WahaN8nSeeder::class,
         ]);
     }
 }

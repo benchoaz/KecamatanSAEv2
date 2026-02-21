@@ -46,7 +46,7 @@
                         <li class="nav-submenu-item">
                             <a href="{{ route('kecamatan.pelayanan.inbox', ['category' => 'pelayanan']) }}"
                                 class="nav-sublink {{ request()->query('category', 'pelayanan') == 'pelayanan' ? 'active' : '' }}">
-                                <i class="fas fa-comments me-2 small"></i> Layanan Warga
+                                <i class="fas fa-file-invoice me-2 small"></i> Pelayanan Berkas
                             </a>
                         </li>
                         <li class="nav-submenu-item">
@@ -67,7 +67,7 @@
                     <a href="{{ route('kecamatan.pelayanan.pengaduan') }}"
                         class="nav-link {{ request()->routeIs('kecamatan.pelayanan.pengaduan') ? 'active' : '' }}">
                         <span class="nav-icon"><i class="fas fa-bullhorn text-rose-500"></i></span>
-                        <span class="nav-text">Pengaduan WhatsApp</span>
+                        <span class="nav-text">Pengaduan Masyarakat</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -273,7 +273,21 @@
                             <span class="nav-text">Manajemen Fitur</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('kecamatan.settings.waha-n8n.index') }}"
+                            class="nav-link {{ request()->routeIs('kecamatan.settings.waha-n8n.*') ? 'active' : '' }}">
+                            <span class="nav-icon"><i class="fab fa-whatsapp"></i></span>
+                            <span class="nav-text">WAHA & n8n</span>
+                        </a>
+                    </li>
                     @if(auth()->user()->isSuperAdmin())
+                        <li class="nav-item">
+                            <a href="{{ route('kecamatan.settings.api-tokens.index') }}"
+                                class="nav-link {{ request()->routeIs('kecamatan.settings.api-tokens.*') ? 'active' : '' }}">
+                                <span class="nav-icon"><i class="fas fa-key"></i></span>
+                                <span class="nav-text">API Token</span>
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a href="{{ route('kecamatan.audit-logs.index') }}"
                                 class="nav-link {{ request()->routeIs('kecamatan.audit-logs.*') ? 'active' : '' }}">

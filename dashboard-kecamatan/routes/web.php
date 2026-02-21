@@ -22,9 +22,7 @@ Route::get('/', [\App\Http\Controllers\LandingController::class, 'index']);
 Route::get('/wilayah', [\App\Http\Controllers\LandingController::class, 'wilayah'])->name('landing.wilayah');
 
 // Public UMKM Etalase (Redirect to unified Economy page)
-Route::get('/umkm', function () {
-    return redirect()->route('kerja.index');
-})->name('public.umkm.index');
+Route::get('/umkm', [\App\Http\Controllers\PublicUmkmController::class, 'index'])->name('public.umkm.index');
 Route::get('/umkm/{id}', [\App\Http\Controllers\PublicUmkmController::class, 'show'])->name('public.umkm.show');
 
 // UMKM Rakyat (Self-Service)

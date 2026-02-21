@@ -14,6 +14,7 @@ class MasterLayanan extends Model
     protected $fillable = [
         'nama_layanan',
         'deskripsi_syarat',
+        'attachment_requirements',
         'estimasi_waktu',
         'ikon',
         'warna_bg',
@@ -24,6 +25,7 @@ class MasterLayanan extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'urutan' => 'integer'
+        'urutan' => 'integer',
+        'attachment_requirements' => 'array'
     ];
 }

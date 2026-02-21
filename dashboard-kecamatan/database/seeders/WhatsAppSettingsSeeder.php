@@ -44,7 +44,7 @@ class WhatsAppSettingsSeeder extends Seeder
             [
                 'module' => 'whatsapp',
                 'key' => 'whatsapp_bot_number',
-                'value' => '6281234567890',
+                'value' => '6281331699112',
                 'description' => 'Official WhatsApp bot number for Kecamatan Besuk',
                 'type' => 'text',
             ],

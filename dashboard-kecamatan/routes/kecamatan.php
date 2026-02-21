@@ -12,6 +12,7 @@ use App\Http\Controllers\Kecamatan\PembangunanController;
 use App\Http\Controllers\Kecamatan\ReferenceDataController;
 use App\Http\Controllers\Master\DesaMasterController;
 use App\Http\Controllers\ApplicationProfileController;
+use App\Http\Controllers\Kecamatan\WahaN8nController;
 use App\Http\Controllers\Pemerintahan\AparaturController; // Keep for now or move
 use Illuminate\Support\Facades\Route;
 
@@ -90,6 +91,20 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin'])->prefix('keca
         Route::delete('/{apiToken}', [\App\Http\Controllers\ApiTokenController::class, 'destroy'])->name('destroy');
     });
 
+    // WAHA & n8n Management
+    Route::prefix('settings/waha-n8n')->name('settings.waha-n8n.')->group(function () {
+        Route::get('/', [WahaN8nController::class, 'index'])->name('index');
+        Route::put('/', [WahaN8nController::class, 'update'])->name('update');
+        Route::get('/status', [WahaN8nController::class, 'status'])->name('status');
+        Route::post('/check-waha', [WahaN8nController::class, 'checkWaha'])->name('check-waha');
+        Route::post('/check-n8n', [WahaN8nController::class, 'checkN8n'])->name('check-n8n');
+        Route::post('/check-all', [WahaN8nController::class, 'checkAll'])->name('check-all');
+        Route::post('/start-session', [WahaN8nController::class, 'startSession'])->name('start-session');
+        Route::post('/logout-session', [WahaN8nController::class, 'logoutSession'])->name('logout-session');
+        Route::get('/qr-code', [WahaN8nController::class, 'getQrCode'])->name('qr-code');
+        Route::post('/test-message', [WahaN8nController::class, 'testMessage'])->name('test-message');
+    });
+
     // Ekbang (Monitoring Side)
     Route::middleware(['menu.toggle:ekbang'])->prefix('ekbang')->name('ekbang.')->group(function () {
         Route::get('/', [EkbangController::class, 'index'])->name('index');
@@ -156,6 +171,7 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin'])->prefix('keca
         Route::get('/pemerintahan', [LaporanController::class, 'pemerintahan'])->name('pemerintahan');
         Route::get('/kesra', [LaporanController::class, 'kesra'])->name('kesra');
         Route::get('/trantibum', [LaporanController::class, 'trantibum'])->name('trantibum');
+        Route::get('/pelayanan', [LaporanController::class, 'pelayanan'])->name('pelayanan');
         Route::get('/export', [LaporanController::class, 'export'])->name('export');
     });
 

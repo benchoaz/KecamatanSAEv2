@@ -25,12 +25,9 @@ class PelayananController extends Controller
 
         $query = PublicService::with('desa');
 
-        // Mapping logic from User Request
+        // Mapping logic for strict separation
         if ($category === 'pelayanan') {
-            $query->whereIn('category', [
-                PublicService::CATEGORY_PENGADUAN,
-                PublicService::CATEGORY_PELAYANAN
-            ]);
+            $query->where('category', PublicService::CATEGORY_PELAYANAN);
         } else {
             $query->where('category', $category);
         }
@@ -328,6 +325,8 @@ class PelayananController extends Controller
             'warna_text' => 'required|string|max:100',
             'is_active' => 'required|boolean',
             'urutan' => 'required|integer',
+            'attachment_requirements' => 'nullable|array',
+            'attachment_requirements.*' => 'required|string|max:255',
         ]);
 
         MasterLayanan::create($validated);
@@ -352,6 +351,8 @@ class PelayananController extends Controller
             'warna_text' => 'required|string|max:100',
             'is_active' => 'required|boolean',
             'urutan' => 'required|integer',
+            'attachment_requirements' => 'nullable|array',
+            'attachment_requirements.*' => 'required|string|max:255',
         ]);
 
         $layanan->update($validated);
@@ -365,34 +366,25 @@ class PelayananController extends Controller
         return redirect()->route('kecamatan.pelayanan.layanan.index')->with('success', 'Layanan berhasil dihapus.');
     }
 
-    /**
-     * Pengaduan WhatsApp - Dedicated Menu
-     * Menampilkan daftar pengaduan yang masuk via WhatsApp
-     */
     public function pengaduanIndex()
     {
-        // Filter hanya pengaduan dari WhatsApp
+        // Filter all complaints (unlimited by source)
         $pengaduans = PublicService::with(['desa', 'handler'])
-            ->where('source', 'whatsapp')
             ->where('category', PublicService::CATEGORY_PENGADUAN)
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        // Statistik pengaduan WhatsApp
+        // Statistik pengaduan (all sources)
         $stats = [
-            'total' => PublicService::where('source', 'whatsapp')
-                ->where('category', PublicService::CATEGORY_PENGADUAN)
+            'total' => PublicService::where('category', PublicService::CATEGORY_PENGADUAN)
                 ->count(),
-            'menunggu' => PublicService::where('source', 'whatsapp')
-                ->where('category', PublicService::CATEGORY_PENGADUAN)
+            'menunggu' => PublicService::where('category', PublicService::CATEGORY_PENGADUAN)
                 ->where('status', PublicService::STATUS_MENUNGGU)
                 ->count(),
-            'diproses' => PublicService::where('source', 'whatsapp')
-                ->where('category', PublicService::CATEGORY_PENGADUAN)
+            'diproses' => PublicService::where('category', PublicService::CATEGORY_PENGADUAN)
                 ->where('status', PublicService::STATUS_DIPROSES)
                 ->count(),
-            'selesai' => PublicService::where('source', 'whatsapp')
-                ->where('category', PublicService::CATEGORY_PENGADUAN)
+            'selesai' => PublicService::where('category', PublicService::CATEGORY_PENGADUAN)
                 ->where('status', PublicService::STATUS_SELESAI)
                 ->count(),
         ];
@@ -400,13 +392,9 @@ class PelayananController extends Controller
         return view('kecamatan.pelayanan.pengaduan.index', compact('pengaduans', 'stats'));
     }
 
-    /**
-     * Detail Pengaduan WhatsApp
-     */
     public function pengaduanShow($id)
     {
         $pengaduan = PublicService::with(['desa', 'handler', 'attachments'])
-            ->where('source', 'whatsapp')
             ->where('category', PublicService::CATEGORY_PENGADUAN)
             ->findOrFail($id);
 

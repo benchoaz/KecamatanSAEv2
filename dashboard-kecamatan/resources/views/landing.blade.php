@@ -265,12 +265,38 @@
                         Sampaikan pengaduan, ajukan layanan, atau lacak status berkas Anda dengan mudah dan transparan.
                     </p>
 
-                    <div class="flex flex-wrap gap-4">
+                    {{-- Chatbox button hidden - can be re-enabled later --}}
+                    {{-- <div class="flex flex-wrap gap-4">
                         <button onclick="document.getElementById('publicServiceModal').showModal()"
                             class="btn bg-[#0d9488] hover:bg-[#0f766e] text-white border-0 rounded-2xl px-10 font-bold shadow-xl transition-all h-14">
                             Sampaikan Layanan / Pengaduan
                         </button>
-                    </div>
+                    </div> --}}
+                    @if(appProfile()->whatsapp_bot_number)
+                        <div
+                            class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 shadow-sm">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-14 h-14 bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-2xl flex items-center justify-center shadow-lg">
+                                    <i class="fab fa-whatsapp text-white text-3xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">Ngobrol SAE
+                                        Bareng Kecamatan</p>
+                                    <p class="text-2xl font-black text-slate-800 tracking-wide">
+                                        @php
+                                            $botNum = appProfile()->whatsapp_bot_number;
+                                            // Display as 08xxx format for Indonesian users
+                                            if (str_starts_with($botNum, '62')) {
+                                                $botNum = '0' . substr($botNum, 2);
+                                            }
+                                        @endphp
+                                        {{ $botNum }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                 </div>
 
@@ -593,7 +619,7 @@
                                 <span>Buka Peta Wilayah</span>
                                 <i class="fas fa-arrow-right ml-2"></i>
                             </a>
-                            <a href="{{ route('kerja.index') }}"
+                            <a href="{{ route('public.umkm.index') }}"
                                 class="flex items-center gap-3 px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-teal-200 transition-all hover:bg-slate-50 group/umkm">
                                 <div class="flex -space-x-2">
                                     @foreach($umkms->take(3) as $u)
@@ -673,7 +699,7 @@
                         </div>
 
                         <button
-                            onclick="openSubmissionModal('{{ $svc->nama_layanan }}', '{{ str_replace(["\r", "\n"], ' ', addslashes($svc->deskripsi_syarat)) }}')"
+                            onclick="openSubmissionModal('{{ $svc->nama_layanan }}', '{{ str_replace(["\r", "\n"], ' ', addslashes($svc->deskripsi_syarat)) }}', {{ json_encode($svc->attachment_requirements ?? []) }})"
                             class="btn btn-sm bg-teal-600 hover:bg-teal-700 border-none text-white rounded-xl px-6 w-full group-hover:shadow-md transition-all py-3 h-auto font-black uppercase tracking-widest text-[10px]">
                             Ajukan / Hubungi
                         </button>
@@ -968,7 +994,8 @@
 
     <!-- Service Submission Modal (PERFECTED & COMPACT) -->
     <dialog id="permohonanModal" class="modal modal-bottom sm:modal-middle">
-        <div class="modal-box max-w-2xl rounded-3xl bg-white p-0 overflow-hidden shadow-2xl border border-slate-100">
+        <div
+            class="modal-box max-w-2xl rounded-3xl bg-white p-0 overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
             <!-- Modal Header (Compact & Professional) -->
             <div
                 class="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 flex justify-between items-center text-white shrink-0 shadow-lg">
@@ -995,7 +1022,7 @@
                 </form>
             </div>
 
-            <form id="submissionForm" class="p-6 space-y-5 bg-slate-50/30">
+            <form id="submissionForm" class="p-6 space-y-5 bg-slate-50/30 overflow-y-auto flex-grow">
                 @csrf
                 <!-- Identification Section (3-Column Grid) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1503,7 +1530,7 @@
         const submissionForm = document.getElementById('submissionForm');
         const dynamicAttachments = document.getElementById('dynamicAttachments');
 
-        function openSubmissionModal(serviceName, requirements = '') {
+        function openSubmissionModal(serviceName, requirements = '', attachmentsJson = []) {
             document.getElementById('modalServiceTitle').innerText = 'Ajukan: ' + serviceName;
             document.getElementById('inputJenisLayanan').value = serviceName;
 
@@ -1522,9 +1549,14 @@
             if (dynamicAttachments) {
                 dynamicAttachments.innerHTML = '';
 
-                // Try to split requirements by numbers (1., 2., etc.) or bullets or commas
                 let reqList = [];
-                if (requirements) {
+
+                // 1. Priority: Use structured JSON if available
+                if (Array.isArray(attachmentsJson) && attachmentsJson.length > 0) {
+                    reqList = attachmentsJson;
+                }
+                // 2. Fallback: Parse from text requirements
+                else if (requirements) {
                     // Remove common preamble like "Syarat:" or "Persyaratan:"
                     let cleanReqs = requirements.replace(/^(Persyaratan|Syarat|SOP):\s*/i, '');
 
@@ -2155,114 +2187,12 @@
             outline: none !important;
         }
 
-        /* WhatsApp Floating Widget */
-        .wa-floating-widget {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            text-decoration: none !important;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .wa-floating-widget:hover {
-            transform: scale(1.05) translateY(-5px);
-        }
-
-        .wa-label {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            color: #1e293b;
-            font-size: 13px;
-            font-weight: 800;
-            white-space: nowrap;
-            opacity: 0;
-            transform: translateX(20px);
-            transition: all 0.4s ease;
-            pointer-events: none;
-        }
-
-        .wa-floating-widget:hover .wa-label {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        .wa-icon-circle {
-            width: 65px;
-            height: 65px;
-            background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 32px;
-            box-shadow: 0 20px 40px rgba(37, 211, 102, 0.3);
-            position: relative;
-        }
-
-        .wa-icon-circle::after {
-            content: '';
-            position: absolute;
-            inset: -5px;
-            border: 2px solid #25d366;
-            border-radius: 50%;
-            animation: waPulse 2s infinite;
-        }
-
-        @keyframes waPulse {
-            0% {
-                transform: scale(1);
-                opacity: 0.8;
-            }
-
-            100% {
-                transform: scale(1.3);
-                opacity: 0;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .wa-floating-widget {
-                bottom: 20px;
-                right: 20px;
-            }
-
-            .wa-label {
-                display: none;
-            }
-
-            .wa-icon-circle {
-                width: 55px;
-                height: 55px;
-                font-size: 26px;
-            }
-        }
-
         path.leaflet-interactive:focus {
             outline: none !important;
         }
     </style>
 
     <script src="{{ asset('voice-guide/min/voice.bundle.min.js') }}?v=3.3"></script>
-
-    {{-- WhatsApp Smart Bot Widget --}}
-    @if(appProfile()->whatsapp_bot_number)
-        <a href="{{ app(\App\Services\ApplicationProfileService::class)->getWhatsappBotUrl('Halo, saya butuh informasi layanan kecamatan.') }}"
-            target="_blank" class="wa-floating-widget" title="Tanya Asissten Digital">
-            <div class="wa-label">Tanya Asisten Digital</div>
-            <div class="wa-icon-circle">
-                <i class="fab fa-whatsapp"></i>
-            </div>
-        </a>
-    @endif
 
     {{-- Fix: Reset dark mode and close modals on page load --}}
     <script>

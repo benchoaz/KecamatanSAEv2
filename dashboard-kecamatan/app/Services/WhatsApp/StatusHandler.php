@@ -9,8 +9,24 @@ class StatusHandler
     /**
      * Handle status check request
      */
-    public function handle(string $phone): array
+    public function handle(string $phone, ?string $query = null): array
     {
+        // If a specific query (PIN or UUID) is provided
+        if ($query) {
+            $service = PublicService::where('tracking_code', $query)
+                ->orWhere('uuid', $query)
+                ->first();
+
+            if ($service) {
+                return [
+                    'success' => true,
+                    'intent' => 'status',
+                    'reply' => $this->formatSingleStatus($service),
+                    'state_update' => null,
+                ];
+            }
+        }
+
         // Clean phone number (remove +, spaces, etc.)
         $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
 
@@ -23,7 +39,7 @@ class StatusHandler
             return [
                 'success' => true,
                 'intent' => 'status',
-                'reply' => "Tidak ditemukan berkas layanan yang terdaftar dengan nomor {$phone}.\n\nPastikan nomor Anda sudah terdaftar saat pengajuan layanan.",
+                'reply' => "Tidak ditemukan berkas layanan yang terdaftar dengan nomor {$phone}.\n\nPastikan nomor Anda sudah terdaftar saat pengajuan layanan atau masukkan PIN Lacak Anda langsung.",
                 'state_update' => null,
             ];
         }
@@ -54,16 +70,18 @@ class StatusHandler
     {
         $status = "📋 *STATUS BERKAS LAYANAN*\n\n";
         $status .= "Jenis Layanan: {$service->jenis_layanan}\n";
-        $status .= "ID Tracking: {$service->uuid}\n";
+        $status .= "ID: " . substr($service->uuid, 0, 8) . "...\n";
+        $status .= "PIN Lacak: *{$service->tracking_code}*\n";
         $status .= "Status: " . $this->getStatusBadge($service->status) . "\n";
         $status .= "Tanggal: {$service->created_at->format('d/m/Y')}\n";
 
-        if ($service->public_response) {
-            $status .= "\n📝 *Tanggapan Petugas:*\n{$service->public_response}";
+        $response = $service->effective_public_response;
+        if ($response) {
+            $status .= "\n📝 *Tanggapan Petugas:*\n{$response}";
         }
 
         if ($service->completion_type === 'digital' && $service->result_file_path) {
-            $status .= "\n\n📄 *Dokumen Selesai:* Silakan cek di tracking web atau hubungi admin.";
+            $status .= "\n\n📄 *Dokumen Selesai:* Silakan cek di website atau hubungi admin.";
         }
 
         return $status;
@@ -81,11 +99,12 @@ class StatusHandler
             $num = $index + 1;
             $status .= "{$num}. {$service->jenis_layanan}\n";
             $status .= "   ID: " . substr($service->uuid, 0, 8) . "...\n";
+            $status .= "   PIN Lacak: *{$service->tracking_code}*\n";
             $status .= "   Status: " . $this->getStatusBadge($service->status) . "\n";
             $status .= "   Tanggal: {$service->created_at->format('d/m/Y')}\n\n";
         }
 
-        $status .= "💡 _Gunakan ID Tracking untuk mendapatkan detail lebih lengkap via website._";
+        $status .= "💡 _Gunakan PIN Lacak (6 angka) untuk melihat detail lebih lengkap di website atau ketik langsung PIN tersebut di sini._";
 
         return $status;
     }

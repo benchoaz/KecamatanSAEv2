@@ -33,7 +33,7 @@ class ApplicationProfileController extends Controller
             'image_umkm' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
             'image_pariwisata' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
             'image_festival' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'hero_image_path' => 'nullable|image|mimes:png,webp|max:5120', // Limit 5MB, PNG/WebP preferred
+            'hero_image_path' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048', // Limit 2MB, support JPG/JPEG/PNG/WebP
             'hero_image_alt' => 'nullable|string|max:100',
             'hero_image_active' => 'nullable|in:0,1,on',
             'hero_bg_path' => 'nullable|image|mimes:jpeg,png,jpg|max:3072', // Max 3MB for background

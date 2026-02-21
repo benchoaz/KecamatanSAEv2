@@ -326,11 +326,12 @@
                                                     <div class="col-md-8">
                                                         <div class="mb-3">
                                                             <label class="form-label text-slate-600 small fw-bold">Upload
-                                                                Foto (Transparan)</label>
+                                                                Foto Hero</label>
                                                             <input type="file" name="hero_image_path"
-                                                                class="form-control bg-slate-50 border-slate-200 rounded-3 text-sm">
+                                                                class="form-control bg-slate-50 border-slate-200 rounded-3 text-sm"
+                                                                accept="image/jpeg,image/jpg,image/png,image/webp">
                                                             <div class="form-text text-[10px] text-slate-400 mt-1 italic">
-                                                                Format PNG tanpa background agar menyatu dengan desain.
+                                                                Format: JPG, JPEG, PNG, WebP. Maksimal 2MB.
                                                             </div>
                                                         </div>
                                                         <div>

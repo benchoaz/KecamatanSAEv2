@@ -165,10 +165,11 @@ class PublicServiceController extends Controller
         }
 
         return response()->json([
-            'message' => 'Terima kasih. Laporan Anda telah kami terima dengan status "Menunggu Klarifikasi". Petugas kami akan melakukan tinjauan administratif secara selektif.',
+            'message' => 'Terima kasih. Laporan Anda telah kami terima dengan PIN Lacak: ' . $service->tracking_code . '. Status awal: "Menunggu Klarifikasi".',
             'uuid' => $service->uuid,
+            'tracking_code' => $service->tracking_code,
             'receipt_url' => route('receipt.download', $service->uuid),
-            'tracking_url' => route('public.tracking') . '?q=' . $service->uuid
+            'tracking_url' => route('public.tracking') . '?q=' . $service->tracking_code
         ]);
     }
 
@@ -377,11 +378,26 @@ class PublicServiceController extends Controller
         ]);
 
         $identifier = $request->identifier;
+        $cleanIdentifier = preg_replace('/[^0-9]/', '', $identifier);
 
-        // Try to find by UUID or WhatsApp
-        $service = PublicService::where('uuid', $identifier)
-            ->orWhere('whatsapp', $identifier)
-            ->with(['desa', 'handler'])
+        // Try to find by Tracking PIN, UUID or WhatsApp
+        // MUST be in category 'pelayanan' as per user request (focus on files/docs)
+        $query = PublicService::where('category', PublicService::CATEGORY_PELAYANAN)
+            ->where(function ($q) use ($identifier, $cleanIdentifier) {
+                $q->where('tracking_code', $identifier)
+                    ->orWhere('uuid', $identifier);
+
+                // If it looks like a phone number (longer than 8 digits), use fuzzy match
+                if (strlen($cleanIdentifier) >= 9) {
+                    // Get the last 10 digits for robust matching (e.g. bypass +62 vs 08)
+                    $suffix = substr($cleanIdentifier, -10);
+                    $q->orWhere('whatsapp', 'LIKE', '%' . $suffix);
+                } else {
+                    $q->orWhere('whatsapp', $identifier);
+                }
+            });
+
+        $service = $query->with(['desa', 'handler'])
             ->latest()
             ->first();
 
@@ -396,12 +412,13 @@ class PublicServiceController extends Controller
         $response = [
             'found' => true,
             'uuid' => $service->uuid,
+            'tracking_code' => $service->tracking_code,
             'jenis_layanan' => $service->jenis_layanan,
             'status' => $service->status,
             'status_label' => $service->status_label,
             'status_color' => $service->status_color,
             'created_at' => $service->created_at->format('d M Y, H:i'),
-            'public_response' => $service->public_response,
+            'public_response' => $service->effective_public_response,
             'completion_type' => $service->completion_type,
         ];
 
@@ -475,10 +492,11 @@ class PublicServiceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'WhatsApp message successfully stored',
+                'message' => 'WhatsApp message successfully stored. Tracking PIN: ' . $service->tracking_code,
                 'data' => [
                     'id' => $service->id,
                     'uuid' => $service->uuid,
+                    'tracking_code' => $service->tracking_code,
                     'category' => $service->category,
                     'status' => $service->status
                 ]

@@ -75,6 +75,9 @@ class LandingController extends Controller
         $heroImage = $profileService->getHeroImage();
         $heroImageAlt = $profileService->getHeroImageAlt();
 
+        // WhatsApp Bot URL for "Ngobrol SAE" button
+        $whatsappUrl = $profileService->getWhatsappBotUrl('MENU');
+
         return view('landing', compact(
             'publicAnnouncements',
             'latestBerita',
@@ -91,7 +94,8 @@ class LandingController extends Controller
             'bgBlur',
             'isHeroActive',
             'heroImage',
-            'heroImageAlt'
+            'heroImageAlt',
+            'whatsappUrl'
         ));
     }
     public function wilayah()

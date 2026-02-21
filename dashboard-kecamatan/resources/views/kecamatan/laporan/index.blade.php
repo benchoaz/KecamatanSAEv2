@@ -65,7 +65,8 @@
                     <span class="text-slate-500 small fw-bold text-uppercase tracking-wider">Cakupan Monitoring</span>
                     <h2 class="fw-900 text-slate-900 mt-2 mb-1">{{ $totalDesa }} Desa</h2>
                     <p class="text-slate-500 small mb-0">Wilayah kerja {{ appProfile()->region_level }}
-                        {{ appProfile()->region_name }}</p>
+                        {{ appProfile()->region_name }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -161,6 +162,25 @@
                         wilayah.</p>
                     <a href="{{ route('kecamatan.laporan.trantibum') }}?year={{ $year }}&desa_id={{ $desaId }}"
                         class="btn btn-outline-slate-900 w-100 rounded-pill fw-bold">
+                        Buka Laporan <i class="fas fa-arrow-right-long ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pelayanan & Pengaduan -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-up bg-white"
+                style="border-top: 4px solid #0d9488 !important;">
+                <div class="card-body p-4">
+                    <div class="bg-teal-50 text-teal-700 rounded-4 p-3 fs-3 d-inline-block mb-4 shadow-sm">
+                        <i class="fas fa-hand-holding-heart"></i>
+                    </div>
+                    <h5 class="fw-bold text-slate-900 mb-3">Pelayanan & Pengaduan</h5>
+                    <p class="text-slate-500 small mb-4">Rekapitulasi pengajuan berkas layanan dan laporan aspirasi
+                        masyarakat (WhatsApp/Bot).</p>
+                    <a href="{{ route('kecamatan.laporan.pelayanan') }}?year={{ $year }}&desa_id={{ $desaId }}"
+                        class="btn btn-brand-600 text-white w-100 rounded-pill fw-bold">
                         Buka Laporan <i class="fas fa-arrow-right-long ms-2"></i>
                     </a>
                 </div>

@@ -1,6 +1,6 @@
 @extends('layouts.kecamatan')
 
-@section('title', 'Detail Pengaduan #' . $complaint->uuid)
+@section('title', 'Detail ' . $complaint->category_label . ' #' . $complaint->uuid)
 
 @section('content')
     <div class="container-fluid px-4 py-4">
@@ -28,9 +28,11 @@
                                     <i class="fas fa-file-alt"></i>
                                 </div>
                                 <div>
-                                    <h5 class="mb-0 fw-bold fs-6">Dokumen Pengaduan</h5>
-                                    <p class="text-[10px] text-slate-400 mb-0 uppercase tracking-wider">UUID:
-                                        {{ $complaint->uuid }}</p>
+                                    <h5 class="mb-0 fw-bold fs-6">Dokumen {{ $complaint->category_label }}</h5>
+                                    <p class="text-[10px] text-slate-400 mb-0 uppercase tracking-wider">
+                                        UUID: {{ $complaint->uuid }} | 
+                                        PIN: <span class="badge bg-teal-100 text-teal-700 fw-bold border border-teal-200">{{ $complaint->tracking_code }}</span>
+                                    </p>
                                 </div>
                             </div>
                             <div class="d-flex gap-2">
@@ -111,7 +113,9 @@
                         </div>
 
                         <div class="mb-5">
-                            <label class="text-[10px] text-slate-400 uppercase fw-bold tracking-wider mb-2 d-block">Uraian / Aspirasi Masyarakat</label>
+                            <label class="text-[10px] text-slate-400 uppercase fw-bold tracking-wider mb-2 d-block">
+                                {{ $complaint->category == 'pelayanan' ? 'Uraian Permohonan' : 'Uraian / Aspirasi Masyarakat' }}
+                            </label>
                             <div class="p-4 bg-slate-50 border border-slate-100 rounded-4 text-slate-700 leading-relaxed fs-6">
                                 {{ $cleanUraian }}
                             </div>
@@ -175,14 +179,14 @@
                     </div>
                 </div>
 
-                @if($complaint->public_response)
+                @if($complaint->effective_public_response)
                     <div class="card border-0 shadow-sm rounded-4 overflow-hidden border border-emerald-100 bg-emerald-50/10">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center gap-2 mb-3">
                                 <i class="fas fa-comment-dots text-emerald-500"></i>
                                 <h6 class="mb-0 fw-bold text-emerald-900 small">Respon Publik (Yang Dilihat Masyarakat)</h6>
                             </div>
-                            <p class="text-slate-700 mb-0 small leading-relaxed">{{ $complaint->public_response }}</p>
+                            <p class="text-slate-700 mb-0 small leading-relaxed">{{ $complaint->effective_public_response }}</p>
                         </div>
                     </div>
                 @endif
@@ -198,7 +202,7 @@
                         </div>
                     </div>
                     <div class="card-body p-4">
-                        <form action="{{ route('kecamatan.pelayanan.update-status', $complaint->id) }}" method="POST">
+                        <form action="{{ route('kecamatan.pelayanan.update-status', $complaint->id) }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class PublicService extends Model
 {
@@ -23,11 +24,51 @@ class PublicService extends Model
 
     protected $guarded = [];
 
+    /**
+     * Get human readable category label
+     */
+    public function getCategoryLabelAttribute(): string
+    {
+        return match ($this->category) {
+            self::CATEGORY_PELAYANAN => 'Pelayanan Berkas',
+            self::CATEGORY_PENGADUAN => 'Pengaduan Masyarakat',
+            self::CATEGORY_UMKM => 'UMKM',
+            self::CATEGORY_LOKER => 'Loker',
+            default => ucfirst($this->category ?? 'Layanan')
+        };
+    }
+
     protected $casts = [
         'is_agreed' => 'boolean',
         'handled_at' => 'datetime',
         'ready_at' => 'datetime',
     ];
+
+    /**
+     * Bootstrap the model and its traits.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->tracking_code) {
+                $model->tracking_code = static::generateUniqueTrackingCode();
+            }
+        });
+    }
+
+    /**
+     * Generate a unique 6-digit numeric tracking code.
+     */
+    public static function generateUniqueTrackingCode()
+    {
+        do {
+            $code = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        } while (static::where('tracking_code', $code)->exists());
+
+        return $code;
+    }
 
     public function desa()
     {
@@ -67,5 +108,27 @@ class PublicService extends Model
             self::STATUS_DITOLAK => 'rose',
             default => 'slate'
         };
+    }
+
+    /**
+     * Get the explicit public response or the default one for pending/processing reports.
+     */
+    public function getEffectivePublicResponseAttribute()
+    {
+        // Safe check: If tracking_code is missing for legacy records, generate it on the fly
+        if (!$this->tracking_code) {
+            $this->tracking_code = static::generateUniqueTrackingCode();
+            $this->save();
+        }
+
+        if ($this->public_response) {
+            return $this->public_response;
+        }
+
+        if (in_array($this->status, [self::STATUS_MENUNGGU, self::STATUS_DIPROSES])) {
+            return "akan segera di tindak lanjuti 2 x24 jam anda akan mendapat laporan";
+        }
+
+        return null;
     }
 }

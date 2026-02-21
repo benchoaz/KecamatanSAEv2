@@ -52,13 +52,13 @@
                             Papan Lowongan Kerja
                         </a></li>
 
-                    <li class="mb-1"><a href="{{ route('kerja.index') }}"
+                    <li class="mb-1"><a href="{{ route('public.umkm.index') }}"
                             class="py-3 px-4 text-xs font-bold text-slate-600 hover:text-teal-600 hover:bg-teal-50 rounded-xl flex gap-3 group/item">
                             <span
                                 class="w-6 h-6 rounded-lg bg-teal-100/50 flex items-center justify-center text-teal-500 group-hover/item:bg-teal-500 group-hover/item:text-white transition-all">
-                                <i class="fas fa-search text-[10px]"></i>
+                                <i class="fas fa-store text-[10px]"></i>
                             </span>
-                            Katalog Pelaku Ekonomi
+                            Etalase Produk UMKM
                         </a></li>
 
                     <li class="mb-1"><a href="{{ route('umkm_rakyat.nearby') }}"

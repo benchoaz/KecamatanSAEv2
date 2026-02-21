@@ -14,8 +14,8 @@
         $pageDesc = 'Verifikasi informasi lowongan kerja baru dari warga.';
         $accentColor = 'emerald';
     } else {
-        $pageTitle .= 'Layanan Warga';
-        $pageDesc = 'Daftar pengaduan dan aspirasi masuk dari masyarakat.';
+        $pageTitle .= 'Pelayanan Berkas';
+        $pageDesc = 'Daftar permohonan layanan administrasi dan berkas dari masyarakat.';
         $accentColor = 'rose';
     }
 @endphp

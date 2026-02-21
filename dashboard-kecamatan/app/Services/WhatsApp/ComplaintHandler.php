@@ -9,16 +9,27 @@ use Illuminate\Support\Str;
 class ComplaintHandler
 {
     /**
-     * Initiate complaint submission flow
+     * Initiate submission flow
      */
-    public function initiate(string $phone): array
+    public function initiate(string $phone, string $category = 'pengaduan'): array
     {
+        $session = WhatsappSession::where('phone', $phone)->first();
+        if ($session) {
+            $session->setTempValue('submission_category', $category);
+        }
+
+        $isPelayanan = $category === 'pelayanan';
+        $title = $isPelayanan ? "📄 *PERMOHONAN LAYANAN*" : "📢 *PENGADUAN MASYARAKAT*";
+        $instruction = $isPelayanan
+            ? "Silakan sampaikan permohonan layanan/berkas Anda (misal: pengurusan KTP, Domisili, dll)."
+            : "Silakan sampaikan keluhan/pengaduan Anda terkait layanan Kecamatan Besuk.";
+
         return [
             'success' => true,
             'intent' => 'complaint_initiate',
-            'reply' => "📢 *PENGADUAN MASYARAKAT*\n\n" .
-                "Silakan sampaikan keluhan/pengaduan Anda terkait layanan Kecamatan Besuk.\n" .
-                "Tulis pengaduan Anda dalam satu pesan (maks 1000 karakter).\n\n" .
+            'reply' => $title . "\n\n" .
+                $instruction . "\n" .
+                "Tulis pesan Anda dalam satu pesan (maks 1000 karakter).\n\n" .
                 "Ketik *BATAL* untuk membatalkan.",
             'state_update' => 'WAITING_COMPLAINT_MESSAGE',
         ];
@@ -79,14 +90,17 @@ class ComplaintHandler
             // Create complaint record using PublicService model
             $complaintMessage = $session->getTempValue('complaint_message');
 
+            $category = $session->getTempValue('submission_category') ?: 'pengaduan';
+            $defaultService = $category === 'pelayanan' ? 'Permohonan Layanan/Berkas' : 'Layanan Pengaduan/Administrasi';
+
             $service = PublicService::create([
                 'uuid' => (string) Str::uuid(),
-                'category' => 'pengaduan', // Category from PublicServiceController constant logic
+                'category' => $category,
                 'source' => 'whatsapp_bot',
                 'whatsapp' => $session->phone,
                 'nama_pemohon' => 'Warga (WhatsApp)',
                 'uraian' => $complaintMessage,
-                'jenis_layanan' => 'Pengaduan Umum',
+                'jenis_layanan' => $defaultService,
                 'status' => 'menunggu_verifikasi',
                 'ip_address' => request()->ip() ?? '127.0.0.1',
             ]);
@@ -99,7 +113,8 @@ class ComplaintHandler
                 'reply' => "✅ *PENGADUAN TERKIRIM*\n\n" .
                     "Terima kasih, laporan Anda telah kami terima dengan ID:\n" .
                     "*{$service->uuid}*\n\n" .
-                    "Petugas kami akan segera menindaklanjuti. Anda dapat mengecek status laporan kapan saja dengan mengetik *STATUS*.",
+                    "Serta *PIN Lacak: {$service->tracking_code}*\n\n" .
+                    "Petugas kami akan segera menindaklanjuti. Anda dapat mengecek status laporan kapan saja dengan mengetik *STATUS* atau langsung masukkan PIN Lacak Anda.",
                 'state_update' => null,
             ];
         }

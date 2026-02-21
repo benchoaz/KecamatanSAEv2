@@ -185,82 +185,85 @@
 
                 if (data.found) {
                     // Build result HTML
+                    const statusIcon = data.status_color === 'emerald' ? 'fa-check-double' :
+                        (data.status_color === 'rose' ? 'fa-times-circle' : 'fa-circle-notch fa-spin');
+
                     let html = `
-                        <div class="mb-4">
-                            <span class="status-badge status-${data.status_color}">
-                                <i class="fas fa-circle-notch fa-spin"></i> ${data.status_label}
-                            </span>
-                        </div>
+                            <div class="mb-4">
+                                <span class="status-badge status-${data.status_color}">
+                                    <i class="fas ${statusIcon}"></i> ${data.status_label}
+                                </span>
+                            </div>
 
-                        <div class="info-row">
-                            <div class="info-label">ID Berkas</div>
-                            <div class="info-value"><code class="bg-slate-100 px-2 py-1 rounded">${data.uuid}</code></div>
-                        </div>
+                            <div class="info-row">
+                                <div class="info-label">ID Berkas</div>
+                                <div class="info-value"><code class="bg-slate-100 px-2 py-1 rounded">${data.uuid}</code></div>
+                            </div>
 
-                        <div class="info-row">
-                            <div class="info-label">Jenis Layanan</div>
-                            <div class="info-value">${data.jenis_layanan}</div>
-                        </div>
+                            <div class="info-row">
+                                <div class="info-label">Jenis Layanan</div>
+                                <div class="info-value">${data.jenis_layanan}</div>
+                            </div>
 
-                        <div class="info-row">
-                            <div class="info-label">Tanggal Pengajuan</div>
-                            <div class="info-value">${data.created_at}</div>
-                        </div>
-                    `;
+                            <div class="info-row">
+                                <div class="info-label">Tanggal Pengajuan</div>
+                                <div class="info-value">${data.created_at}</div>
+                            </div>
+                        `;
 
                     if (data.public_response) {
                         html += `
-                            <div class="info-row">
-                                <div class="info-label">Tanggapan</div>
-                                <div class="info-value">${data.public_response}</div>
-                            </div>
-                        `;
+                                <div class="info-row">
+                                    <div class="info-label">Tanggapan</div>
+                                    <div class="info-value">${data.public_response}</div>
+                                </div>
+                            `;
                     }
 
                     // Digital completion
                     if (data.completion_type === 'digital' && data.download_url) {
                         html += `
-                            <div class="mt-4 pt-4 border-top text-center">
-                                <h6 class="fw-bold text-success mb-3">
-                                    <i class="fas fa-check-circle me-2"></i>Berkas Sudah Selesai!
-                                </h6>
-                                <a href="${data.download_url}" target="_blank" class="download-btn">
-                                    <i class="fas fa-file-pdf fs-5"></i>
-                                    <span>Download Hasil (PDF)</span>
-                                </a>
-                                <p class="text-muted small mt-3 mb-0">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    File akan terbuka di tab baru
-                                </p>
-                            </div>
-                        `;
+                                <div class="mt-4 pt-4 border-top text-center">
+                                    <h6 class="fw-bold text-success mb-3">
+                                        <i class="fas fa-check-circle me-2"></i>Berkas Sudah Selesai!
+                                    </h6>
+                                    <a href="${data.download_url}" target="_blank" class="download-btn">
+                                        <i class="fas fa-file-pdf fs-5"></i>
+                                        <span>Download Hasil (PDF)</span>
+                                    </a>
+                                    <p class="text-muted small mt-3 mb-0">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        File akan terbuka di tab baru
+                                    </p>
+                                </div>
+                            `;
                     }
 
                     // Physical completion
                     if (data.completion_type === 'physical' && data.pickup_info) {
                         html += `
-                            <div class="pickup-card">
-                                <h6 class="fw-bold text-amber-900 mb-3">
-                                    <i class="fas fa-building me-2"></i>Ambil di Kantor Kecamatan
-                                </h6>
-                                <div class="mb-2">
-                                    <strong class="text-amber-800">Siap Diambil:</strong>
-                                    <span class="text-amber-900">${data.pickup_info.ready_at || 'Segera'}</span>
-                                </div>
-                                <div class="mb-2">
-                                    <strong class="text-amber-800">Hubungi:</strong>
-                                    <span class="text-amber-900">${data.pickup_info.pickup_person || '-'}</span>
-                                </div>
-                                ${data.pickup_info.pickup_notes ? `
-                                    <div class="mt-3 p-3 bg-white rounded-3">
-                                        <small class="text-slate-700">
-                                            <i class="fas fa-sticky-note text-amber-600 me-2"></i>
-                                            ${data.pickup_info.pickup_notes}
-                                        </small>
+                                <div class="pickup-card">
+                                    <h6 class="fw-bold text-amber-900 mb-3">
+                                        <i class="fas fa-building me-2"></i>Ambil di Kantor Kecamatan
+                                    </h6>
+                                    <div class="mb-2">
+                                        <strong class="text-amber-800">Siap Diambil:</strong>
+                                        <span class="text-amber-900">${data.pickup_info.ready_at || 'Segera'}</span>
                                     </div>
-                                ` : ''}
-                            </div>
-                        `;
+                                    <div class="mb-2">
+                                        <strong class="text-amber-800">Hubungi:</strong>
+                                        <span class="text-amber-900">${data.pickup_info.pickup_person || '-'}</span>
+                                    </div>
+                                    ${data.pickup_info.pickup_notes ? `
+                                        <div class="mt-3 p-3 bg-white rounded-3">
+                                            <small class="text-slate-700">
+                                                <i class="fas fa-sticky-note text-amber-600 me-2"></i>
+                                                ${data.pickup_info.pickup_notes}
+                                            </small>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
                     }
 
                     resultContent.innerHTML = html;

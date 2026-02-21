@@ -64,7 +64,8 @@
             <div class="hidden md:flex items-center gap-8">
                 <a href="/" class="text-sm font-bold text-slate-600 hover:text-teal-600 transition-colors">Beranda</a>
                 <a href="{{ route('kerja.index') }}" class="text-sm font-bold text-teal-600">Pekerjaan & Jasa</a>
-                <a href="/#umkm" class="text-sm font-bold text-slate-600 hover:text-teal-600 transition-colors">UMKM</a>
+                <a href="{{ route('public.umkm.index') }}"
+                    class="text-sm font-bold text-slate-600 hover:text-teal-600 transition-colors">UMKM</a>
                 <a href="/login"
                     class="px-5 py-2 bg-slate-800 text-white rounded-xl text-sm font-bold hover:bg-slate-700 transition-all shadow-lg">Login
                     Admin</a>

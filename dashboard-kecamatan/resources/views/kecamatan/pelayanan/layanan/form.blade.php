@@ -45,11 +45,51 @@
                                 <div class="col-12">
                                     <label
                                         class="form-label text-slate-700 fw-bold small uppercase tracking-wider">Persyaratan
-                                        <span class="text-rose-500">*</span></label>
+                                        (Teks) <span class="text-rose-500">*</span></label>
                                     <textarea name="deskripsi_syarat"
                                         class="form-control border-slate-200 bg-slate-50 rounded-3" rows="3"
                                         placeholder="Contoh: Fotokopi KTP, KK, & Surat Pengantar RT/RW."
                                         required>{{ old('deskripsi_syarat', $layanan->deskripsi_syarat ?? '') }}</textarea>
+                                </div>
+
+                                <!-- Dynamic Attachment Requirements -->
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <label
+                                            class="form-label text-slate-700 fw-bold small uppercase tracking-wider mb-0">
+                                            <i class="fas fa-paperclip text-primary me-1"></i> Upload Berkas Mandiri
+                                        </label>
+                                        <button type="button" id="addAttachmentBtn"
+                                            class="btn btn-xs btn-outline-primary rounded-pill px-3">
+                                            <i class="fas fa-plus me-1"></i> Tambah Field Upload
+                                        </button>
+                                    </div>
+                                    <div id="attachmentRequirementsContainer" class="d-flex flex-column gap-3">
+                                        @php
+                                            $requirements = old('attachment_requirements', $layanan->attachment_requirements ?? []);
+                                        @endphp
+                                        @forelse($requirements as $req)
+                                            <div class="attachment-row d-flex gap-2">
+                                                <input type="text" name="attachment_requirements[]" value="{{ $req }}"
+                                                    class="form-control border-slate-200 bg-slate-50 rounded-3"
+                                                    placeholder="Contoh: Foto Ijazah Asli" required>
+                                                <button type="button"
+                                                    class="btn btn-outline-rose rounded-3 remove-attachment-btn">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        @empty
+                                            <div class="text-center py-3 border border-dashed border-slate-200 rounded-4 bg-slate-50/50"
+                                                id="noAttachmentsMsg">
+                                                <p class="text-slate-400 small mb-0">Belum ada persyaratan upload berkas
+                                                    digital.</p>
+                                            </div>
+                                        @endforelse
+                                    </div>
+                                    <div class="form-text x-small text-slate-400 mt-2">
+                                        Tentukan berkas apa saja yang harus di-upload oleh masyarakat saat mengajukan
+                                        layanan ini.
+                                    </div>
                                 </div>
 
                                 <!-- Estimasi Waktu -->
@@ -231,6 +271,51 @@
             const activeColorBtn = Array.from(colorButtons).find(btn => btn.dataset.bg === warnaBgInput.value);
             if (activeColorBtn) {
                 activeColorBtn.click();
+            }
+
+            // Dynamic Attachment Requirements
+            const addAttachmentBtn = document.getElementById('addAttachmentBtn');
+            const attachmentContainer = document.getElementById('attachmentRequirementsContainer');
+            const noAttachmentsMsg = document.getElementById('noAttachmentsMsg');
+
+            addAttachmentBtn.addEventListener('click', function () {
+                if (noAttachmentsMsg) noAttachmentsMsg.remove();
+
+                const row = document.createElement('div');
+                row.className = 'attachment-row d-flex gap-2';
+                row.innerHTML = `
+                        <input type="text" name="attachment_requirements[]" 
+                            class="form-control border-slate-200 bg-slate-50 rounded-3" 
+                            placeholder="Contoh: Foto KK Asli" required>
+                        <button type="button" class="btn btn-outline-rose rounded-3 remove-attachment-btn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                attachmentContainer.appendChild(row);
+
+                // Add remove listener to the new button
+                row.querySelector('.remove-attachment-btn').addEventListener('click', function () {
+                    row.remove();
+                    checkEmptyRequirements();
+                });
+            });
+
+            // Initial remove listeners for existing rows
+            document.querySelectorAll('.remove-attachment-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    this.closest('.attachment-row').remove();
+                    checkEmptyRequirements();
+                });
+            });
+
+            function checkEmptyRequirements() {
+                if (attachmentContainer.children.length === 0) {
+                    attachmentContainer.innerHTML = `
+                            <div class="text-center py-3 border border-dashed border-slate-200 rounded-4 bg-slate-50/50" id="noAttachmentsMsg">
+                                <p class="text-slate-400 small mb-0">Belum ada persyaratan upload berkas digital.</p>
+                            </div>
+                        `;
+                }
             }
         });
     </script>

@@ -17,7 +17,8 @@
                         Detail Pengaduan
                     </h1>
                     <p class="text-slate-400 small mb-0">
-                        ID: <code>{{ $pengaduan->uuid }}</code>
+                        ID: <code>{{ $pengaduan->uuid }}</code> | 
+                        PIN: <span class="badge bg-teal-100 text-teal-700 fw-bold border border-teal-200">{{ $pengaduan->tracking_code }}</span>
                     </p>
                 </div>
                 <div>
