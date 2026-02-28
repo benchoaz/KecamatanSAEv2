@@ -1,0 +1,134 @@
+# Production Docker Compose - Deploy dari GitHub Container Registry (ghcr.io)
+# Usage: docker-compose -f docker-compose.production.yml up -d
+#
+# Sebelum deploy, pastikan:
+# 1. Repository sudah di-push ke GitHub
+# 2.ghcr.io packages sudah ter-build (via GitHub Actions)
+# 3.ghcr.io packages设为 public ATAU buat personal access token
+
+version: '3.8'
+
+services:
+  # PHP App - dari ghcr.io
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}:latest
+    container_name: dashboard-kecamatan-app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./storage:/var/www/storage
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "php-fpm", "-t" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: dashboard-kecamatan-db
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: dashboard_kecamatan
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_USER: ${DB_USERNAME:-user}
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx - dari ghcr.io
+  nginx:
+    image: ghcr.io/${GITHUB_REPOSITORY:-owner/repo}:nginx-latest
+    container_name: dashboard-kecamatan-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./storage:/var/www/storage:ro
+    networks:
+      - app-network
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "nginx", "-t" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # n8n - WhatsApp Automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: dashboard-n8n
+    restart: unless-stopped
+    ports:
+      - "5679:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_ALLOW_ENV_IN_EXPRESSIONS=true
+      - N8N_RUNNERS_TASK_ENV_ALLOW_LIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
+      - N8N_ENV_ALLOWLIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
+      - DASHBOARD_URL=http://dashboard-kecamatan-nginx
+      - PUBLIC_BASE_URL=${APP_URL}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app-network
+    depends_on:
+      - nginx
+
+  # WAHA - WhatsApp API
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha-kecamatan
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - WHATSAPP_API_TOKEN=${WAHA_API_KEY}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME:-admin}
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD:-${WAHA_API_KEY}}
+      - WHATSAPP_START_SESSION=${WAHA_SESSION:-default}
+      - WHATSAPP_RESTART_ALL_SESSIONS=true
+      - WHATSAPP_HOOK_URL=http://dashboard-n8n:5678/webhook/whatsapp-primary
+    volumes:
+      - waha_sessions:/app/.sessions
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  # Adminer - Database UI
+  adminer:
+    image: adminer:latest
+    container_name: dashboard-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+  n8n_data:
+  waha_sessions:

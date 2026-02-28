@@ -1,75 +1,56 @@
-# Version Control
+# Git
 .git
 .gitignore
-.gitattributes
 
-# IDE & Editor
-.vscode
-.idea
+# IDE
+.idea/
+.vscode/
 *.swp
 *.swo
-*~
-.DS_Store
 
-# Node/npm
-node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Docker
+docker/
+Dockerfile
+docker-compose*.yml
+.dockerignore
 
-# Composer & Dependencies (sebelum multi-stage build)
-vendor/
-.phpunit.result.cache
+# Documentation
+*.md
+!README.md
+docs/
+*.txt
+
+# Testing
 phpunit.xml
+tests/
+.phpunit.result.cache
 
-# Laravel - Storage logs (jangan di-copy)
-storage/logs/*
-storage/app/*
-storage/framework/cache/data/*
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Laravel specific
+.env
+.env.*
+!.env.example
+.env.backup
+storage/*.key
+storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
-bootstrap/cache/*
-.phpunit.result.cache
+storage/logs/*
 
-# Environment & Config
-.env
-.env.*.php
-.env.*.local
-.env.example
-.env.whatsapp.example
-.env.backup
+# Database
+*.sqlite
+*.sqlite3
 
-# Docker compose files (jangan di-copy ke image)
-docker-compose.yml
-docker-compose.dev.yml
-docker-compose.optimized.yml
-.dockerignore
-Dockerfile
-Dockerfile.*
+# OS
+.DS_Store
+Thumbs.db
 
-# Testing & Documentation
-tests/
-docs/
-AUDIT_REPORT.md
-DECISION_FRAMEWORK.md
-PROJECT_STRUCTURE_ANALYSIS.md
-README.md
-*.md
-
-# Build artifacts
-dist/
-build/
-.cache/
-
-# Symlinks & Special files
-public/storage
-public/.htaccess
-
-# Misc development files
-.config
-.composer
-.agent
-.phpunit.result.cache
-artisan
-package.json
-vite.config.js
+# Backup files
+*.backup
+*.bak
+*~

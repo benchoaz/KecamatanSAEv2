@@ -24,6 +24,12 @@ Route::get('/wilayah', [\App\Http\Controllers\LandingController::class, 'wilayah
 
 // Public Economy Hub (Unidentified UMKM & Jasa)
 Route::get('/ekonomi', [\App\Http\Controllers\EconomyController::class, 'index'])->name('economy.index');
+
+// Pendaftaran Pekerjaan & Jasa (HARUS di sebelum route /ekonomi/{id})
+Route::get('/ekonomi/daftar', [\App\Http\Controllers\EconomyController::class, 'create'])->name('economy.create');
+Route::post('/ekonomi/daftar', [\App\Http\Controllers\EconomyController::class, 'store'])->name('economy.store');
+
+// Detail Pekerjaan & Jasa
 Route::get('/ekonomi/{id}', [\App\Http\Controllers\EconomyController::class, 'show'])->name('economy.show');
 
 // Redirects for backward compatibility
@@ -32,6 +38,25 @@ Route::get('/umkm', function () {
 })->name('public.umkm.index');
 Route::get('/kerja', function () {
     return redirect()->route('economy.index', ['tab' => 'jasa']);
+});
+
+// Owner Dashboard (UMKM/Jasa/Loker)
+Route::prefix('owner')->name('owner.')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\OwnerAuthController::class, 'login'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\OwnerAuthController::class, 'authenticate'])->name('authenticate');
+    Route::get('/logout', [\App\Http\Controllers\OwnerAuthController::class, 'logout'])->name('logout');
+
+    // Forgot PIN
+    Route::get('/lupa-pin', [\App\Http\Controllers\OwnerAuthController::class, 'forgotPin'])->name('forgot_pin');
+    Route::post('/lupa-pin', [\App\Http\Controllers\OwnerAuthController::class, 'requestPinReset'])->name('request_pin_reset');
+
+    // Protected routes
+    Route::middleware(['web'])->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\OwnerAuthController::class, 'dashboard'])->name('dashboard');
+        Route::post('/reset-pin', [\App\Http\Controllers\OwnerAuthController::class, 'resetPin'])->name('reset_pin');
+        Route::post('/toggle-umkm', [\App\Http\Controllers\OwnerAuthController::class, 'toggleUmkm'])->name('toggle_umkm');
+        Route::post('/toggle-loker', [\App\Http\Controllers\OwnerAuthController::class, 'toggleLoker'])->name('toggle_loker');
+    });
 });
 
 Route::get('/umkm/{id}', [\App\Http\Controllers\PublicUmkmController::class, 'show'])->name('public.umkm.show');
@@ -63,9 +88,67 @@ Route::prefix('umkm-rakyat')->name('umkm_rakyat.')->group(function () {
 });
 
 // Public Service Portal
-Route::get('/layanan', function () {
-    return view('layanan');
+Route::get('/layanan', function (\Illuminate\Http\Request $request) {
+    $jenis = $request->query('jenis');
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+
+    $publicAnnouncements = \App\Models\Announcement::where('target_type', 'public')
+        ->where('is_active', true)
+        ->where('start_date', '<=', now())
+        ->where('end_date', '>=', now())
+        ->orderBy('priority', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return view('layanan', compact(
+        'jenis',
+        'masterLayanan',
+        'publicAnnouncements'
+    ));
 })->name('layanan');
+
+// Clean Application Routes (for WhatsApp Bot)
+Route::get('/ktp', function () {
+    $jenis = 'ktp';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.ktp');
+
+Route::get('/kk', function () {
+    $jenis = 'kk';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.kk');
+
+Route::get('/akta', function () {
+    $jenis = 'akta';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.akta');
+
+Route::get('/sktm', function () {
+    $jenis = 'sktm';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.sktm');
+
+Route::get('/domisili', function () {
+    $jenis = 'domisili';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.domisili');
+
+Route::get('/nikah', function () {
+    $jenis = 'nikah';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.nikah');
+
+Route::get('/bpjs', function () {
+    $jenis = 'bpjs';
+    $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    return view('layanan', compact('jenis', 'masterLayanan'));
+})->name('apply.bpjs');
 
 use App\Http\Controllers\PublicServiceController;
 use App\Http\Controllers\ApplicationProfileController;
