@@ -16,10 +16,14 @@
                         <i class="fab fa-whatsapp text-success me-2"></i>
                         Detail Pengaduan
                     </h1>
-                    <p class="text-slate-400 small mb-0">
-                        ID: <code>{{ $pengaduan->uuid }}</code> | 
-                        PIN: <span class="badge bg-teal-100 text-teal-700 fw-bold border border-teal-200">{{ $pengaduan->tracking_code }}</span>
-                    </p>
+                    {{-- PIN Display - More Prominent --}}
+                    <div class="bg-gradient-teal d-inline-flex px-3 py-2 rounded-3 text-white shadow-sm mt-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-key text-white-50"></i>
+                            <span class="small text-white-70">PIN:</span>
+                            <span class="fw-bold fs-5 font-monospace" style="letter-spacing: 2px;">{{ $pengaduan->tracking_code }}</span>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     @php
