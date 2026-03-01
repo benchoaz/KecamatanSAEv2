@@ -84,10 +84,11 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-end">
+                                    <td class="px-4 py-3 text-end" style="position: relative; z-index: 1;">
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light border-0 shadow-sm rounded-circle" type="button"
-                                                data-bs-toggle="dropdown">
+                                            <button
+                                                class="btn btn-sm btn-light border-0 shadow-sm rounded-circle dropdown-toggle"
+                                                type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <i class="fas fa-ellipsis-v text-slate-400"></i>
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-4 p-2">
@@ -152,4 +153,20 @@
             @endif
         </div>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Initialize all dropdowns with proper event handling
+                var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+                var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                    return new bootstrap.Dropdown(dropdownToggleEl, {
+                        popperConfig: {
+                            strategy: 'fixed'
+                        }
+                    });
+                });
+            });
+        </script>
+    @endpush
 @endsection
