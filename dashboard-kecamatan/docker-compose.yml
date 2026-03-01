@@ -24,6 +24,7 @@ services:
       - ./package.json:/var/www/package.json:ro
       - ./vite.config.js:/var/www/vite.config.js:ro
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
+      - ./database/migrations:/var/www/database/migrations:ro
     networks:
       - app-network
     healthcheck:
@@ -145,7 +146,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-
 
 # Docker Networks
 networks:
