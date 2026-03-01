@@ -337,20 +337,13 @@
                             <span class="label-text font-medium">Desa/Kelurahan</span>
                         </label>
                         <select name="desa_id" class="select select-bordered w-full">
+                            <option value="">Pilih Desa...</option>
+                            @if(isset($desas))
+                                @foreach($desas as $desa)
+                                    <option value="{{ $desa->id }}">{{ $desa->nama_desa }}</option>
+                                @endforeach
+                            @endif
                             <option value="999">Luar Wilayah</option>
-                            <option value="1">Besuk</option>
-                            <option value="2">Bulu</option>
-                            <option value="3">Kaliboto</option>
-                            <option value="4">Karangandong</option>
-                            <option value="5">Kertonegoro</option>
-                            <option value="6">Marani</option>
-                            <option value="7">Menyono</option>
-                            <option value="8">Pondokan</option>
-                            <option value="9">Rambigundam</option>
-                            <option value="10">Sukodono</option>
-                            <option value="11">Sumberkembar</option>
-                            <option value="12">Tiris</option>
-                            <option value="13">Wonoroto</option>
                         </select>
                     </div>
                 </div>

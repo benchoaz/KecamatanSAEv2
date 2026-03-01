@@ -91,6 +91,7 @@ Route::prefix('umkm-rakyat')->name('umkm_rakyat.')->group(function () {
 Route::get('/layanan', function (\Illuminate\Http\Request $request) {
     $jenis = $request->query('jenis');
     $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+    $desas = \App\Models\Desa::orderBy('nama_desa')->get();
 
     $publicAnnouncements = \App\Models\Announcement::where('target_type', 'public')
         ->where('is_active', true)
@@ -103,6 +104,7 @@ Route::get('/layanan', function (\Illuminate\Http\Request $request) {
     return view('layanan', compact(
         'jenis',
         'masterLayanan',
+        'desas',
         'publicAnnouncements'
     ));
 })->name('layanan');
@@ -111,7 +113,8 @@ Route::get('/layanan', function (\Illuminate\Http\Request $request) {
 Route::get('/ktp', function () {
     $jenis = 'ktp';
     $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
-    return view('layanan', compact('jenis', 'masterLayanan'));
+    $desas = \App\Models\Desa::orderBy('nama_desa')->get();
+    return view('layanan', compact('jenis', 'masterLayanan', 'desas'));
 })->name('apply.ktp');
 
 Route::get('/kk', function () {
