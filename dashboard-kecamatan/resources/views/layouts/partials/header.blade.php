@@ -49,8 +49,8 @@
                     </div>
                     <div class="notification-list" style="max-height: 400px; overflow-y: auto;">
                         {{-- New Service Submissions --}}
-                        @foreach($recentUnreadServices ?? [] as $svc)
-                            <a href="{{ route('kecamatan.pelayanan.show', $svc->id) }}" class="px-4 py-3 border-bottom hover-bg-light transition-all d-block text-decoration-none bg-teal-50/30">
+                        @forelse($recentUnreadServices ?? [] as $svc)
+                            <a href="{{ route('kecamatan.pelayanan.show', $svc->id ?? 0) }}" class="px-4 py-3 border-bottom hover-bg-light transition-all d-block text-decoration-none bg-teal-50/30">
                                 <div class="d-flex gap-3">
                                     <div class="flex-shrink-0 bg-teal-50 text-teal-600 rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
                                         <i class="fas fa-file-invoice"></i>
@@ -58,9 +58,9 @@
                                     <div class="flex-grow-1">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="small fw-bold text-teal-900">Pengajuan Layanan baru</span>
-                                            <span class="text-tertiary" style="font-size: 10px;">{{ $svc->created_at->diffForHumans() }}</span>
+                                            <span class="text-tertiary" style="font-size: 10px;">{{ $svc->created_at->diffForHumans() ?? '-' }}</span>
                                         </div>
-                                        <p class="mb-0 text-slate-500 small lh-sm"><strong>{{ $svc->nama_pemohon }}</strong> mengajukan {{ $svc->jenis_layanan }}</p>
+                                        <p class="mb-0 text-slate-500 small lh-sm"><strong>{{ $svc->nama_pemohon ?? 'Unknown' }}</strong> mengajukan {{ $svc->jenis_layanan ?? 'Layanan' }}</p>
                                     </div>
                                 </div>
                             </a>
@@ -85,7 +85,7 @@
                                     </div>
                                 </div>
                             </div>
-                        @empty
+                        @endforelse
                             @if(count($recentUnreadServices ?? []) == 0)
                                 <div class="text-center py-5 px-4">
                                     <i class="fas fa-bell-slash fa-2x text-primary-50 mb-3 d-block"></i>
