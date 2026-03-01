@@ -156,6 +156,17 @@ class WhatsappController extends Controller
                 }
             }
 
+            // =====================================================
+            // FAILSAFE MODE: Ensure reply is never empty
+            // =====================================================
+            if (empty($response['reply'])) {
+                \Log::warning('Handler returned empty reply, using fallback', [
+                    'phone' => $phone,
+                    'intent' => $response['intent'] ?? 'unknown',
+                ]);
+                $response['reply'] = '🙏 Sistem sedang memproses. Silakan coba kembali beberapa saat lagi.';
+            }
+
             // Log interaction - convert array reply to string
             $replyForLog = '';
             if (isset($response['reply'])) {

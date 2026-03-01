@@ -12,11 +12,26 @@ class ComplaintHandler
     /**
      * Get complaint form URL from AppProfile
      */
-    protected function getComplaintFormUrl(): string
+    protected function getComplaintFormUrl(?string $name = null, ?string $phone = null): string
     {
         $profile = app(AppProfile::class);
         $baseUrl = $profile->public_base_url ?? $profile->app_url ?? config('app.url', 'https://localhost');
-        return rtrim($baseUrl, '/') . '/#pengaduan';
+        $url = rtrim($baseUrl, '/') . '/#pengaduan';
+
+        // Add pre-filled parameters if provided
+        $params = [];
+        if ($name) {
+            $params['nama'] = urlencode($name);
+        }
+        if ($phone) {
+            $params['no_hp'] = urlencode($phone);
+        }
+
+        if (!empty($params)) {
+            $url .= '?' . http_build_query($params);
+        }
+
+        return $url;
     }
 
     /**
@@ -98,9 +113,11 @@ class ComplaintHandler
         // Store WhatsApp number
         $session->setTempValue('complaint_wa', $waNumber);
 
-        // Get form URL
-        $formUrl = $this->getComplaintFormUrl();
+        // Get name from session
         $name = $session->getTempValue('complaint_name');
+
+        // Get form URL with pre-filled parameters
+        $formUrl = $this->getComplaintFormUrl($name, $waNumber);
 
         // Clear session after providing link
         $session->clear();

@@ -1,8 +1,8 @@
 {
-    "updatedAt":  "2026-02-24T05:27:29.629Z",
-    "createdAt":  "2026-02-22T20:13:30.616Z",
-    "id":  "LmfmJIMSpbx53KNN",
-    "name":  "WhatsApp Bot - PRIMARY V2",
+    "updatedAt":  "2026-02-24T21:05:28.551Z",
+    "createdAt":  "2026-02-24T21:05:27.652Z",
+    "id":  "F0YivOPRpiQfU0iW",
+    "name":  "WhatsApp Bot - PRIMARY V2 with Health Check",
     "description":  null,
     "active":  false,
     "isArchived":  false,
@@ -16,13 +16,13 @@
 
                                                      }
                                      },
-                      "id":  "6aebc171-e314-4f42-8c90-66696d39e6c2",
+                      "id":  "webhook-node",
                       "name":  "WAHA Webhook",
                       "type":  "n8n-nodes-base.webhook",
                       "typeVersion":  1,
                       "position":  [
-                                       -1120,
-                                       -160
+                                       0,
+                                       0
                                    ],
                       "webhookId":  "whatsapp-primary"
                   },
@@ -34,52 +34,52 @@
                                                          "responseCode":  200
                                                      }
                                      },
-                      "id":  "777727e3-fcfc-4dcb-a30f-0a433a25a5e1",
+                      "id":  "respond-node",
                       "name":  "Respond 200 OK",
                       "type":  "n8n-nodes-base.respondToWebhook",
                       "typeVersion":  1,
                       "position":  [
-                                       -928,
-                                       -288
+                                       200,
+                                       -100
                                    ]
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "// NODE: EVENT FILTER\nconst raw = $input.first().json;\nif (!raw) return [];\n\nconst data = raw.body || raw;\nconst event = (data.event || \u0027\u0027).toLowerCase();\nconst payload = data.payload || {};\n\nconsole.log(\u0027[EventFilter] event:\u0027, event, \u0027| from:\u0027, payload.from);\n\nconst BLOCKED = [\u0027message.ack\u0027, \u0027message.reaction\u0027, \u0027presence\u0027, \u0027session.status\u0027, \u0027state.change\u0027];\nif (BLOCKED.some(e =\u003e event.includes(e))) {\n  return [];\n}\n\nif (!event.includes(\u0027message\u0027) \u0026\u0026 !payload.from) {\n  return [];\n}\n\nreturn $input.all();"
+                                         "jsCode":  "// NODE: EVENT FILTER\nconst raw = $input.first().json;\nif (!raw) return [];\n\nconst data = raw.body || raw;\nconst event = (data.event || \u0027\u0027).toLowerCase();\nconst payload = data.payload || {};\n\nconsole.log(\u0027[EventFilter] event:\u0027, event, \u0027| from:\u0027, payload.from);\n\nconst BLOCKED = [\u0027message.ack\u0027, \u0027message.reaction\u0027, \u0027presence\u0027, \u0027session.status\u0027, \u0027state.change\u0027];\nif (BLOCKED.some(e =\u003e event.includes(e))) {\n  console.log(\u0027[EventFilter] BLOCKED event:\u0027, event);\n  return [];\n}\n\nif (!event.includes(\u0027message\u0027) \u0026\u0026 !payload.from) {\n  console.log(\u0027[EventFilter] DROPPED: No message or from\u0027);\n  return [];\n}\n\nreturn $input.all();"
                                      },
-                      "id":  "58300ce3-0fb4-4706-8ec2-efc4209d9fb8",
+                      "id":  "event-filter-node",
                       "name":  "Event Filter",
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       -928,
-                                       -32
+                                       200,
+                                       100
                                    ]
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "// NODE: NORMALIZE \u0026 VALIDATE (PRIVATE ONLY)\nconst raw = $input.first().json;\nconst data = raw.body || raw;\nconst payload = data.payload || {};\n\nconst chatId = (payload.from || data.from || \u0027\u0027).trim();\nconst message = (payload.body || payload.text || data.body || \u0027\u0027).trim();\nconst fromMe = payload.fromMe === true || payload.fromMe === \u0027true\u0027;\nconst pushName = payload.pushName || payload.notifyName || \u0027\u0027;\n\nconsole.log(\u0027[Normalize] RAW keys:\u0027, Object.keys(raw));\nconsole.log(\u0027[Normalize] DATA keys:\u0027, Object.keys(data));\nconsole.log(\u0027[Normalize] PAYLOAD keys:\u0027, Object.keys(payload));\nconsole.log(\u0027[Normalize] from:\u0027, chatId, \u0027| msg:\u0027, message);\n\nif (!chatId || !chatId.includes(\u0027@c.us\u0027)) {\n  console.log(\u0027[Normalize] DROPPED: Bukan pesan pribadi:\u0027, chatId);\n  return [];\n}\n\nif (!message) {\n  console.log(\u0027[Normalize] DROPPED: Pesan kosong\u0027);\n  return [];\n}\n\nconst phone = chatId.replace(\u0027@c.us\u0027, \u0027\u0027);\n\nconsole.log(\u0027[Normalize] OUTPUT: chatId=\u0027, chatId, \u0027phone=\u0027, phone, \u0027message=\u0027, message);\n\nreturn [{ json: { chatId, phone, message, fromMe, pushName, timestamp: new Date().toISOString() } }];"
+                                         "jsCode":  "// NODE: NORMALIZE \u0026 VALIDATE\nconst raw = $input.first().json;\nconst data = raw.body || raw;\nconst payload = data.payload || {};\n\n// Extract data from WAHA webhook format\nconst chatId = (payload.from || data.from || \u0027\u0027).trim();\nconst message = (payload.body || payload.text || data.body || \u0027\u0027).trim();\nconst fromMe = payload.fromMe === true || payload.fromMe === \u0027true\u0027;\nconst pushName = payload.pushName || payload.notifyName || \u0027\u0027;\n\nconsole.log(\u0027[Normalize] chatId:\u0027, chatId, \u0027| message:\u0027, message, \u0027| fromMe:\u0027, fromMe);\n\n// Only process private messages (must have @c.us)\nif (!chatId || !chatId.includes(\u0027@c.us\u0027)) {\n  console.log(\u0027[Normalize] DROPPED: Not a private message:\u0027, chatId);\n  return [];\n}\n\nif (!message) {\n  console.log(\u0027[Normalize] DROPPED: Empty message\u0027);\n  return [];\n}\n\nconst phone = chatId.replace(\u0027@c.us\u0027, \u0027\u0027);\n\nconsole.log(\u0027[Normalize] OUTPUT: chatId=\u0027, chatId, \u0027| phone=\u0027, phone, \u0027| message=\u0027, message);\n\nreturn [{ json: { chatId, phone, message, fromMe, pushName, timestamp: new Date().toISOString() } }];"
                                      },
-                      "id":  "480e5599-5d5a-479b-9ce2-fb4b686b55bc",
+                      "id":  "normalize-node",
                       "name":  "Normalize \u0026 Validate",
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       -720,
-                                       -32
+                                       400,
+                                       100
                                    ]
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "// NODE: ANTI-LOOP FILTER\nconst data = $json;\nconsole.log(\u0027[AntiLoop] Input:\u0027, JSON.stringify(data, null, 2));\n\nconst fromMe = data.fromMe;\nif (fromMe === true || fromMe === \u0027true\u0027) {\n  console.log(\u0027[AntiLoop] DROPPED: fromMe is true\u0027);\n  return [];\n}\n\nconsole.log(\u0027[AntiLoop] PASSED: chatId=\u0027, data.chatId, \u0027phone=\u0027, data.phone, \u0027message=\u0027, data.message);\nreturn $input.all();"
+                                         "jsCode":  "// NODE: ANTI-LOOP FILTER\nconst data = $json;\nconsole.log(\u0027[AntiLoop] Input:\u0027, JSON.stringify(data, null, 2));\n\nconst fromMe = data.fromMe;\nif (fromMe === true || fromMe === \u0027true\u0027) {\n  console.log(\u0027[AntiLoop] DROPPED: fromMe is true\u0027);\n  return [];\n}\n\nconsole.log(\u0027[AntiLoop] PASSED: chatId=\u0027, data.chatId, \u0027| phone=\u0027, data.phone, \u0027| message=\u0027, data.message);\nreturn $input.all();"
                                      },
-                      "id":  "d46ee4b1-8edc-45df-9735-760d1c21c763",
+                      "id":  "antiloop-node",
                       "name":  "Anti-Loop Filter",
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       -512,
-                                       -32
+                                       600,
+                                       100
                                    ]
                   },
                   {
@@ -109,8 +109,8 @@
                       "type":  "n8n-nodes-base.httpRequest",
                       "typeVersion":  4.1,
                       "position":  [
-                                       -304,
-                                       100
+                                       600,
+                                       200
                                    ]
                   },
                   {
@@ -122,8 +122,8 @@
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       -96,
-                                       100
+                                       700,
+                                       200
                                    ]
                   },
                   {
@@ -135,7 +135,7 @@
                                                                   "parameters":  [
                                                                                      {
                                                                                          "name":  "Authorization",
-                                                                                         "value":  "=Bearer {{ $env.DASHBOARD_API_TOKEN }}"
+                                                                                         "value":  "=Bearer {{ $credentials.dashboardAuth }}"
                                                                                      },
                                                                                      {
                                                                                          "name":  "Accept",
@@ -159,26 +159,26 @@
                                                          "timeout":  15000
                                                      }
                                      },
-                      "id":  "5ff4f0df-9262-4421-a90e-73098b202551",
+                      "id":  "dashboard-api-node",
                       "name":  "Call Dashboard API",
                       "type":  "n8n-nodes-base.httpRequest",
                       "typeVersion":  4.1,
                       "position":  [
-                                       -304,
-                                       -32
+                                       800,
+                                       100
                                    ]
                   },
                   {
                       "parameters":  {
-                                         "jsCode":  "// NODE: EXTRACT REPLY\nconst resp = $json;\n\nconsole.log(\u0027[ExtractReply] Dashboard API Response:\u0027, JSON.stringify(resp, null, 2));\n\n// Get chatId from the original Normalize \u0026 Validate node (it has the chatId)\nconst normalizedData = $(\u0027Normalize \u0026 Validate\u0027).first().json;\nconsole.log(\u0027[ExtractReply] Normalized data:\u0027, JSON.stringify(normalizedData, null, 2));\n\nconst chatId = normalizedData?.chatId;\nconsole.log(\u0027[ExtractReply] chatId:\u0027, chatId);\n\n// Check if Dashboard API returned an error\nif (resp.message \u0026\u0026 !resp.reply \u0026\u0026 !resp.success) {\n  console.log(\u0027[ExtractReply] ERROR: Dashboard API returned error:\u0027, resp.message);\n  // Don\u0027t send error messages to WAHA, just stop\n  return [];\n}\n\nconst reply = resp.reply || resp.text || resp.data?.reply || null;\n\nif (!reply) {\n  console.log(\u0027[ExtractReply] No reply found, using fallback message\u0027);\n  const fallbackReply = \u0027ðŸ™ Sistem sedang memproses. Silakan coba kembali beberapa saat lagi.\u0027;\n  const formattedChatId = chatId.includes(\u0027@c.us\u0027) ? chatId : chatId + \u0027@c.us\u0027;\n  return [{ json: { chatId: formattedChatId, reply: fallbackReply } }];\n}\n\nif (!chatId) {\n  console.log(\u0027[ExtractReply] ERROR: chatId is missing!\u0027);\n  return [];\n}\n\n// Ensure chatId has @c.us suffix\nconst formattedChatId = chatId.includes(\u0027@c.us\u0027) ? chatId : chatId + \u0027@c.us\u0027;\nconsole.log(\u0027[ExtractReply] Formatted chatId:\u0027, formattedChatId, \u0027| reply:\u0027, reply);\n\nreturn [{ json: { chatId: formattedChatId, reply } }];"
+                                         "jsCode":  "// NODE: EXTRACT REPLY\nconst resp = $json;\n\nconsole.log(\u0027[ExtractReply] Dashboard API Response:\u0027, JSON.stringify(resp, null, 2));\n\n// Get chatId from the original Normalize \u0026 Validate node\nconst normalizedData = $(\u0027Normalize \u0026 Validate\u0027).first().json;\nconsole.log(\u0027[ExtractReply] Normalized data:\u0027, JSON.stringify(normalizedData, null, 2));\n\nconst chatId = normalizedData?.chatId;\nconsole.log(\u0027[ExtractReply] chatId:\u0027, chatId);\n\n// Check if Dashboard API returned an error (validation error)\nif (resp.message \u0026\u0026 !resp.reply \u0026\u0026 !resp.success) {\n  console.log(\u0027[ExtractReply] ERROR: Dashboard API returned validation error:\u0027, resp.message);\n  // Don\u0027t send error messages to WAHA, just stop\n  return [];\n}\n\nconst reply = resp.reply || resp.text || resp.data?.reply || null;\n\n// FAILSAFE: If no reply found, use fallback message instead of stopping\nif (!reply) {\n  console.log(\u0027[ExtractReply] No reply found, using fallback message\u0027);\n  const fallbackReply = \u0027🙏 Sistem sedang memproses. Silakan coba kembali beberapa saat lagi.\u0027;\n  const formattedChatId = chatId.includes(\u0027@c.us\u0027) ? chatId : chatId + \u0027@c.us\u0027;\n  return [{ json: { chatId: formattedChatId, reply: fallbackReply } }];\n}\n\nif (!chatId) {\n  console.log(\u0027[ExtractReply] ERROR: chatId is missing!\u0027);\n  return [];\n}\n\n// Ensure chatId has @c.us suffix\nconst formattedChatId = chatId.includes(\u0027@c.us\u0027) ? chatId : chatId + \u0027@c.us\u0027;\nconsole.log(\u0027[ExtractReply] Formatted chatId:\u0027, formattedChatId, \u0027| reply:\u0027, reply);\n\nreturn [{ json: { chatId: formattedChatId, reply } }];"
                                      },
-                      "id":  "653aed8d-08a2-4e04-8f82-c1ea8c69c68d",
+                      "id":  "extract-reply-node",
                       "name":  "Extract Reply",
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       -96,
-                                       -32
+                                       1000,
+                                       100
                                    ]
                   },
                   {
@@ -190,7 +190,7 @@
                                                                   "parameters":  [
                                                                                      {
                                                                                          "name":  "X-Api-Key",
-                                                                                         "value":  "={{ $env.WAHA_API_KEY }}"
+                                                                                         "value":  "={{ $credentials.wahaAuth }}"
                                                                                      },
                                                                                      {
                                                                                          "name":  "Content-Type",
@@ -205,32 +205,31 @@
                                                          "timeout":  15000,
                                                          "response":  {
                                                                           "response":  {
-                                                                                           "neverError":  true,
-                                                                                           "fullResponse":  false
+                                                                                           "neverError":  true
                                                                                        }
                                                                       }
                                                      }
                                      },
-                      "id":  "63b292ca-ccd1-4ed5-a9be-03d06424ed3e",
+                      "id":  "sendtext-waha-node",
                       "name":  "SendText WAHA",
                       "type":  "n8n-nodes-base.httpRequest",
                       "typeVersion":  4.1,
                       "position":  [
-                                       128,
-                                       -32
+                                       1200,
+                                       100
                                    ]
                   },
                   {
                       "parameters":  {
                                          "jsCode":  "// NODE: LOG WAHA RESPONSE\nconst resp = $json;\nconsole.log(\u0027[SendText WAHA] Response:\u0027, JSON.stringify(resp, null, 2));\n\n// Check for errors\nif (resp.error || resp.message) {\n  console.log(\u0027[SendText WAHA] Error detected:\u0027, resp.error || resp.message);\n}\n\nreturn $input.all();"
                                      },
-                      "id":  "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                      "id":  "log-response-node",
                       "name":  "Log WAHA Response",
                       "type":  "n8n-nodes-base.code",
                       "typeVersion":  2,
                       "position":  [
-                                       352,
-                                       -32
+                                       1400,
+                                       100
                                    ]
                   }
               ],
@@ -277,35 +276,13 @@
                                                  "main":  [
                                                               [
                                                                   {
-                                                                      "node":  "Health Check",
+                                                                      "node":  "Call Dashboard API",
                                                                       "type":  "main",
                                                                       "index":  0
                                                                   }
                                                               ]
                                                           ]
                                              },
-                        "Health Check":  {
-                                             "main":  [
-                                                          [
-                                                              {
-                                                                  "node":  "Check Health Response",
-                                                                  "type":  "main",
-                                                                  "index":  0
-                                                              }
-                                                          ]
-                                                      ]
-                                         },
-                        "Check Health Response":  {
-                                                      "main":  [
-                                                                   [
-                                                                       {
-                                                                           "node":  "Call Dashboard API",
-                                                                           "type":  "main",
-                                                                           "index":  0
-                                                                       }
-                                                                   ]
-                                                               ]
-                                                  },
                         "Call Dashboard API":  {
                                                    "main":  [
                                                                 [
@@ -347,19 +324,17 @@
                  },
     "staticData":  null,
     "meta":  null,
-    "pinData":  {
-
-                },
-    "versionId":  "c87917eb-8201-47ea-9129-011424b4c451",
+    "pinData":  null,
+    "versionId":  "1a646a88-0eb7-4c9e-b069-0f056e918c28",
     "activeVersionId":  null,
-    "versionCounter":  34,
-    "triggerCount":  1,
+    "versionCounter":  2,
+    "triggerCount":  0,
     "shared":  [
                    {
-                       "updatedAt":  "2026-02-22T20:13:30.638Z",
-                       "createdAt":  "2026-02-22T20:13:30.638Z",
+                       "updatedAt":  "2026-02-24T21:05:27.660Z",
+                       "createdAt":  "2026-02-24T21:05:27.660Z",
                        "role":  "workflow:owner",
-                       "workflowId":  "LmfmJIMSpbx53KNN",
+                       "workflowId":  "F0YivOPRpiQfU0iW",
                        "projectId":  "H5YH7mhpLSoNKEQ5",
                        "project":  {
                                        "updatedAt":  "2026-02-16T16:19:59.592Z",
@@ -377,7 +352,7 @@
                                                                     "userId":  "1e2dedc7-bccf-49f9-9e24-fa531e6213e5",
                                                                     "projectId":  "H5YH7mhpLSoNKEQ5",
                                                                     "user":  {
-                                                                                 "updatedAt":  "2026-02-24T05:16:32.000Z",
+                                                                                 "updatedAt":  "2026-02-24T20:18:48.000Z",
                                                                                  "createdAt":  "2026-02-16T12:31:01.050Z",
                                                                                  "id":  "1e2dedc7-bccf-49f9-9e24-fa531e6213e5",
                                                                                  "email":  "beni.solo.leveling@gmail.com",

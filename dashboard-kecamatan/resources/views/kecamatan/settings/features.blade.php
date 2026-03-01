@@ -88,6 +88,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
                     body: JSON.stringify({
@@ -115,8 +116,8 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan sistem.');
+                        console.error('Error in fetch:', error);
+                        alert('Terjadi kesalahan: ' + error.message);
                         this.checked = !this.checked; // Revert
                     })
                     .finally(() => {

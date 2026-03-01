@@ -90,6 +90,7 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=false
       # Allow environment variables in expressions (required for n8n 2.x)
       - N8N_ALLOW_ENV_IN_EXPRESSIONS=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       # Environment variables yang bisa diakses di workflow via $env
       - N8N_RUNNERS_TASK_ENV_ALLOW_LIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
       - N8N_ENV_ALLOWLIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
@@ -145,17 +146,6 @@ services:
       retries: 3
       start_period: 30s
 
-  # Adminer Service - Tiny DB UI
-  adminer:
-    image: adminer:latest
-    container_name: dashboard-adminer
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    networks:
-      - app-network
-    depends_on:
-      - db
 
 # Docker Networks
 networks:

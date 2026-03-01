@@ -26,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (str_contains(config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
         \App\Models\Menu::observe(\App\Observers\MenuObserver::class);
         \App\Models\Aspek::observe(\App\Observers\AspekObserver::class);
         \App\Models\Indikator::observe(\App\Observers\IndikatorObserver::class);

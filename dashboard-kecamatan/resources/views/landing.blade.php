@@ -274,8 +274,12 @@
                         </button>
                     </div> --}}
                     @if(appProfile()->whatsapp_bot_number)
-                        <div
-                            class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 shadow-sm">
+                        @php
+                            $rawWaNum = preg_replace('/[^0-9]/', '', appProfile()->whatsapp_bot_number);
+                            $waLink = str_starts_with($rawWaNum, '0') ? '62' . substr($rawWaNum, 1) : $rawWaNum;
+                        @endphp
+                        <a href="https://wa.me/{{ $waLink }}" target="_blank"
+                            class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 shadow-sm block hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center gap-4">
                                 <div
                                     class="w-14 h-14 bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-2xl flex items-center justify-center shadow-lg">
@@ -296,7 +300,7 @@
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     @endif
 
                 </div>
@@ -2177,9 +2181,29 @@
         // Check for WhatsApp in URL parameter (from WhatsApp bot)
         const urlParams = new URLSearchParams(window.location.search);
         const waFromUrl = urlParams.get('wa');
+        const namaFromUrl = urlParams.get('nama');
+        const noHpFromUrl = urlParams.get('no_hp');
 
         // Priority: URL parameter > localStorage > empty
         const defaultWa = waFromUrl || storedWa || '';
+
+        // Auto-fill name from URL parameter
+        if (namaFromUrl) {
+            const nameFields = ['inlineComplaintName', 'complaintName', 'nama_pemohon'];
+            nameFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.value) el.value = decodeURIComponent(namaFromUrl);
+            });
+        }
+
+        // Auto-fill WhatsApp from URL parameter (no_hp)
+        if (noHpFromUrl) {
+            const waFields = ['inlineComplaintWa', 'complaintWa', 'whatsapp'];
+            waFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.value) el.value = decodeURIComponent(noHpFromUrl);
+            });
+        }
 
         if (!document.getElementById('complaintWa').value) {
             document.getElementById('complaintWa').value = defaultWa;
