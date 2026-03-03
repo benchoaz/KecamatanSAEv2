@@ -1,6 +1,6 @@
 # Cloud Shell Deployment - Ready to Deploy 🚀
 
-Your dashboard-kecamatan project is now ready to deploy to Google Cloud Shell!
+Your **KECAMATAN-LAYANAN-WHATSAPP** project is now ready to deploy to Google Cloud Shell!
 
 ## What's Included
 
@@ -15,8 +15,8 @@ Open Google Cloud Shell and run:
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/dashboard-kecamatan.git
-cd dashboard-kecamatan
+git clone https://github.com/benchoaz/KECAMATAN-LAYANAN-WHATSAPP.git
+cd KECAMATAN-LAYANAN-WHATSAPP
 
 # Run quick start
 bash cloudshell-quickstart.sh
@@ -44,8 +44,8 @@ If you prefer step-by-step deployment:
 
 ```bash
 # 1. Clone
-git clone https://github.com/YOUR_USERNAME/dashboard-kecamatan.git
-cd dashboard-kecamatan
+git clone https://github.com/benchoaz/KECAMATAN-LAYANAN-WHATSAPP.git
+cd KECAMATAN-LAYANAN-WHATSAPP
 
 # 2. Setup environment
 cp .env.example .env
