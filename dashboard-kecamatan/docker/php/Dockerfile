@@ -1,4 +1,4 @@
-# Simplified PHP FPM Dockerfile for Cloud Shell - removes complex multi-stage build
+# Simplified PHP FPM Dockerfile for Cloud Shell
 
 FROM php:8.1-fpm-alpine
 
@@ -53,10 +53,6 @@ RUN mkdir -p storage/framework/sessions \
     bootstrap/cache && \
     chown -R www-data:www-data storage bootstrap && \
     chmod -R 775 storage bootstrap
-
-# Copy entrypoint script if it exists
-COPY docker/php/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh || echo "No entrypoint script"
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh 2>/dev/null || true
 
 # Expose port
 EXPOSE 9000
