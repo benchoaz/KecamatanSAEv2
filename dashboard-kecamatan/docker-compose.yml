@@ -10,7 +10,6 @@ services:
     restart: unless-stopped
     env_file: .env
     volumes:
-      - ./.env:/var/www/.env:ro
       - ./app:/var/www/app
       - ./routes:/var/www/routes
       - ./config:/var/www/config
@@ -18,13 +17,6 @@ services:
       - ./resources:/var/www/resources
       - ./storage:/var/www/storage
       - ./bootstrap:/var/www/bootstrap
-      - ./artisan:/var/www/artisan:ro
-      - ./composer.json:/var/www/composer.json:ro
-      - ./composer.lock:/var/www/composer.lock:ro
-      - ./package.json:/var/www/package.json:ro
-      - ./vite.config.js:/var/www/vite.config.js:ro
-      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini:ro
-      - ./database/migrations:/var/www/database/migrations:ro
     networks:
       - app-network
     healthcheck:
