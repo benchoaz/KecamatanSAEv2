@@ -1,31 +1,5 @@
 services:
-
-  # PHP Service - optimized
-  app:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
-    image: dashboard-kecamatan-app:v1-alpine
-    container_name: dashboard-kecamatan-app
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - ./app:/var/www/app
-      - ./routes:/var/www/routes
-      - ./config:/var/www/config
-      - ./public:/var/www/public
-      - ./resources:/var/www/resources
-      - ./storage:/var/www/storage
-      - ./bootstrap:/var/www/bootstrap
-    networks:
-      - app-network
-    healthcheck:
-      test: [ "CMD", "php-fpm", "-t" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # MySQL Service - lightweight alpine version
+  # MySQL Database
   db:
     image: mysql:8.0
     container_name: dashboard-kecamatan-db
@@ -39,37 +13,46 @@ services:
       MYSQL_USER: user
     volumes:
       - dbdata:/var/lib/mysql
-      - ./_migration/database.sql:/docker-entrypoint-initdb.d/database.sql:ro
     networks:
       - app-network
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Nginx Service
+  # PHP-FPM using official image
+  app:
+    image: php:8.1-fpm-alpine
+    container_name: dashboard-kecamatan-app
+    restart: unless-stopped
+    working_dir: /var/www
+    env_file: .env
+    volumes:
+      - ./:/var/www
+    networks:
+      - app-network
+    depends_on:
+      - db
+    command: sh -c "composer install --no-dev --no-interaction 2>/dev/null || true && php-fpm"
+
+  # Nginx Web Server
   nginx:
     image: nginx:alpine
     container_name: dashboard-kecamatan-nginx
     restart: unless-stopped
     ports:
-      - "8000:80"
+      - "80:80"
+      - "8000:8000"
     volumes:
       - ./public:/var/www/public:ro
-      - ./storage:/var/www/storage:ro
-      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
     networks:
       - app-network
     depends_on:
       - app
-    healthcheck:
-      test: [ "CMD", "nginx", "-t" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-  # n8n Service - dengan tag spesifik
+  # n8n Workflows
   n8n:
     image: n8nio/n8n:latest
     container_name: dashboard-n8n
@@ -78,30 +61,23 @@ services:
       - "5679:5678"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=false
-      # Allow environment variables in expressions (required for n8n 2.x)
       - N8N_ALLOW_ENV_IN_EXPRESSIONS=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      # Environment variables yang bisa diakses di workflow via $env
       - N8N_RUNNERS_TASK_ENV_ALLOW_LIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
       - N8N_ENV_ALLOWLIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
-      # WAHA API Key untuk kirim pesan
       - WAHA_API_KEY=${WAHA_API_KEY}
-      # Dashboard API Token untuk autentikasi ke Laravel
       - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
       - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
       - DASHBOARD_URL=http://dashboard-kecamatan-nginx
-      # Public base URL untuk link dinamis
-      - PUBLIC_BASE_URL=http://localhost:8000
+      - PUBLIC_BASE_URL=${APP_URL}
     volumes:
-      - n8n_data_dashboard:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
     networks:
       - app-network
     depends_on:
       - nginx
 
-  # WAHA Service - WhatsApp API
-  # Dashboard Login: http://localhost:3000
-  # Username: admin | Password: (WAHA_API_KEY dari .env)
+  # WAHA WhatsApp API
   waha:
     image: devlikeapro/waha:latest
     container_name: waha-kecamatan
@@ -109,16 +85,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # API Key untuk autentikasi request
       - WHATSAPP_API_TOKEN=${WAHA_API_KEY}
       - WAHA_API_KEY=${WAHA_API_KEY}
-      # Dashboard login credentials
       - WAHA_DASHBOARD_USERNAME=admin
       - WAHA_DASHBOARD_PASSWORD=${WAHA_API_KEY}
-      # Session configuration
       - WHATSAPP_START_SESSION=default
       - WHATSAPP_RESTART_ALL_SESSIONS=true
-      # Webhook untuk mengirim event ke n8n
       - WHATSAPP_HOOK_URL=http://dashboard-n8n:5678/webhook/whatsapp-primary
     volumes:
       - waha_sessions:/app/.sessions
@@ -126,22 +98,12 @@ services:
       - app-network
     depends_on:
       - app
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "--spider", "--header=X-Api-Key: ${WAHA_API_KEY}", "http://localhost:3000/api/sessions" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
-# Docker Networks
 networks:
   app-network:
     driver: bridge
 
-# Volumes
 volumes:
   dbdata:
-    driver: local
-  n8n_data_dashboard:
-    driver: local
+  n8n_data:
   waha_sessions:
-    driver: local
