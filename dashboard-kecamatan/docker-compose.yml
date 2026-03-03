@@ -124,15 +124,13 @@ services:
       # API Key untuk autentikasi request
       - WHATSAPP_API_TOKEN=${WAHA_API_KEY}
       - WAHA_API_KEY=${WAHA_API_KEY}
-      # Dashboard login credentials (eksplisit agar tidak auto-generated)
-      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME:-admin}
-      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD:-${WAHA_API_KEY}}
+      # Dashboard login credentials
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_API_KEY}
       # Session configuration
-      - WHATSAPP_START_SESSION=${WAHA_SESSION:-default}
+      - WHATSAPP_START_SESSION=default
       - WHATSAPP_RESTART_ALL_SESSIONS=true
-      # Webhook untuk mengirim event ke n8n (bukan langsung ke Laravel)
-      # Alur: WAHA → n8n → Laravel API → n8n → WAHA
-      # Path harus sesuai dengan workflow n8n yang di-import
+      # Webhook untuk mengirim event ke n8n
       - WHATSAPP_HOOK_URL=http://dashboard-n8n:5678/webhook/whatsapp-primary
     volumes:
       - waha_sessions:/app/.sessions
