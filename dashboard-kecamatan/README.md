@@ -4,7 +4,7 @@
 [![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=flat&logo=laravel)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?style=flat&logo=php)](https://php.net)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)](https://docker.com)
-[![WhatsApp](https://img.shields.io/badge/WhatsApp-Bot-25D366?style=flat&logo=whatsapp)](https://github.com/benchoaz/KECAMATAN-LAYANAN-WHATSAPP)
+[![WhatsApp](https://img.shields.io/badge/WhatsApp-Bot-25D366?style=flat&logo=whatsapp)](https://github.com/benchoaz/KECAMATANSAE)
 
 ---
 
@@ -67,29 +67,11 @@
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/benchoaz/KECAMATAN-LAYANAN-WHATSAPP.git
-cd KECAMATAN-LAYANAN-WHATSAPP/dashboard-kecamatan
+git clone https://github.com/benchoaz/KecamatanSAEversiKabupaten.git
+cd KecamatanSAEversiKabupaten
 
-# 2. Copy environment file
-cp .env.example .env
-
-# 3. Jalankan Docker
-docker-compose up -d
-
-# 4. Install dependencies
-docker exec dashboard-kecamatan-app composer install
-
-# 5. Generate app key
-docker exec dashboard-kecamatan-app php artisan key:generate
-
-# 6. Jalankan migration
-docker exec dashboard-kecamatan-app php artisan migrate --force
-
-# 7. Jalankan seeder
-docker exec dashboard-kecamatan-app php artisan db:seed --force
-
-# 8. Storage link
-docker exec dashboard-kecamatan-app php artisan storage:link
+# 2. Jalankan Auto-Deploy Script (Otomatis install Docker, dependensi, & migrasi DB)
+bash deploy.sh
 ```
 
 Akses aplikasi di: **http://localhost:8000**
