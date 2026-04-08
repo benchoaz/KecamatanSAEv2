@@ -62,30 +62,66 @@ graph TD
 
 ---
 
-## 🚀 Panduan Instalasi (Quick Start)
+## 🚀 Panduan Deployment (VPS & Server)
 
 ### Prasyarat (Prerequisites):
+- Server Linux (Ubuntu/Debian direkomendasikan)
+- Git terinstall
 - Docker & Docker Compose (Versi terbaru)
-- Alat autentikasi WhatsApp (Handphone aktif)
+- Nama domain yang sudah diarahkan ke IP Server (Opsional)
 
-### Langkah-langkah Deployment:
+### Langkah Instalasi Pertama Kali:
 
 1. **Clone Repositori**:
    ```bash
-   git clone https://github.com/benchoaz/KECAMATAN-LAYANAN-WHATSAPP.git
-   cd KECAMATAN-LAYANAN-WHATSAPP
+   git clone https://github.com/benchoaz/KecamatanSAEversiKabupaten.git
+   cd KecamatanSAEversiKabupaten
    ```
 
 2. **Konfigurasi Environment**:
-   Salin file `.env.example` di setiap folder (`dashboard-kecamatan`, `whatsapp`) dan sesuaikan `WAHA_API_KEY` serta `DASHBOARD_API_TOKEN`.
-
-3. **Jalankan Container**:
+   Salin file `.env.example` ke `.env` pada subdirektori `dashboard-kecamatan` dan konfigurasi password database serta kredensial lainnya.
    ```bash
-   docker-compose up -d
+   cp dashboard-kecamatan/.env.example dashboard-kecamatan/.env
    ```
 
-4. **Pairing WhatsApp**:
-   Akses dashboard WAHA di port `3000` untuk memindai kode QR dan menghubungkan nomor WhatsApp layanan.
+3. **Jalankan Instalasi dan Container**:
+   Menjalankan *script* bawaan untuk memastikan instalasi awal berjalan mulus:
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. **Konfigurasi Laravel Inti**:
+   Jalankan migrasi database agar struktur siap digunakan:
+   ```bash
+   docker exec kecamatan-app php /var/www/artisan key:generate
+   docker exec kecamatan-app php /var/www/artisan migrate --seed --force
+   docker exec kecamatan-app php /var/www/artisan optimize:clear
+   ```
+
+5. **Pairing WhatsApp**:
+   Akses dashboard WAHA (contoh `http://ip-vps:3000`) untuk memindai kode QR dan menghubungkan nomor WhatsApp layanan utama.
+
+---
+
+## 🔄 Cara Melakukan Pembaruan (Update) di VPS
+
+Sistem aplikasi ini dirancang ter-containerization dengan kuat, sehingga saat ada fitur atau optimasi baru dari repository, Anda tidak akan mengalami kendala *caching* atau ketergantungan paket versi OS.
+
+Cukup jalankan runtutan sintaks berikut secara berurutan di dalam folder `KecamatanSAEversiKabupaten`:
+
+```bash
+# 1. Menarik source-code terbaru dari GitHub
+git pull origin main
+
+# 2. Menata ulang kontainer tanpa downtime lama
+docker compose up -d --build
+
+# 3. Menyesuaikan modifikasi kolom basis data yang baru (Bila ada)
+docker exec kecamatan-app php /var/www/artisan migrate --force
+
+# 4. Membersihkan cache sistem agar perubahan UI/UX tersinkronisasi
+docker exec kecamatan-app php /var/www/artisan optimize:clear
+```
 
 ---
 
