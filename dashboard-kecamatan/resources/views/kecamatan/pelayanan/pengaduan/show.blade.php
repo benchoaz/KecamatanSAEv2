@@ -48,43 +48,58 @@
         <!-- Left Column - Pengaduan Info -->
         <div class="col-lg-8">
             <!-- Pengirim Card -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom py-3">
+            <form class="card border-0 shadow-sm mb-4" action="{{ route('kecamatan.pelayanan.pengaduan.update-sender', $pengaduan->id) }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold text-slate-700">
-                        <i class="fas fa-user me-2"></i> Informasi Pengirim
+                        <i class="fas fa-user-edit me-2"></i> Informasi Pengirim (Verifikasi)
                     </h6>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-save me-1"></i> Simpan Data Verifikasi
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Nama</label>
-                            <p class="text-slate-700 mb-0">{{ $pengaduan->nama ?? 'Tidak disebutkan' }}</p>
+                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1 d-block">Nama Lengkap</label>
+                            <input type="text" name="nama_pemohon" class="form-control form-control-sm" value="{{ $pengaduan->nama ?? '' }}" placeholder="Belum disebutkan">
                         </div>
                         <div class="col-md-6">
-                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">No. WhatsApp</label>
-                            <p class="mb-0">
-                                @if($pengaduan->whatsapp)
-                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $pengaduan->whatsapp) }}" 
-                                   target="_blank" class="text-success text-decoration-none">
-                                    <i class="fab fa-whatsapp me-1"></i>
-                                    {{ $pengaduan->whatsapp }}
+                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1 d-block">No. WhatsApp</label>
+                            <input type="text" name="whatsapp" class="form-control form-control-sm" value="{{ $pengaduan->whatsapp ?? '' }}" placeholder="Belum disebutkan">
+                            @if($pengaduan->whatsapp)
+                            <div class="mt-1">
+                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $pengaduan->whatsapp) }}" target="_blank" class="text-success text-[11px] text-decoration-none">
+                                    <i class="fab fa-whatsapp me-1"></i> Chat WhatsApp
                                 </a>
-                                @else
-                                <span class="text-slate-400">-</span>
-                                @endif
-                            </p>
+                            </div>
+                            @endif
                         </div>
                         <div class="col-md-6">
-                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">NIK</label>
-                            <p class="text-slate-700 mb-0">{{ $pengaduan->nik ?? 'Tidak disebutkan' }}</p>
+                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1 d-block">NIK KTP <span class="text-danger">*</span></label>
+                            <input type="text" name="nik" class="form-control form-control-sm" value="{{ $pengaduan->nik ?? '' }}" placeholder="Masukkan 16 digit NIK">
                         </div>
                         <div class="col-md-6">
-                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Desa/Kelurahan</label>
-                            <p class="text-slate-700 mb-0">{{ $pengaduan->desa?->nama_desa ?? 'Tidak disebutkan' }}</p>
+                            <label class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1 d-block">Desa/Kelurahan</label>
+                            <select name="desa_id" class="form-select form-select-sm">
+                                <option value="">-- Pilih Desa --</option>
+                                @foreach($desas ?? [] as $desa)
+                                <option value="{{ $desa->id }}" {{ $pengaduan->desa_id == $desa->id ? 'selected' : '' }}>
+                                    {{ $desa->nama_desa }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3 pt-3 border-top">
+                            <div class="p-2 bg-slate-50 rounded-3 text-[11px] text-slate-500">
+                                <i class="fas fa-info-circle me-1 text-primary"></i> 
+                                Pastikan Anda memverifikasi data diri pelapor sebelum memproses lebih lanjut untuk menghindari laporan palsu. Edit dan klik tombol <b>Simpan Data Verifikasi</b> di kanan atas kartu ini bila diperlukan.
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
             <!-- Isi Pengaduan Card -->
             <div class="card border-0 shadow-sm mb-4">

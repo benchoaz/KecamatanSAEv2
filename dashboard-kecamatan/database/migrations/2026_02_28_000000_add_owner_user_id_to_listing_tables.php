@@ -12,31 +12,37 @@ return new class extends Migration {
     public function up(): void
     {
         // Tambahkan ke tabel umkm
-        Schema::table('umkm', function (Blueprint $table) {
-            $table->foreignId('owner_user_id')
-                ->nullable()
-                ->constrained('users')
-                ->onDelete('set null')
-                ->after('status');
-        });
+        if (Schema::hasTable('umkm')) {
+            Schema::table('umkm', function (Blueprint $table) {
+                $table->foreignId('owner_user_id')
+                    ->nullable()
+                    ->constrained('users')
+                    ->onDelete('set null')
+                    ->after('status');
+            });
+        }
 
         // Tambahkan ke tabel loker
-        Schema::table('loker', function (Blueprint $table) {
-            $table->foreignId('owner_user_id')
-                ->nullable()
-                ->constrained('users')
-                ->onDelete('set null')
-                ->after('status');
-        });
+        if (Schema::hasTable('loker')) {
+            Schema::table('loker', function (Blueprint $table) {
+                $table->foreignId('owner_user_id')
+                    ->nullable()
+                    ->constrained('users')
+                    ->onDelete('set null')
+                    ->after('status');
+            });
+        }
 
         // Tambahkan ke tabel umkm_local
-        Schema::table('umkm_local', function (Blueprint $table) {
-            $table->foreignId('owner_user_id')
-                ->nullable()
-                ->constrained('users')
-                ->onDelete('set null')
-                ->after('module');
-        });
+        if (Schema::hasTable('umkm_local')) {
+            Schema::table('umkm_local', function (Blueprint $table) {
+                $table->foreignId('owner_user_id')
+                    ->nullable()
+                    ->constrained('users')
+                    ->onDelete('set null')
+                    ->after('module');
+            });
+        }
     }
 
     /**

@@ -21,11 +21,15 @@ class MasterLayanan extends Model
         'warna_bg',
         'warna_text',
         'is_active',
-        'urutan'
+        'urutan',
+        'is_popular',
+        'link_type',
+        'custom_link'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_popular' => 'boolean',
         'urutan' => 'integer',
         'attachment_requirements' => 'array'
     ];

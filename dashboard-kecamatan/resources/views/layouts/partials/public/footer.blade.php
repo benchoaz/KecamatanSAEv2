@@ -9,8 +9,8 @@
 
     <div class="container mx-auto max-w-7xl px-6 relative z-10">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 mb-20">
-            <!-- Col 1: Branding (4 cols) -->
-            <div class="lg:col-span-4 space-y-10">
+            <!-- Col 1: Branding (5 cols) -->
+            <div class="lg:col-span-5 space-y-10">
                 <div class="group flex items-center gap-6">
                     @if(appProfile()->logo_path)
                         <div class="relative">
@@ -81,8 +81,8 @@
                 </div>
             </div>
 
-            <!-- Col 2: Navigation (2 cols) -->
-            <div class="lg:col-span-2">
+            <!-- Col 2: Navigation (3 cols) -->
+            <div class="lg:col-span-3">
                 <h5 class="text-white font-black text-xs uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
                     <span class="w-8 h-px bg-teal-500"></span>
                     Navigasi
@@ -123,8 +123,8 @@
                 </ul>
             </div>
 
-            <!-- Col 3: Contact Details (3 cols) -->
-            <div class="lg:col-span-3">
+            <!-- Col 3: Contact Details (4 cols) -->
+            <div class="lg:col-span-4">
                 <h5 class="text-white font-black text-xs uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
                     <span class="w-8 h-px bg-blue-500"></span>
                     Hubungi Kami
@@ -160,50 +160,6 @@
                 </div>
             </div>
 
-            <!-- Col 4: Time of Service (3 cols) -->
-            <div class="lg:col-span-3">
-                <h5 class="text-white font-black text-xs uppercase tracking-[0.2em] mb-10 flex items-center gap-3">
-                    <span class="w-8 h-px bg-amber-500"></span>
-                    Jam Operasional
-                </h5>
-                <div
-                    class="p-6 rounded-3xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-sm relative group overflow-hidden">
-                    <div
-                        class="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full group-hover:bg-amber-500/10 transition-all">
-                    </div>
-                    <div class="space-y-6 relative z-10">
-                        <div>
-                            <span
-                                class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Senin
-                                — Kamis</span>
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-clock text-amber-500/50"></i>
-                                <span
-                                    class="text-white font-black tracking-tight text-base">{{ appProfile()->office_hours_mon_thu ?? '08:00 - 15:30' }}
-                                    WIB</span>
-                            </div>
-                        </div>
-                        <div>
-                            <span
-                                class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Jumat</span>
-                            <div class="flex items-center gap-3">
-                                <i class="fas fa-clock text-amber-500/50"></i>
-                                <span
-                                    class="text-white font-black tracking-tight text-base">{{ appProfile()->office_hours_fri ?? '08:00 - 11:30' }}
-                                    WIB</span>
-                            </div>
-                        </div>
-                        <div class="pt-2">
-                            <div
-                                class="inline-flex items-center gap-2 px-3 py-1 bg-rose-500/10 rounded-full border border-rose-500/20">
-                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest">Sabtu &
-                                    Minggu Libur</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         {{-- Bottom Attribution Bar --}}

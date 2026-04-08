@@ -219,7 +219,7 @@
                         Daftarkan produk atau jasa Anda di etalase resmi kecamatan. Gratis dan mudah!
                     </p>
                 </div>
-                <a href="{{ route('umkm_rakyat.create') }}"
+                <a href="{{ route('economy.create') }}"
                     class="px-6 py-3 bg-white hover:bg-amber-50 text-orange-600 rounded-xl font-bold text-sm shadow-lg transition-all whitespace-nowrap relative z-10">
                     <i class="fas fa-plus mr-2"></i> Daftar Sekarang
                 </a>
@@ -272,7 +272,7 @@
                                         <div class="text-xs font-bold text-slate-400 italic">Hubungi Penjual</div>
                                     @endif
                                 </div>
-                                <a href="{{ route('public.umkm.show', $u->id) }}"
+                                <a href="{{ route('economy.index', ['tab' => 'produk']) }}"
                                     class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors">
                                     <i class="fas fa-arrow-right text-sm"></i>
                                 </a>

@@ -21,11 +21,15 @@ class PublicServiceController extends Controller
         }
 
         // 2. Rate Limiting (2 reports / 24h per WA number)
-        $count = PublicService::where('whatsapp', $request->whatsapp)
-            ->where('created_at', '>=', Carbon::now()->subDay())
-            ->count();
-        if ($count >= 2) {
-            return response()->json(['message' => 'Anda telah mencapai batas pengiriman laporan hari ini. Silakan coba lagi besok.'], 429);
+        // Skip rate limiting for chatbox handoff requests (source=chatbox)
+        $isChatboxHandoff = $request->input('source') === 'chatbox';
+        if (!$isChatboxHandoff) {
+            $count = PublicService::where('whatsapp', $request->whatsapp)
+                ->where('created_at', '>=', Carbon::now()->subDay())
+                ->count();
+            if ($count >= 2) {
+                return response()->json(['message' => 'Anda telah mencapai batas pengiriman laporan hari ini. Silakan coba lagi besok.'], 429);
+            }
         }
 
         // 3. Security Keyword filtering (Soft redirection to SP4N-LAPOR)
@@ -222,191 +226,24 @@ class PublicServiceController extends Controller
         ]);
     }
 
+    protected \App\Services\FaqSearchService $faqSearchService;
+
+    public function __construct(\App\Services\FaqSearchService $faqSearchService)
+    {
+        $this->faqSearchService = $faqSearchService;
+    }
+
     public function faqSearch(Request $request)
     {
-        $query = strtolower($request->query('q', ''));
-        if (empty($query)) {
-            return response()->json(['answer' => null]);
+        $query = $request->query('q', '');
+        $data = $this->faqSearchService->search($query);
+
+        // Adjust for legacy frontend expectation if necessary
+        if ($data['found'] && !isset($data['multiple'])) {
+            $data['multiple'] = false;
         }
 
-        // 0. Pre-processing & Synonyms (Fix for user expectation vs keyword mismatch)
-        $synonyms = [
-            'jam layanan' => 'jam pelayanan',
-            'buka jam' => 'jam pelayanan',
-            'tutup jam' => 'jam pelayanan',
-            'jadwal' => 'jam',
-            'syarat' => 'persyaratan'
-        ];
-
-        foreach ($synonyms as $from => $to) {
-            if (str_contains($query, $from)) {
-                $query = str_replace($from, $to, $query);
-            }
-        }
-
-        // 0. Priority Checklist: Darurat Category from Database (User Managed Override)
-        $emergencyFaqs = \App\Models\PelayananFaq::where('is_active', true)
-            ->where('category', 'Darurat')
-            ->get();
-
-        foreach ($emergencyFaqs as $faq) {
-            $keywords = explode(',', strtolower($faq->keywords));
-            foreach ($keywords as $kw) {
-                $trimmedKw = trim($kw);
-                if ($trimmedKw !== '' && preg_match('/\b' . preg_quote($trimmedKw, '/') . '\b/i', $query)) {
-                    return response()->json([
-                        'found' => true,
-                        'is_emergency' => true,
-                        'results' => [['jawaban' => $faq->answer]]
-                    ]);
-                }
-            }
-        }
-
-        // 1. Hardcoded Safety Fallbacks (If DB entry is missing or inactive)
-
-        // 1.1 Criminal Emergency
-        $criminalKeywords = [
-            'maling',
-            'pencurian',
-            'perampokan',
-            'dirampok',
-            'kriminal',
-            'kejahatan',
-            'kekerasan',
-            'curi',
-            'jambret',
-            'begal',
-            'penodongan',
-            'maling!',
-            'pencuri'
-        ];
-        foreach ($criminalKeywords as $ckw) {
-            if (preg_match('/\b' . preg_quote($ckw, '/') . '\b/i', $query)) {
-                return response()->json([
-                    'found' => true,
-                    'is_emergency' => true,
-                    'results' => [['jawaban' => "⚠️ Jika Anda mengalami atau melihat tindak pencurian atau kejahatan:\n\n1. Segera hubungi Kepolisian melalui nomor 110\n2. Atau laporkan langsung ke Polsek terdekat\n3. Mintalah Surat Tanda Lapor Polisi (STLP) jika diperlukan\n\nUtamakan keselamatan diri Anda."]]
-                ]);
-            }
-        }
-
-        // 1.2 Health Emergency
-        $healthKeywords = [
-            'pingsan',
-            'sesak napas',
-            'kejang',
-            'kecelakaan',
-            'luka berat',
-            'darah banyak',
-            'darurat kesehatan',
-            'sakit parah',
-            'serangan jantung',
-            'melahirkan',
-            'ambulan'
-        ];
-        foreach ($healthKeywords as $hkw) {
-            if (preg_match('/\b' . preg_quote($hkw, '/') . '\b/i', $query)) {
-                return response()->json([
-                    'found' => true,
-                    'is_emergency' => true,
-                    'results' => [['jawaban' => "⚠️ Jika terjadi keadaan darurat kesehatan:\n\n1. Segera hubungi layanan darurat medis (119) atau fasilitas kesehatan terdekat\n2. Jika memungkinkan, minta bantuan warga sekitar\n3. Jika korban tidak sadar atau luka berat, jangan dipindahkan sembarangan\n\nUtamakan keselamatan dan pertolongan pertama."]]
-                ]);
-            }
-        }
-
-        // 1.3 Social Conflict
-        $conflictKeywords = [
-            'keributan',
-            'tawuran',
-            'bentrok',
-            'perkelahian',
-            'ancaman',
-            'gangguan ketertiban',
-            'konflik warga',
-            'demo',
-            'unjuk rasa',
-            'rusuh'
-        ];
-        foreach ($conflictKeywords as $ckw) {
-            if (preg_match('/\b' . preg_quote($ckw, '/') . '\b/i', $query)) {
-                return response()->json([
-                    'found' => true,
-                    'is_emergency' => true,
-                    'results' => [['jawaban' => "⚠️ Jika terjadi konflik atau gangguan ketertiban:\n\n1. Hindari lokasi kejadian demi keselamatan\n2. Segera laporkan ke aparat keamanan setempat\n3. Jangan melakukan tindakan balasan atau provokasi\n\nMari jaga keamanan dan ketertiban bersama."]]
-                ]);
-            }
-        }
-
-        // 1.4 Natural Disaster
-        $disasterKeywords = [
-            'banjir',
-            'longsor',
-            'gempa',
-            'kebakaran',
-            'angin kencang',
-            'bencana alam',
-            'evakuasi',
-            'puting beliung',
-            'tsunami',
-            'gunung meletus',
-            'damkar'
-        ];
-        foreach ($disasterKeywords as $dkw) {
-            if (preg_match('/\b' . preg_quote($dkw, '/') . '\b/i', $query)) {
-                return response()->json([
-                    'found' => true,
-                    'is_emergency' => true,
-                    'results' => [['jawaban' => "⚠️ Jika terjadi bencana alam:\n\n1. Segera menjauh dari lokasi berbahaya\n2. Ikuti arahan petugas dan aparat setempat\n3. Siapkan dokumen penting dan kebutuhan darurat\n\nKeselamatan jiwa adalah yang utama.\nNO DARURAT PETUGAS DAMKAR 112"]]
-                ]);
-            }
-        }
-
-        // 1.5 General Backup
-        $generalEmergency = ['darurat', 'begal', 'bantuan'];
-        foreach ($generalEmergency as $ekw) {
-            if (preg_match('/\b' . preg_quote($ekw, '/') . '\b/i', $query)) {
-                return response()->json([
-                    'found' => true,
-                    'is_emergency' => true,
-                    'results' => [['jawaban' => "⚠️ **Peringatan Darurat Keamanan/Keselamatan!**\n\nLayanan ini hanya untuk informasi administrasi. Untuk situasi darurat, segera hubungi:\n- **Polisi/Keadaan Darurat**: 110\n- **Ambulans/Medis**: 119\n- **Pemadam Kebakaran**: 113\n\nTetap tenang dan cari tempat aman."]]
-                ]);
-            }
-        }
-
-        // 4. Strict FAQ Matching
-        // Phase A: Search by Question Title (Priority)
-        $matchingFaq = \App\Models\PelayananFaq::where('is_active', true)
-            ->whereRaw('LOWER(question) LIKE ?', ["%{$query}%"])
-            ->first();
-
-        // Phase B: Search by Keywords (Fallback)
-        if (!$matchingFaq) {
-            $matchingFaq = \App\Models\PelayananFaq::where('is_active', true)->get()->first(function ($faq) use ($query) {
-                $keywords = explode(',', strtolower($faq->keywords));
-                foreach ($keywords as $kw) {
-                    $trimmedKw = trim($kw);
-                    if ($trimmedKw !== '' && preg_match('/\b' . preg_quote($trimmedKw, '/') . '\b/i', $query)) {
-                        return true;
-                    }
-                }
-                return false;
-            });
-        }
-
-        // 3. Verbatim Response
-        if ($matchingFaq) {
-            return response()->json([
-                'found' => true,
-                'question' => $matchingFaq->question,
-                'results' => [['jawaban' => $matchingFaq->answer]]
-            ]);
-        }
-
-        return response()->json([
-            'found' => false,
-            'answer' => "Maaf, informasi terkait hal tersebut tidak ditemukan dalam database FAQ resmi kami. Silakan coba kata kunci lain (seperti: KTP, KK, Pindah) atau datang langsung ke kantor Kecamatan pada jam kerja."
-        ]);
+        return response()->json($data);
     }
 
     /**
@@ -414,7 +251,11 @@ class PublicServiceController extends Controller
      */
     public function trackingPage()
     {
-        return view('public.tracking');
+        $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)
+            ->orderBy('urutan')
+            ->get();
+            
+        return view('public.layanan', compact('masterLayanan'));
     }
 
     /**

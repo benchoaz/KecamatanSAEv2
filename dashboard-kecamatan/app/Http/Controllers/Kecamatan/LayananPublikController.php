@@ -8,11 +8,13 @@ use App\Models\UmkmAdminLog;
 use App\Models\Loker;
 use App\Models\Desa;
 use App\Models\PublicService;
+use App\Traits\HasWhatsAppNotifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class LayananPublikController extends Controller
 {
+    use HasWhatsAppNotifications;
     /**
      * --- UMKM RAKYAT FACILITATOR SECTION ---
      * Menggantikan fungsi UMKM lama dengan sistem UMKM Rakyat.
@@ -80,6 +82,22 @@ class LayananPublikController extends Controller
             'actor' => 'admin', // Kecamatan
             'notes' => 'Pendaftaran jalur bantuan (Fasilitator). ' . ($validated['notes'] ?? ''),
         ]);
+
+        // Automate Inbox Sync
+        if ($request->filled('from_inbox')) {
+            $inbox = PublicService::find($request->from_inbox);
+            if ($inbox) {
+                $inbox->update([
+                    'status' => PublicService::STATUS_SELESAI,
+                    'public_response' => "Lapak UMKM Anda ({$umkm->nama_usaha}) telah terdaftar dan aktif. Silakan kelola melalui link yang dikirimkan petugas atau via WhatsApp.",
+                    'handled_by' => auth()->id(),
+                    'handled_at' => now(),
+                    'responded_at' => now(),
+                ]);
+                // Trigger notification for the inbox closure
+                $this->sendWaNotification($inbox, 'status_update');
+            }
+        }
 
         // Redirect to Handover Page
         return redirect()->route('kecamatan.umkm.handover', $umkm->id)
@@ -217,6 +235,22 @@ class LayananPublikController extends Controller
         $validated['is_available_today'] = $request->has('is_available_today');
 
         Loker::create($validated);
+
+        // Automate Inbox Sync
+        if ($request->filled('from_inbox')) {
+            $inbox = PublicService::find($request->from_inbox);
+            if ($inbox) {
+                $inbox->update([
+                    'status' => PublicService::STATUS_SELESAI,
+                    'public_response' => "Data Lowongan Kerja ({$request->title}) telah berhasil kami tayangkan di portal Loker Warga. Terima kasih atas kontribusi Anda.",
+                    'handled_by' => auth()->id(),
+                    'handled_at' => now(),
+                    'responded_at' => now(),
+                ]);
+                // Trigger notification for the inbox closure
+                $this->sendWaNotification($inbox, 'status_update');
+            }
+        }
 
         return redirect()->route('kecamatan.loker.index')->with('success', 'Data Loker Warga berhasil ditambahkan.');
     }

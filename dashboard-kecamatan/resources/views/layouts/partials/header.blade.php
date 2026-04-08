@@ -132,7 +132,7 @@
 
                     <ul class="gov-profile__list">
                         <li>
-                            <a href="/admin/profile" class="gov-profile__item">
+                            <a href="{{ route('profile.edit') }}" class="gov-profile__item">
                                 <i class="fas fa-user-circle"></i> Profil Saya
                             </a>
                         </li>
@@ -142,7 +142,10 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('logout') }}" class="gov-profile__item gov-profile__item--logout">
+                            <form action="{{ route('logout') }}" method="POST" id="logout-form" style="display: none;">
+                                @csrf
+                            </form>
+                            <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="gov-profile__item gov-profile__item--logout">
                                 <i class="fas fa-power-off"></i> Keluar Aplikasi
                             </a>
                         </li>

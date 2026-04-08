@@ -89,6 +89,9 @@ Route::prefix('whatsapp')->middleware(['api.token', 'throttle:60,1'])->group(fun
         ->name('api.whatsapp.health');
 });
 
+// Global health check for n8n (compatibility alias)
+Route::get('/health', [WhatsappController::class, 'health'])->name('api.health');
+
 
 
 

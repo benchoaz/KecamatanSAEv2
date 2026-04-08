@@ -12,7 +12,7 @@ class ComplaintHandler
     /**
      * Get complaint form URL from AppProfile
      */
-    protected function getComplaintFormUrl(?string $name = null, ?string $phone = null): string
+    protected function getComplaintFormUrl(?string $name = null, ?string $phone = null, ?string $category = null): string
     {
         $profile = app(AppProfile::class);
         $baseUrl = $profile->public_base_url ?? $profile->app_url ?? config('app.url', 'https://localhost');
@@ -25,6 +25,9 @@ class ComplaintHandler
         }
         if ($phone) {
             $params['no_hp'] = urlencode($phone);
+        }
+        if ($category) {
+            $params['kategori'] = urlencode($category);
         }
 
         if (!empty($params)) {
@@ -91,7 +94,7 @@ class ComplaintHandler
     }
 
     /**
-     * Handle WhatsApp number input - send form link with disclaimer
+     * Handle WhatsApp number input - ask for Category
      */
     public function handleWhatsApp(WhatsappSession $session, string $message): array
     {
@@ -113,18 +116,62 @@ class ComplaintHandler
         // Store WhatsApp number
         $session->setTempValue('complaint_wa', $waNumber);
 
-        // Get name from session
-        $name = $session->getTempValue('complaint_name');
+        return [
+            'success' => true,
+            'intent' => 'complaint_wa_received',
+            'reply' => "Baik, nomor WhatsApp *{$waNumber}* telah dicatat.\n\n" .
+                "Pilih kategori pengaduan Anda:\n" .
+                "1️⃣ Pengaduan (Layanan Tidak Memadai)\n" .
+                "2️⃣ Aspirasi (Saran & Masukan)\n" .
+                "3️⃣ Permintaan (Butuh Layanan Khusus)\n\n" .
+                "Ketik angka *1*, *2*, atau *3*:",
+            'state_update' => 'WAITING_COMPLAINT_CATEGORY',
+        ];
+    }
 
-        // Get form URL with pre-filled parameters
-        $formUrl = $this->getComplaintFormUrl($name, $waNumber);
+    /**
+     * Handle Category input - send form link with disclaimer
+     */
+    public function handleCategory(WhatsappSession $session, string $message): array
+    {
+        $input = trim($message);
+        $category = 'Pengaduan'; // default
+        
+        if ($input === '1') {
+            $category = 'Pengaduan';
+        } elseif ($input === '2') {
+            $category = 'Aspirasi';
+        } elseif ($input === '3') {
+            $category = 'Permintaan';
+        } elseif (is_numeric($input)) {
+            return [
+                'success' => true,
+                'intent' => 'complaint_category_invalid',
+                'reply' => "Pilihan tidak valid. Silakan ketik angka *1*, *2*, atau *3* sesuai kategori.",
+                'state_update' => 'WAITING_COMPLAINT_CATEGORY',
+            ];
+        } else {
+            // Fallback for non-number text
+            $category = $input;
+        }
+
+        // Store Category
+        $session->setTempValue('complaint_category', $category);
+
+        // Retrieve earlier data
+        $name = $session->getTempValue('complaint_name');
+        $waNumber = $session->getTempValue('complaint_wa');
+
+        // Get form URL with all pre-filled parameters
+        $formUrl = $this->getComplaintFormUrl($name, $waNumber, $category);
 
         // Clear session after providing link
         $session->clear();
 
         $reply = "✅ *Data Diterima!*\n\n" .
             "Nama: *{$name}*\n" .
-            "WhatsApp: *{$waNumber}*\n\n" .
+            "WhatsApp: *{$waNumber}*\n" .
+            "Kategori: *{$category}*\n\n" .
             "━━━━━━━━━━━━━━━━━━━━\n\n" .
             "📝 *ISI FORM PENGADUAN*:\n{$formUrl}\n\n" .
             "━━━━━━━━━━━━━━━━━━━━\n\n" .

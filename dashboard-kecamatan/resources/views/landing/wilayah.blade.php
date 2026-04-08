@@ -227,7 +227,7 @@
             <div class="relative group mt-8">
                 <!-- Map Container -->
                 <div id="mapContainer"
-                    class="w-full h-[500px] md:h-[650px] rounded-[3rem] shadow-2xl border-8 border-white overflow-hidden relative">
+                    class="w-full h-[400px] sm:h-[500px] md:h-[650px] rounded-[2rem] md:rounded-[3rem] shadow-xl md:shadow-2xl border-4 md:border-8 border-white overflow-hidden relative z-20">
                 </div>
 
                 <!-- Map Legend/Overlay -->

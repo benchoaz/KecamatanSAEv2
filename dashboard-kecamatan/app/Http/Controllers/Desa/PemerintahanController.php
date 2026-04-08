@@ -84,7 +84,8 @@ class PemerintahanController extends Controller
             'personils' => $personils,
             'desa_id' => $desa_id,
             'title' => 'Struktur BPD',
-            'kategori' => 'bpd'
+            'kategori' => 'bpd',
+            'store_route' => route('desa.pemerintahan.detail.personil.store')
         ]);
     }
 

@@ -13,6 +13,10 @@ use App\Http\Controllers\Kecamatan\ReferenceDataController;
 use App\Http\Controllers\Master\DesaMasterController;
 use App\Http\Controllers\ApplicationProfileController;
 use App\Http\Controllers\Kecamatan\WahaN8nController;
+use App\Http\Controllers\Kecamatan\PelayananController;
+use App\Http\Controllers\Kecamatan\AnnouncementController;
+use App\Http\Controllers\Kecamatan\LayananPublikController;
+use App\Http\Controllers\Kecamatan\BeritaController;
 use App\Http\Controllers\Pemerintahan\AparaturController; // Keep for now or move
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +26,66 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
     // System Settings - Allow all authenticated users in this group
     Route::get('/settings/profile', [ApplicationProfileController::class, 'index'])->name('settings.profile');
     Route::put('/settings/profile', [ApplicationProfileController::class, 'update'])->name('settings.profile.update');
+
+    // Standardized Pelayanan Module
+    Route::prefix('pelayanan')->name('pelayanan.')->group(function () {
+        Route::get('/inbox', [PelayananController::class, 'inbox'])->name('inbox');
+        Route::get('/pengaduan', [PelayananController::class, 'pengaduanIndex'])->name('pengaduan');
+        Route::get('/pengaduan/{id}', [PelayananController::class, 'pengaduanShow'])->name('pengaduan.show');
+        Route::put('/pengaduan/{id}', [PelayananController::class, 'pengaduanUpdateStatus'])->name('pengaduan.update-status');
+        Route::put('/pengaduan/{id}/sender', [PelayananController::class, 'pengaduanUpdateSender'])->name('pengaduan.update-sender');
+        Route::get('/statistics', [PelayananController::class, 'statistics'])->name('statistics');
+
+        Route::prefix('visitor')->name('visitor.')->group(function () {
+            Route::get('/', [PelayananController::class, 'visitorIndex'])->name('index');
+            Route::post('/', [PelayananController::class, 'visitorStore'])->name('store');
+            Route::put('/{id}', [PelayananController::class, 'visitorUpdate'])->name('update');
+        });
+
+        Route::prefix('faq')->name('faq.')->group(function () {
+            Route::get('/', [PelayananController::class, 'faqIndex'])->name('index');
+            Route::post('/', [PelayananController::class, 'faqStore'])->name('store');
+            Route::put('/{id}', [PelayananController::class, 'faqUpdate'])->name('update');
+        });
+
+        Route::prefix('layanan')->name('layanan.')->group(function () {
+            Route::get('/', [PelayananController::class, 'layananIndex'])->name('index');
+            Route::get('/create', [PelayananController::class, 'layananCreate'])->name('create');
+            Route::post('/', [PelayananController::class, 'layananStore'])->name('store');
+            Route::get('/{id}/edit', [PelayananController::class, 'layananEdit'])->name('edit');
+            Route::put('/{id}', [PelayananController::class, 'layananUpdate'])->name('update');
+            Route::delete('/{id}', [PelayananController::class, 'layananDestroy'])->name('destroy');
+        });
+
+        // Pelayanan Detail & Status Update: Catch-all ID routes moved to end 
+        // to avoid hijacking static prefixes like /visitor, /faq, /layanan
+        Route::get('/{id}', [PelayananController::class, 'show'])->name('show');
+        Route::put('/{id}', [PelayananController::class, 'updateStatus'])->name('update-status');
+    });
+
+    // Announcements
+    Route::resource('announcements', AnnouncementController::class);
+
+    // UMKM & Loker (Layanan Publik)
+    Route::prefix('umkm')->name('umkm.')->group(function () {
+        Route::get('/', [LayananPublikController::class, 'umkmIndex'])->name('index');
+        Route::get('/create', [LayananPublikController::class, 'umkmCreate'])->name('create');
+        Route::post('/', [LayananPublikController::class, 'umkmStore'])->name('store');
+        Route::get('/{id}/handover', [LayananPublikController::class, 'umkmHandover'])->name('handover');
+        Route::get('/{id}/edit', [LayananPublikController::class, 'umkmEdit'])->name('edit');
+        Route::put('/{id}', [LayananPublikController::class, 'umkmUpdate'])->name('update');
+        Route::delete('/{id}', [LayananPublikController::class, 'umkmDestroy'])->name('destroy');
+        Route::post('/{id}/reset-akses', [LayananPublikController::class, 'resetAkses'])->name('reset-akses');
+    });
+
+    Route::prefix('loker')->name('loker.')->group(function () {
+        Route::get('/', [LayananPublikController::class, 'lokerIndex'])->name('index');
+        Route::get('/create', [LayananPublikController::class, 'lokerCreate'])->name('create');
+        Route::post('/', [LayananPublikController::class, 'lokerStore'])->name('store');
+        Route::get('/{id}/edit', [LayananPublikController::class, 'lokerEdit'])->name('edit');
+        Route::put('/{id}', [LayananPublikController::class, 'lokerUpdate'])->name('update');
+        Route::delete('/{id}', [LayananPublikController::class, 'lokerDestroy'])->name('destroy');
+    });
 
     // Restrict other routes to Super Admin & Operator only
     Route::middleware(['role:Operator Kecamatan,Super Admin'])->group(function () {

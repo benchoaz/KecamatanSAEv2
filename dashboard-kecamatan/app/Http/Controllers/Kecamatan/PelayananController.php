@@ -14,14 +14,19 @@ use App\Models\WorkDirectory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+use App\Traits\HasWhatsAppNotifications;
+
 class PelayananController extends Controller
 {
+    use HasWhatsAppNotifications;
     /**
      * Inbox Pengaduan & Pelayanan
      */
     public function inbox(Request $request)
     {
         $category = $request->query('category', 'pelayanan');
+        $search = $request->query('search');
+        $statusFilter = $request->query('status');
 
         $query = PublicService::with('desa')->withCount('attachments');
 
@@ -32,10 +37,26 @@ class PelayananController extends Controller
             $query->where('category', $category);
         }
 
-        $complaints = $query->orderBy('created_at', 'desc')
-            ->paginate(15);
+        // Apply Search
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nama_pemohon', 'like', "%{$search}%")
+                  ->orWhere('uraian', 'like', "%{$search}%")
+                  ->orWhere('whatsapp', 'like', "%{$search}%")
+                  ->orWhere('uuid', 'like', "%{$search}%")
+                  ->orWhere('tracking_code', 'like', "%{$search}%");
+            });
+        }
 
-        return view('kecamatan.pelayanan.inbox', compact('complaints', 'category'));
+        // Apply Status Filter
+        if ($statusFilter) {
+            $query->where('status', $statusFilter);
+        }
+
+        $complaints = $query->orderBy('created_at', 'desc')
+            ->paginate(15)->withQueryString();
+
+        return view('kecamatan.pelayanan.inbox', compact('complaints', 'category', 'search', 'statusFilter'));
     }
 
     /**
@@ -57,27 +78,46 @@ class PelayananController extends Controller
             'status' => 'required|string',
             'internal_notes' => 'nullable|string',
             'public_response' => 'nullable|string',
-            'completion_type' => 'nullable|in:digital,physical',
+            'completion_type' => 'nullable|in:digital,physical,whatsapp',
             'result_file' => 'nullable|file|mimes:pdf|max:5120',
             'ready_at' => 'nullable|date',
             'pickup_person' => 'nullable|string|max:255',
             'pickup_notes' => 'nullable|string',
             'send_whatsapp_notification' => 'nullable|boolean',
+            'wa_reply_text' => 'nullable|string',
         ]);
 
         $complaint = PublicService::findOrFail($id);
+        
+        // Custom backend validation for digital completion
+        if ($request->status === PublicService::STATUS_SELESAI && $request->completion_type === 'digital') {
+            if (!$request->hasFile('result_file') && !$complaint->result_file_path) {
+                return redirect()->back()->withErrors(['result_file' => 'Dokumen PDF hasil layanan wajib diunggah untuk diserahkan ke warga.'])->withInput();
+            }
+        }
+
+        // Validation for WhatsApp reply type
+        if ($request->completion_type === 'whatsapp' && empty($request->wa_reply_text)) {
+            return redirect()->back()->withErrors(['wa_reply_text' => 'Teks jawaban WhatsApp wajib diisi.'])->withInput();
+        }
+
         $oldStatus = $complaint->status;
 
+        // For WhatsApp completion type, wa_reply_text IS the public_response
+        $publicResponse = $request->completion_type === 'whatsapp'
+            ? $request->wa_reply_text
+            : $request->public_response;
+
         $updateData = [
-            'status' => $request->status,
-            'internal_notes' => $request->internal_notes,
-            'public_response' => $request->public_response,
-            'handled_by' => auth()->id(),
-            'handled_at' => now(),
+            'status'          => $request->status,
+            'internal_notes'  => $request->internal_notes,
+            'public_response' => $publicResponse,
+            'handled_by'      => auth()->id(),
+            'handled_at'      => now(),
             'completion_type' => $request->completion_type,
-            'ready_at' => $request->ready_at,
-            'pickup_person' => $request->pickup_person,
-            'pickup_notes' => $request->pickup_notes,
+            'ready_at'        => $request->ready_at,
+            'pickup_person'   => $request->pickup_person,
+            'pickup_notes'    => $request->pickup_notes,
         ];
 
         // Handle PDF upload for digital completion
@@ -86,168 +126,24 @@ class PelayananController extends Controller
             $updateData['result_file_path'] = $path;
         }
 
-        if ($request->filled('public_response')) {
+        if (!empty($publicResponse)) {
             $updateData['responded_at'] = now();
         }
 
         $complaint->update($updateData);
 
-        // Send WhatsApp notification if status changed
+        // Send WhatsApp notification
         $shouldNotify = $request->boolean('send_whatsapp_notification', true);
-        if ($shouldNotify && $complaint->whatsapp && $oldStatus !== $request->status) {
-            $this->sendWhatsAppNotification($complaint, $request->status);
+        if ($shouldNotify && $complaint->whatsapp) {
+            if ($request->completion_type === 'whatsapp') {
+                // Send the custom reply text directly (regardless of status change)
+                $this->sendWaNotification($complaint->fresh(), 'wa_reply');
+            } elseif ($oldStatus !== $request->status) {
+                $this->sendWaNotification($complaint->fresh(), 'status_update');
+            }
         }
 
         return redirect()->back()->with('success', 'Tindak lanjut pengaduan berhasil diperbarui.');
-    }
-
-    /**
-     * Send WhatsApp notification for status update
-     * 
-     * @param \App\Models\PublicService $complaint
-     * @param string $newStatus
-     * @return void
-     */
-    private function sendWhatsAppNotification($complaint, $newStatus)
-    {
-        try {
-            $message = $this->buildStatusMessage($complaint, $newStatus);
-
-            // Normalize phone
-            $phone = preg_replace('/[^0-9]/', '', $complaint->whatsapp);
-            if (str_starts_with($phone, '0')) {
-                $phone = '62' . substr($phone, 1);
-            } elseif (!str_starts_with($phone, '62')) {
-                $phone = '62' . $phone;
-            }
-
-            // Try WAHA direct first
-            $wahaSettings = \App\Models\WahaN8nSetting::getSettings();
-            if ($wahaSettings && $wahaSettings->waha_api_url) {
-                $headers = ['Content-Type' => 'application/json'];
-                if ($wahaSettings->waha_api_key) {
-                    $headers['X-Api-Key'] = $wahaSettings->waha_api_key;
-                }
-                \Illuminate\Support\Facades\Http::withHeaders($headers)
-                    ->timeout(8)
-                    ->post(rtrim($wahaSettings->waha_api_url, '/') . '/api/sendText', [
-                        'session' => $wahaSettings->waha_session_name ?? 'default',
-                        'chatId' => $phone . '@c.us',
-                        'text' => $message,
-                    ]);
-                return;
-            }
-
-            // Fallback: n8n reply webhook
-            $n8nWebhook = config('services.n8n.reply_webhook_url', env('N8N_REPLY_WEBHOOK_URL'));
-            if ($n8nWebhook) {
-                \Illuminate\Support\Facades\Http::post($n8nWebhook, [
-                    'phone' => $complaint->whatsapp,
-                    'message' => $message,
-                    'type' => 'status_update',
-                    'service_id' => $complaint->id,
-                    'uuid' => $complaint->uuid
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to send WhatsApp notification', [
-                'error' => $e->getMessage(),
-                'service_id' => $complaint->id,
-            ]);
-        }
-    }
-
-    /**
-     * Build status message for WhatsApp notification
-     * 
-     * @param \App\Models\PublicService $complaint
-     * @param string $newStatus
-     * @return string
-     */
-    private function buildStatusMessage($complaint, $newStatus)
-    {
-        $statusLabel = $complaint->status_label;
-        $statusEmoji = match ($newStatus) {
-            PublicService::STATUS_MENUNGGU => '⏳',
-            PublicService::STATUS_DIPROSES => '🔄',
-            PublicService::STATUS_SELESAI => '✅',
-            PublicService::STATUS_DITOLAK => '❌',
-            default => '📋'
-        };
-
-        $message = "{$statusEmoji} *Update Status Laporan*\n\n";
-        $message .= "🆔 ID: `{$complaint->uuid}`\n";
-        $message .= "📂 Layanan: {$complaint->jenis_layanan}\n";
-        $message .= "📊 Status: *{$statusLabel}*\n";
-        $message .= "📅 Update: " . now()->format('d M Y, H:i') . "\n\n";
-
-        if ($complaint->public_response) {
-            $message .= "📝 *Respon Petugas:*\n{$complaint->public_response}\n\n";
-        }
-
-        if ($newStatus === PublicService::STATUS_SELESAI) {
-            if ($complaint->completion_type === 'digital' && $complaint->result_file_path) {
-                $message .= "📎 *Dokumen Tersedia:*\n";
-                $message .= asset('storage/' . $complaint->result_file_path) . "\n\n";
-            } elseif ($complaint->completion_type === 'physical') {
-                $message .= "📍 *Dokumen Siap Diambil:*\n";
-                if ($complaint->ready_at) {
-                    $message .= "⏰ Waktu: {$complaint->ready_at->format('d M Y, H:i')}\n";
-                }
-                if ($complaint->pickup_person) {
-                    $message .= "👤 Pengambil: {$complaint->pickup_person}\n";
-                }
-                if ($complaint->pickup_notes) {
-                    $message .= "📝 Catatan: {$complaint->pickup_notes}\n";
-                }
-                $message .= "\n";
-            }
-        }
-
-        $message .= "💡 Ketik `/status {$complaint->uuid}` untuk cek status kapan saja.";
-
-        return $message;
-    }
-
-    /**
-     * FAQ Management
-     */
-    public function faqIndex()
-    {
-        $faqs = PelayananFaq::orderBy('category')->get();
-        return view('kecamatan.pelayanan.faq.index', compact('faqs'));
-    }
-
-    public function faqStore(Request $request)
-    {
-        $data = $request->validate([
-            'category' => 'required|string',
-            'keywords' => 'required|string',
-            'question' => 'required|string',
-            'answer' => 'required|string',
-        ]);
-
-        $data['module'] = 'pelayanan';
-        PelayananFaq::create($data);
-
-        return redirect()->back()->with('success', 'FAQ Administrasi berhasil ditambahkan.');
-    }
-
-    public function faqUpdate(Request $request, $id)
-    {
-        $data = $request->validate([
-            'category' => 'required|string',
-            'keywords' => 'required|string',
-            'question' => 'required|string',
-            'answer' => 'required|string',
-            'is_active' => 'required|boolean',
-        ]);
-
-        $data['module'] = 'pelayanan';
-        $faq = PelayananFaq::findOrFail($id);
-        $faq->update($data);
-
-        return redirect()->back()->with('success', 'FAQ Administrasi berhasil diperbarui.');
     }
 
     /**
@@ -328,6 +224,61 @@ class PelayananController extends Controller
     /**
      * Master Layanan (Self Service)
      */
+    /**
+     * FAQ Administrasi (Jawaban Otomatis WhatsApp Bot)
+     */
+    public function faqIndex()
+    {
+        $faqs = PelayananFaq::orderBy('category')
+            ->orderBy('priority', 'desc')
+            ->get();
+
+        return view('kecamatan.pelayanan.faq.index', compact('faqs'));
+    }
+
+    public function faqStore(Request $request)
+    {
+        $validated = $request->validate([
+            'category'  => 'required|string|max:100',
+            'keywords'  => 'required|string|max:500',
+            'question'  => 'required|string|max:500',
+            'answer'    => 'required|string',
+        ]);
+
+        $validated['is_active']       = true;
+        $validated['priority']        = 0;
+        $validated['module']          = PelayananFaq::MODULE_PELAYANAN;
+        $validated['last_updated_by'] = auth()->id();
+
+        PelayananFaq::create($validated);
+
+        return redirect()->route('kecamatan.pelayanan.faq.index')
+            ->with('success', 'FAQ berhasil ditambahkan.');
+    }
+
+    public function faqUpdate(Request $request, $id)
+    {
+        $faq = PelayananFaq::findOrFail($id);
+
+        $validated = $request->validate([
+            'category'  => 'required|string|max:100',
+            'keywords'  => 'required|string|max:500',
+            'question'  => 'required|string|max:500',
+            'answer'    => 'required|string',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $validated['last_updated_by'] = auth()->id();
+
+        $faq->update($validated);
+
+        return redirect()->route('kecamatan.pelayanan.faq.index')
+            ->with('success', 'FAQ berhasil diperbarui.');
+    }
+
+    /**
+     * Master Layanan (Self Service)
+     */
     public function layananIndex()
     {
         $layanan = MasterLayanan::orderBy('urutan')->get();
@@ -349,6 +300,9 @@ class PelayananController extends Controller
             'warna_bg' => 'required|string|max:100',
             'warna_text' => 'required|string|max:100',
             'is_active' => 'required|boolean',
+            'is_popular' => 'nullable|boolean',
+            'link_type' => 'nullable|string|in:form,loker,umkm,external',
+            'custom_link' => 'nullable|string|max:255',
             'urutan' => 'required|integer',
             'attachment_requirements' => 'nullable|array',
             'attachment_requirements.*' => 'required|string|max:255',
@@ -375,6 +329,9 @@ class PelayananController extends Controller
             'warna_bg' => 'required|string|max:100',
             'warna_text' => 'required|string|max:100',
             'is_active' => 'required|boolean',
+            'is_popular' => 'nullable|boolean',
+            'link_type' => 'nullable|string|in:form,loker,umkm,external',
+            'custom_link' => 'nullable|string|max:255',
             'urutan' => 'required|integer',
             'attachment_requirements' => 'nullable|array',
             'attachment_requirements.*' => 'required|string|max:255',
@@ -423,7 +380,32 @@ class PelayananController extends Controller
             ->where('category', PublicService::CATEGORY_PENGADUAN)
             ->findOrFail($id);
 
-        return view('kecamatan.pelayanan.pengaduan.show', compact('pengaduan'));
+        $desas = \App\Models\Desa::orderBy('nama_desa')->get();
+
+        return view('kecamatan.pelayanan.pengaduan.show', compact('pengaduan', 'desas'));
+    }
+
+    /**
+     * Update Data Pelapor (Verifikasi Sender Info)
+     */
+    public function pengaduanUpdateSender(Request $request, $id)
+    {
+        $request->validate([
+            'nama_pemohon' => 'nullable|string|max:255',
+            'nik' => 'nullable|digits:16',
+            'whatsapp' => 'required|string|max:20',
+            'desa_id' => 'nullable|exists:desa,id',
+        ]);
+
+        $pengaduan = PublicService::findOrFail($id);
+        $pengaduan->update([
+            'nama_pemohon' => $request->nama_pemohon,
+            'nik' => $request->nik,
+            'whatsapp' => $request->whatsapp,
+            'desa_id' => $request->desa_id,
+        ]);
+
+        return redirect()->back()->with('success', 'Informasi pengirim berhasil diperbarui.');
     }
 
     /**
@@ -457,7 +439,7 @@ class PelayananController extends Controller
 
         // Kirim notifikasi WhatsApp jika diminta dan status berubah
         if ($request->boolean('send_whatsapp', true) && $pengaduan->whatsapp && $oldStatus !== $request->status) {
-            $this->sendWhatsAppNotification($pengaduan, $request->status);
+            $this->sendWaNotification($pengaduan, 'status_update');
         }
 
         return redirect()->back()->with('success', 'Status pengaduan berhasil diperbarui dan notifikasi WhatsApp terkirim.');

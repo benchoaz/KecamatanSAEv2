@@ -1,0 +1,33 @@
+services:
+  db:
+    container_name: sae-kab-db
+    ports:
+      - "3310:3306"
+
+  redis:
+    container_name: sae-kab-redis
+    ports:
+      - "6382:6379"
+
+  app:
+    container_name: sae-kab-app
+
+  nginx:
+    container_name: sae-kab-nginx
+    ports:
+      - "8002:80"
+
+  n8n:
+    container_name: sae-kab-n8n
+    ports:
+      - "5680:5678"
+
+  waha:
+    container_name: sae-kab-waha
+    ports:
+      - "3001:3000"
+
+networks:
+  app-network:
+    name: sae-kab-network
+    driver: bridge

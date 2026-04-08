@@ -67,6 +67,7 @@ class StateHandler
             // New simplified complaint flow - form link
             'WAITING_COMPLAINT_NAME' => $this->complaintHandler->handleName($session, $message),
             'WAITING_COMPLAINT_WA' => $this->complaintHandler->handleWhatsApp($session, $message),
+            'WAITING_COMPLAINT_CATEGORY' => $this->complaintHandler->handleCategory($session, $message),
             'WAITING_OWNER_PIN' => $this->ownerHandler->handlePin($session, $message),
             'WAITING_OWNER_ACTION' => $this->ownerHandler->handleAction($session, $message),
             default => [

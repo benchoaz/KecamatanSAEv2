@@ -19,7 +19,10 @@ class LandingController extends Controller
 {
     public function index()
     {
-        $publicAnnouncements = Announcement::where('target_type', 'public')
+        $profileService = app(\App\Services\ApplicationProfileService::class);
+        $appProfile = $profileService->getProfile();
+
+        $publicAnnouncements = \App\Models\Announcement::where('target_type', 'public')
             ->where('is_active', true)
             ->where('start_date', '<=', now())
             ->where('end_date', '>=', now())
@@ -27,56 +30,24 @@ class LandingController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $latestBerita = Berita::published()
-            ->with('author:id,nama_lengkap')
-            ->latest('published_at')
-            ->take(4)
-            ->get();
-
-        $faqKeywords = PelayananFaq::where('is_active', true)
-            ->pluck('keywords')
-            ->filter()
-            ->flatMap(function ($k) {
-                return explode(',', $k);
-            })
-            ->map(function ($k) {
-                return trim(strtolower($k));
-            })
-            ->unique()
-            ->values()
-            ->toArray();
-
-        // New data for overhauled landing page
-        $featuredLayanan = PelayananFaq::where('is_active', true)
-            ->where('category', '!=', 'Darurat')
-            ->take(5)
-            ->get();
-
-        $masterLayanan = MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
-
-        $resolvedComplaints = PublicService::where('status', 'selesai')
-            ->latest()
-            ->take(3)
-            ->get();
-
-        $umkms = Umkm::where('status', 'aktif')->latest()->take(6)->get();
-        $jobs = JobVacancy::where('is_active', true)->latest()->take(4)->get();
-        $desas = Desa::orderBy('nama_desa')->get();
-
-        // Work Directory - Latest jobs and services
-        $workItems = WorkDirectory::public()->latest()->take(6)->get();
-
-        // Hero Section Settings
-        $profileService = app(ApplicationProfileService::class);
         $heroBg = $profileService->getHeroBg();
         $bgOpacity = $profileService->getHeroBgOpacity();
         $bgBlur = $profileService->getHeroBgBlur();
         $isHeroActive = $profileService->isHeroImageActive();
         $heroImage = $profileService->getHeroImage();
         $heroImageAlt = $profileService->getHeroImageAlt();
-
-        // WhatsApp Bot URL for "Ngobrol SAE" button
         $whatsappUrl = $profileService->getWhatsappBotUrl('MENU');
+
+        // Other required vars for the view
+        $latestBerita = \App\Models\Berita::latest()->take(3)->get();
+        $faqKeywords = [];
+        $featuredLayanan = \App\Models\MasterLayanan::where('is_active', true)
+            ->where('is_popular', true)
+            ->orderBy('urutan')
+            ->get();
+        $masterLayanan = \App\Models\MasterLayanan::where('is_active', true)->orderBy('urutan')->get();
+        $resolvedComplaints = \App\Models\PublicService::where('status', 'Selesai')->take(5)->get();
+        $desas = \App\Models\Desa::all();
 
         return view('landing', compact(
             'publicAnnouncements',
@@ -85,19 +56,18 @@ class LandingController extends Controller
             'featuredLayanan',
             'masterLayanan',
             'resolvedComplaints',
-            'umkms',
-            'jobs',
             'desas',
-            'workItems',
             'heroBg',
             'bgOpacity',
             'bgBlur',
             'isHeroActive',
             'heroImage',
             'heroImageAlt',
-            'whatsappUrl'
+            'whatsappUrl',
+            'appProfile'
         ));
     }
+    
     public function wilayah()
     {
         $desas = Desa::orderBy('nama_desa')->get();
@@ -145,5 +115,13 @@ class LandingController extends Controller
             'heroImageAlt',
             'faqKeywords'
         ));
+    }
+
+    public function berita()
+    {
+        $profileService = app(ApplicationProfileService::class);
+        $appProfile = $profileService->getProfile();
+        $beritas = Berita::where('is_active', true)->latest()->paginate(9);
+        return view('landing.berita', compact('beritas', 'appProfile'));
     }
 }

@@ -43,6 +43,7 @@
                                         <span class="fw-bold fs-5 font-monospace" style="letter-spacing: 2px;">{{ $complaint->tracking_code }}</span>
                                     </div>
                                 </div>
+                                {{-- PENDING FEATURE: Uncomment when receipt and qr routes are implemented
                                 <a href="{{ route('receipt.download', $complaint->uuid) }}" 
                                    class="btn btn-sm btn-primary rounded-3" 
                                    target="_blank"
@@ -55,6 +56,7 @@
                                    title="Lihat QR Code">
                                     <i class="fas fa-qrcode"></i>
                                 </a>
+                                --}}
                                 <span class="text-slate-400 small">
                                     {{ $complaint->created_at->format('d M Y, H:i') }} WIB
                                 </span>
@@ -271,21 +273,53 @@
                                         <option value="physical" {{ old('completion_type', $complaint->completion_type) == 'physical' ? 'selected' : '' }}>
                                             🏢 Fisik (Ambil di Kantor)
                                         </option>
+                                        <option value="whatsapp" {{ old('completion_type', $complaint->completion_type) == 'whatsapp' ? 'selected' : '' }}>
+                                            💬 WhatsApp (Jawaban via WA)
+                                        </option>
                                     </select>
                                 </div>
 
                                 {{-- Digital: Upload PDF --}}
                                 <div id="digitalSection" class="mb-3" style="display: {{ old('completion_type', $complaint->completion_type) == 'digital' ? 'block' : 'none' }}">
-                                    <label class="form-label small fw-bold text-slate-600">Upload Hasil (PDF)</label>
+                                    <label class="form-label small fw-bold text-slate-600">Upload Hasil (PDF) <span id="pdfRequiredMark" class="text-danger" style="display:none;">*</span></label>
                                     <input type="file" name="result_file" accept=".pdf" class="form-control form-control-sm bg-slate-50 border-slate-200 rounded-3">
+                                    @error('result_file')
+                                        <div class="text-danger text-[11px] fw-bold mt-1"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
+                                    @enderror
                                     @if($complaint->result_file_path)
-                                        <div class="mt-2">
-                                            <a href="{{ asset('storage/' . $complaint->result_file_path) }}" target="_blank" class="text-success text-xs">
-                                                <i class="fas fa-file-pdf me-1"></i> File sudah diupload
-                                            </a>
+                                        <div class="mt-3 p-2 bg-white border border-emerald-100 rounded-3 d-flex align-items-center justify-content-between">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-file-pdf text-rose-500 fs-5"></i>
+                                                <div>
+                                                    <a href="{{ asset('storage/' . $complaint->result_file_path) }}" target="_blank" class="text-emerald-700 text-[11px] fw-bold text-decoration-none hover:underline">
+                                                        Lihat File Saat Ini
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-emerald-50 text-emerald-600 text-[9px] border border-emerald-200">Tersimpan</span>
                                         </div>
+                                        <small class="text-muted d-block mt-1 text-[10px]"><i class="fas fa-info-circle me-1"></i>Abaikan input file jika tidak ingin mengganti PDF lama. Mengunggah baru akan menimpa file sebelumnya.</small>
+                                    @else
+                                        <small class="text-muted d-block mt-1">File ini bisa didownload oleh masyarakat via chat WA.</small>
                                     @endif
-                                    <small class="text-muted d-block mt-1">File ini bisa didownload oleh masyarakat</small>
+                                </div>
+
+                                {{-- WhatsApp: Text Answer --}}
+                                <div id="whatsappSection" class="mb-3" style="display: {{ old('completion_type', $complaint->completion_type) == 'whatsapp' ? 'block' : 'none' }}">
+                                    <div class="alert border-0 rounded-3 p-3 mb-3" style="background: #e7f8ef;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fab fa-whatsapp text-success fs-5"></i>
+                                            <div>
+                                                <p class="mb-0 fw-bold small text-success">Jawaban via WhatsApp</p>
+                                                <p class="mb-0 text-[10px] text-slate-500">Teks di bawah akan dikirim langsung ke nomor WA pemohon sebagai jawaban resmi.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <label class="form-label small fw-bold text-slate-600">Teks Jawaban WA <span class="text-danger">*</span></label>
+                                    <textarea name="wa_reply_text" id="waReplyText" rows="5"
+                                        class="form-control form-control-sm bg-slate-50 border-slate-200 rounded-3 font-monospace"
+                                        placeholder="Tuliskan jawaban yang akan dikirim via WhatsApp...">{{ old('wa_reply_text', $complaint->completion_type == 'whatsapp' ? $complaint->public_response : '') }}</textarea>
+                                    <small class="text-muted d-block mt-1 text-[10px]"><i class="fas fa-info-circle me-1"></i>Pastikan toggle notifikasi WA di bawah dalam keadaan aktif agar pesan terkirim.</small>
                                 </div>
 
                                 {{-- Physical: Pickup Info --}}
@@ -309,6 +343,22 @@
                                             class="form-control form-control-sm bg-slate-50 border-slate-200 rounded-3"
                                             placeholder="Contoh: Bawa KTP asli, Jam operasional 08:00-14:00">{{ old('pickup_notes', $complaint->pickup_notes) }}</textarea>
                                     </div>
+                                </div>
+                            </div>
+
+                            {{-- WhatsApp Notification Toggle --}}
+                            <div class="mb-4 d-flex align-items-center justify-content-between p-3 bg-slate-50 border border-slate-200 rounded-3 shadow-sm">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="icon-box icon-box-emerald xs bg-emerald-100 text-emerald-600 rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-slate-700 small">Kirim Notifikasi WA</h6>
+                                        <p class="mb-0 text-[10px] text-slate-500">Beritahu warga pemohon pembaruan ini</p>
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch m-0 d-flex align-items-center">
+                                    <input class="form-check-input mt-0" type="checkbox" name="send_whatsapp_notification" value="1" id="sendWaToggle" checked style="width: 2.5em; height: 1.25em; cursor: pointer;">
                                 </div>
                             </div>
 
@@ -388,20 +438,46 @@
 
     <script>
         // Toggle completion sections
-        document.getElementById('completionType')?.addEventListener('change', function() {
-            const digitalSection = document.getElementById('digitalSection');
+        const statusSelect = document.querySelector('select[name="status"]');
+        const completionSelect = document.getElementById('completionType');
+        const pdfInput = document.querySelector('input[name="result_file"]');
+        const pdfRequiredMark = document.getElementById('pdfRequiredMark');
+        const waReplyText = document.getElementById('waReplyText');
+        const hasExistingPdf = {!! $complaint->result_file_path ? 'true' : 'false' !!};
+
+        function checkRequirements() {
+            const isSelesai = statusSelect.value === 'Selesai';
+            const completionVal = completionSelect?.value;
+
+            const digitalSection  = document.getElementById('digitalSection');
             const physicalSection = document.getElementById('physicalSection');
-            
-            if (this.value === 'digital') {
+            const whatsappSection = document.getElementById('whatsappSection');
+
+            // Hide all sections first
+            digitalSection.style.display  = 'none';
+            physicalSection.style.display = 'none';
+            whatsappSection.style.display = 'none';
+            pdfInput.removeAttribute('required');
+            if (pdfRequiredMark) pdfRequiredMark.style.display = 'none';
+            if (waReplyText) waReplyText.removeAttribute('required');
+
+            if (completionVal === 'digital') {
                 digitalSection.style.display = 'block';
-                physicalSection.style.display = 'none';
-            } else if (this.value === 'physical') {
-                digitalSection.style.display = 'none';
+                // Require PDF if Selesai + no existing PDF
+                if (isSelesai && !hasExistingPdf) {
+                    pdfInput.setAttribute('required', 'required');
+                    if (pdfRequiredMark) pdfRequiredMark.style.display = 'inline';
+                }
+            } else if (completionVal === 'physical') {
                 physicalSection.style.display = 'block';
-            } else {
-                digitalSection.style.display = 'none';
-                physicalSection.style.display = 'none';
+            } else if (completionVal === 'whatsapp') {
+                whatsappSection.style.display = 'block';
+                if (waReplyText) waReplyText.setAttribute('required', 'required');
             }
-        });
+        }
+
+        completionSelect?.addEventListener('change', checkRequirements);
+        statusSelect?.addEventListener('change', checkRequirements);
+        checkRequirements(); // run once on load
     </script>
 @endsection

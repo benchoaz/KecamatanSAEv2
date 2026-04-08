@@ -35,6 +35,8 @@ class AppProfile extends Model
         'instagram_url',
         'youtube_url',
         'x_url',
+        'leader_name',
+        'leader_title',
         'office_hours_mon_thu',
         'office_hours_fri',
         'map_latitude',

@@ -16,14 +16,18 @@ RUN apk add --no-cache \
     libzip-dev \
     zip \
     oniguruma-dev \
-    nodejs \
     npm \
     mysql-client \
-    imagemagick
+    imagemagick \
+    sqlite-dev \
+    icu-dev \
+    freetype-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    $PHPIZE_DEPS
 
 # Install PHP extensions
-RUN docker-php-ext-configure zip --with-libzip \
-    && docker-php-ext-install -j$(nproc) \
+RUN docker-php-ext-install -j$(nproc) \
     pdo \
     pdo_mysql \
     pdo_sqlite \
@@ -60,7 +64,7 @@ WORKDIR /var/www
 
 # Copy composer files first for better layer caching
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
 # Copy application code
 COPY . .
@@ -82,7 +86,6 @@ COPY --from=builder /var/www/public ./public
 COPY --from=builder /var/www/resources ./resources
 COPY --from=builder /var/www/routes ./routes
 COPY --from=builder /var/www/storage ./storage
-COPY --from=builder /var/www/.env ./
 
 # Create symbolic links for storage
 RUN mkdir -p storage/framework/{cache,sessions,views} \

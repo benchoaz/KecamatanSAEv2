@@ -369,8 +369,19 @@
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <label class="form-label text-slate-600 small fw-bold">Nama /
-                                                                Jabatan (Alt Text)</label>
+                                                            <label class="form-label text-slate-600 small fw-bold">Nama Pimpinan</label>
+                                                            <input type="text" name="leader_name"
+                                                                value="{{ old('leader_name', $profile->leader_name) }}"
+                                                                class="form-control bg-slate-50 border-slate-200 rounded-3 text-sm mb-3"
+                                                                placeholder="Contoh: Bpk. H. Ahmad Fauzi">
+
+                                                            <label class="form-label text-slate-600 small fw-bold">Jabatan / Gelar</label>
+                                                            <input type="text" name="leader_title"
+                                                                value="{{ old('leader_title', $profile->leader_title) }}"
+                                                                class="form-control bg-slate-50 border-slate-200 rounded-3 text-sm mb-3"
+                                                                placeholder="Contoh: Camat {{ $profile->region_name ?? 'Wilayah' }}">
+
+                                                            <label class="form-label text-slate-600 small fw-bold">Keterangan Foto (Alt Text)</label>
                                                             <input type="text" name="hero_image_alt"
                                                                 value="{{ old('hero_image_alt', $profile->hero_image_alt) }}"
                                                                 class="form-control bg-slate-50 border-slate-200 rounded-3 text-sm"

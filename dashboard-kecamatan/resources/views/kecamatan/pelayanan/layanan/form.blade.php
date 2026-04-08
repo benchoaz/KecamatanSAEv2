@@ -196,6 +196,30 @@
                                     </select>
                                 </div>
 
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" name="is_popular" value="1" id="isPopularSwitch" {{ old('is_popular', $layanan->is_popular ?? false) ? 'checked' : '' }}>
+                                        <label class="form-check-label text-slate-700 fw-bold small uppercase tracking-wider ms-2" for="isPopularSwitch">
+                                            Populer / Hero Overlay
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label text-slate-700 fw-bold small uppercase tracking-wider">Tipe Aksi Link</label>
+                                    <select name="link_type" id="linkTypeSelect" class="form-select border-slate-200 bg-slate-50 rounded-3">
+                                        <option value="form" {{ old('link_type', $layanan->link_type ?? 'form') == 'form' ? 'selected' : '' }}>Standard (Form Pendaftaran)</option>
+                                        <option value="loker" {{ old('link_type', $layanan->link_type ?? 'form') == 'loker' ? 'selected' : '' }}>Loker (Buka Loker)</option>
+                                        <option value="umkm" {{ old('link_type', $layanan->link_type ?? 'form') == 'umkm' ? 'selected' : '' }}>UMKM (Modal Bantuan)</option>
+                                        <option value="external" {{ old('link_type', $layanan->link_type ?? 'form') == 'external' ? 'selected' : '' }}>Custom Link / URL</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6" id="customLinkContainer" style="{{ old('link_type', $layanan->link_type ?? 'form') == 'external' ? '' : 'display: none;' }}">
+                                    <label class="form-label text-slate-700 fw-bold small uppercase tracking-wider">URL Kustom</label>
+                                    <input type="text" name="custom_link" value="{{ old('custom_link', $layanan->custom_link ?? '') }}" class="form-control border-slate-200 bg-slate-50 rounded-3" placeholder="https://...">
+                                </div>
+
                                 <div class="col-12 mt-4 pt-3 border-top border-slate-50">
                                     <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm fw-bold">
                                         {{ $isEdit ? 'Simpan Perubahan' : 'Terbitkan Layanan' }}
@@ -306,6 +330,18 @@
                     this.closest('.attachment-row').remove();
                     checkEmptyRequirements();
                 });
+            });
+
+            // Toggle custom link input
+            const linkTypeSelect = document.getElementById('linkTypeSelect');
+            const customLinkContainer = document.getElementById('customLinkContainer');
+
+            linkTypeSelect.addEventListener('change', function () {
+                if (this.value === 'external') {
+                    customLinkContainer.style.display = 'block';
+                } else {
+                    customLinkContainer.style.display = 'none';
+                }
             });
 
             function checkEmptyRequirements() {

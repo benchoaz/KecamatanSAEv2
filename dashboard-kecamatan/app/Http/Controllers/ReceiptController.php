@@ -18,9 +18,9 @@ class ReceiptController extends Controller
             ->with(['desa', 'handler'])
             ->firstOrFail();
 
-        // Generate QR Code as base64
+        // Generate QR Code as SVG instead of PNG (removes imagick dependency)
         $trackingUrl = route('public.tracking') . '?q=' . $service->uuid;
-        $qrCode = base64_encode(QrCode::format('png')
+        $qrCode = base64_encode(QrCode::format('svg')
             ->size(200)
             ->errorCorrection('H')
             ->generate($trackingUrl));
@@ -30,7 +30,7 @@ class ReceiptController extends Controller
             'service' => $service,
             'qrCode' => $qrCode,
             'trackingUrl' => $trackingUrl,
-            'appProfile' => app('App\Services\ApplicationProfileService'),
+            'appProfile' => appProfile(),
         ];
 
         // Generate PDF
@@ -53,7 +53,7 @@ class ReceiptController extends Controller
             ->firstOrFail();
 
         $trackingUrl = route('public.tracking') . '?q=' . $service->uuid;
-        $qrCode = base64_encode(QrCode::format('png')
+        $qrCode = base64_encode(QrCode::format('svg')
             ->size(200)
             ->errorCorrection('H')
             ->generate($trackingUrl));
@@ -62,7 +62,7 @@ class ReceiptController extends Controller
             'service' => $service,
             'qrCode' => $qrCode,
             'trackingUrl' => $trackingUrl,
-            'appProfile' => app('App\Services\ApplicationProfileService'),
+            'appProfile' => appProfile(),
         ];
 
         return view('receipts.service-receipt', $data);
@@ -76,7 +76,7 @@ class ReceiptController extends Controller
         $service = PublicService::where('uuid', $uuid)->firstOrFail();
         $trackingUrl = route('public.tracking') . '?q=' . $service->uuid;
 
-        return QrCode::format('png')
+        return QrCode::format('svg')
             ->size(300)
             ->errorCorrection('H')
             ->generate($trackingUrl);

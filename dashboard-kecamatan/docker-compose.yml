@@ -4,10 +4,10 @@ services:
   # ============================================================
   db:
     image: mysql:8.0
-    container_name: dashboard-kecamatan-db
+    container_name: kecamatan-db
     restart: unless-stopped
-    ports:
-      - "3307:3306"
+    # ports:
+    #   - "3307:3306"
     environment:
       MYSQL_DATABASE: dashboard_kecamatan
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
@@ -30,10 +30,10 @@ services:
   # ============================================================
   redis:
     image: redis:7-alpine
-    container_name: dashboard-kecamatan-redis
+    container_name: kecamatan-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -53,7 +53,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: dashboard-kecamatan-app
+    container_name: kecamatan-app
     restart: unless-stopped
     working_dir: /var/www
     env_file: .env
@@ -61,6 +61,8 @@ services:
       - PHP_OPCACHE_ENABLE=1
       - PHP_OPCACHE_MEMORY=256
       - PHP_OPCACHE_MAX_ACCELERATED_FILES=10000
+      - SESSION_DRIVER=file
+      - SESSION_DOMAIN=null
     volumes:
       - ./:/var/www
     networks:
@@ -81,18 +83,18 @@ services:
   # ============================================================
   nginx:
     image: nginx:alpine
-    container_name: dashboard-kecamatan-nginx
+    container_name: kecamatan-nginx
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "6060:80"
+      - "8000:80"
     volumes:
-      - ./public:/var/www/public:ro
+      - ./:/var/www:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
       - nginx_cache:/var/cache/nginx
     networks:
-      - app-network
+      app-network:
+        aliases:
+          - dashboard-kecamatan-nginx
     depends_on:
       - app
     healthcheck:
@@ -106,22 +108,24 @@ services:
   # ============================================================
   n8n:
     image: n8nio/n8n:latest
-    container_name: dashboard-n8n
+    container_name: kecamatan-n8n
     restart: unless-stopped
     ports:
-      - "5679:5678"
+      - "8085:5678"
     environment:
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_ALLOW_ENV_IN_EXPRESSIONS=true
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - N8N_RUNNERS_TASK_ENV_ALLOW_LIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
       - N8N_ENV_ALLOWLIST=WAHA_API_KEY,DASHBOARD_API_TOKEN,WHATSAPP_API_TOKEN,DASHBOARD_URL,PUBLIC_BASE_URL
+      - N8N_REDIS_HOST=redis
+      - N8N_REDIS_PORT=6379
       - WAHA_API_KEY=${WAHA_API_KEY}
       - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
       - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
-      - DASHBOARD_URL=http://dashboard-kecamatan-nginx
+      - DASHBOARD_URL=http://kecamatan-nginx
       - PUBLIC_BASE_URL=${APP_URL}
-      - EXECUTIONS_MODE=queue
+      - EXECUTIONS_MODE=regular
       - EXECUTIONS_DATA_SAVE_ON_ERROR=all
       - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
     volumes:
@@ -147,7 +151,7 @@ services:
       - WAHA_DASHBOARD_PASSWORD=${WAHA_API_KEY}
       - WHATSAPP_START_SESSION=default
       - WHATSAPP_RESTART_ALL_SESSIONS=true
-      - WHATSAPP_HOOK_URL=http://dashboard-n8n:5678/webhook/whatsapp-primary
+      - WHATSAPP_HOOK_URL=http://kecamatan-n8n:5678/webhook/whatsapp-primary
       - WAHA_SESSION_DATA_SAVE=true
     volumes:
       - waha_sessions:/app/.sessions
@@ -158,6 +162,7 @@ services:
 
 networks:
   app-network:
+    name: kecamatan-network
     driver: bridge
 
 volumes:

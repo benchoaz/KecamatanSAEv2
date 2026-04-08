@@ -63,6 +63,10 @@
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Swiper.js (Modern Slider) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
     <style>
         body {
@@ -172,273 +176,367 @@
     @include('layouts.partials.public.navbar')
     @include('layouts.partials.public.announcements')
 
-    <!-- Hero Section Settings Integration -->
-    @if($heroBg)
-        <style>
-            .hero-dynamic-bg {
-                position: absolute;
-                inset: 0;
-                background-image: url('{{ $heroBg }}');
-                background-size: cover;
-                background-position: center;
-                /* Logic: 14% Transparansi = 86% Intensity */
-                opacity:
-                    {{ 1 - (($bgOpacity ?? 0) / 100) }}
-                ;
-                filter: blur({{ $bgBlur ?? 0 }}px);
-                z-index: 10;
-                /* Fade effect: Scenery strictly on the left (behind text), fully clean on the right */
-                -webkit-mask-image: linear-gradient(to right, black 5%, rgba(0, 0, 0, 0.4) 35%, transparent 55%);
-                mask-image: linear-gradient(to right, black 5%, rgba(0, 0, 0, 0.4) 35%, transparent 55%);
+    <!-- Hero Section Styles -->
+    <style>
+        .hero-swiper {
+            width: 100%;
+            height: 75vh;
+            min-height: 550px;
+        }
+
+        .hero-slide {
+            position: relative;
+            overflow: hidden;
+            background: white;
+        }
+
+        .slide-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            z-index: 10;
+        }
+
+        .slide-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 30%, rgba(255, 255, 255, 0.2) 60%, transparent 100%);
+            z-index: 15;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 20;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding-top: 5rem; /* Default mobile padding */
+        }
+
+        @media (min-width: 1024px) {
+            .hero-content {
+                padding-top: 2.5rem; /* Desktop padding adjustment */
             }
+        }
 
-            .hero-text-reveal {
-                animation: heroFocusReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-                animation-delay: 0.8s;
-            }
+        .text-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
-            @keyframes heroFocusReveal {
-                from {
-                    opacity: 0;
-                    filter: blur(10px);
-                }
+        .swiper-slide-active .text-reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-                to {
-                    opacity: 1;
-                    filter: blur(0);
-                }
-            }
-        </style>
-    @endif
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+        .delay-400 { transition-delay: 400ms; }
 
-    <!-- Hero Section -->
-    <div class="hero min-h-[75vh] relative overflow-hidden bg-white">
-        <!-- Layer 0: Base Body Background -->
-        <div class="absolute inset-0 bg-gradient-to-br from-[#e0f7f6] via-white to-white z-0"></div>
+        /* Custom Swiper Navigation */
+        .swiper-button-next:after, .swiper-button-prev:after {
+            font-size: 20px !important;
+            font-weight: 900;
+        }
+        .swiper-button-next, .swiper-button-prev {
+            width: 50px !important;
+            height: 50px !important;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            border-radius: 50%;
+            color: #0d9488 !important;
+            transition: all 0.3s;
+        }
+        .swiper-pagination-bullet-active {
+            background: #0d9488 !important;
+        }
+    </style>
 
-        @if($heroBg)
-            <!-- Layer 1: Dynamic Scenery (Centered) -->
-            <div class="hero-dynamic-bg"></div>
-            <!-- Extra Overlay for Emotional Connection & Context -->
-            <div class="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent z-15"></div>
-        @else
-            <!-- Fallback Scenery Backdrop -->
-            <div class="absolute inset-0 z-10 opacity-15"
-                style="background-image: url('https://images.unsplash.com/photo-1596328330776-6d9b4b0e503b?q=80&w=1600&auto=format&fit=crop'); background-size: cover; background-position: center;">
-            </div>
-            <div class="absolute inset-0 bg-gradient-to-r from-white via-white/40 to-transparent z-15"></div>
-        @endif
+    <!-- Dynamic Hero Swiper -->
+    <div class="swiper hero-swiper">
+        <div class="swiper-wrapper">
+            
+            <!-- Slide 1: Welcome & WhatsApp Call Center -->
+            <div class="swiper-slide hero-slide">
+                <div class="slide-bg opacity-85" style="background-image: url('{{ $heroBg ?? 'https://images.unsplash.com/photo-1596328330776-6d9b4b0e503b?q=80&w=1600' }}');"></div>
+                <div class="slide-overlay"></div>
+                
+                <div class="container mx-auto px-6 hero-content">
+                    <div class="flex flex-col lg:flex-row items-center w-full gap-12">
+                        <!-- Left: Content -->
+                        <div class="w-full lg:w-3/5 text-left">
+                            <div class="text-reveal delay-100 inline-flex items-center gap-2 bg-[#dcfce7] text-[#166534] px-4 py-1.5 rounded-full mb-6 shadow-sm border border-emerald-100">
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                <span class="text-xs font-bold uppercase tracking-wide">Ngobrol SAE Bareng {{ appProfile()->region_level }}</span>
+                            </div>
+                            
+                            <h1 class="text-reveal delay-200 text-5xl md:text-7xl font-black text-[#1e293b] mb-6 leading-[1.1] tracking-tight">
+                                Solusi Cepat<br>
+                                Urusan <span class="text-[#0d9488]">Layanan Publik</span>
+                            </h1>
+                            
+                            <p class="text-reveal delay-300 text-lg md:text-xl text-[#475569] mb-10 leading-relaxed font-medium max-w-xl">
+                                Akses berbagai layanan publik secara digital, cepat, dan transparan. Mudahkan urusan administrasi Anda dari mana saja.
+                            </p>
 
-        <!-- Layer 2: Decorative Blobs -->
-        <div
-            class="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-50/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 z-15 opacity-60">
-        </div>
+                            <div class="text-reveal delay-400">
+                                <a href="#layanan" 
+                                   class="btn bg-[#0d9488] hover:bg-[#0b7a70] text-white border-0 rounded-2xl px-12 h-16 font-black shadow-xl shadow-teal-200 transition-all flex items-center gap-2">
+                                    Mulai Layanan Digital <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
 
-        <div class="container mx-auto px-6 relative z-20 pt-20 pb-44 lg:pb-60">
-            <div class="flex flex-col lg:flex-row items-center gap-12">
-                <!-- Left: Content -->
-                <div class="w-full lg:w-1/2 text-left hero-text-reveal">
-                    <div
-                        class="inline-flex items-center gap-2 bg-[#dcfce7] text-[#166534] px-4 py-1.5 rounded-full mb-6 shadow-sm border border-emerald-100">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                        <span class="text-xs font-bold uppercase tracking-wide">Sistem Administrasi Terpadu untuk
-                            Masyarakat</span>
-                    </div>
-
-
-                    <h1 class="text-5xl md:text-7xl font-black text-[#1e293b] mb-6 leading-[1.1] tracking-tight"
-                        style="text-shadow: 0 1px 2px rgba(255,255,255,0.5);">
-                        {{ appProfile()->full_region_name }}<br>
-                        <span class="text-[#0f766e]">{{ $appProfile->region_parent ?? 'Kabupaten Probolinggo' }}</span>
-                    </h1>
-
-                    <p class="text-lg md:text-xl text-[#475569] mb-6 leading-relaxed font-medium max-w-xl"
-                        style="text-shadow: 0 1px 1px rgba(255,255,255,0.8);">
-                        Website resmi <strong>{{ appProfile()->region_level }} {{ appProfile()->region_name }}</strong>
-                        yang menyediakan informasi
-                        <strong>layanan pemerintahan</strong>, berita {{ appProfile()->region_name }}, peta <strong>desa
-                            di {{ appProfile()->region_level }}
-                            {{ appProfile()->region_name }}</strong>, serta etalase <strong>UMKM warga</strong>.
-                    </p>
-
-                    <p class="text-base md:text-lg text-[#64748b] mb-10 leading-relaxed"
-                        style="text-shadow: 0 1px 1px rgba(255,255,255,0.8);">
-                        Sampaikan pengaduan, ajukan layanan, atau lacak status berkas Anda dengan mudah dan transparan.
-                    </p>
-
-                    {{-- Chatbox button hidden - can be re-enabled later --}}
-                    {{-- <div class="flex flex-wrap gap-4">
-                        <button onclick="document.getElementById('publicServiceModal').showModal()"
-                            class="btn bg-[#0d9488] hover:bg-[#0f766e] text-white border-0 rounded-2xl px-10 font-bold shadow-xl transition-all h-14">
-                            Sampaikan Layanan / Pengaduan
-                        </button>
-                    </div> --}}
-                    @if(appProfile()->whatsapp_bot_number)
-                        @php
-                            $rawWaNum = preg_replace('/[^0-9]/', '', appProfile()->whatsapp_bot_number);
-                            $waLink = str_starts_with($rawWaNum, '0') ? '62' . substr($rawWaNum, 1) : $rawWaNum;
-                        @endphp
-                        <a href="https://wa.me/{{ $waLink }}" target="_blank"
-                            class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-100 shadow-sm block hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="w-14 h-14 bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-2xl flex items-center justify-center shadow-lg">
-                                    <i class="fab fa-whatsapp text-white text-3xl"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">Ngobrol SAE
-                                        Bareng Kecamatan</p>
-                                    <p class="text-2xl font-black text-slate-800 tracking-wide">
-                                        @php
-                                            $botNum = appProfile()->whatsapp_bot_number;
-                                            // Display as 08xxx format for Indonesian users
-                                            if (str_starts_with($botNum, '62')) {
-                                                $botNum = '0' . substr($botNum, 2);
-                                            }
-                                        @endphp
-                                        {{ $botNum }}
-                                    </p>
+                        <!-- Right: Visual Balance (Regional Leader Photo) -->
+                        <div class="w-full lg:w-2/5 flex justify-center lg:justify-end relative order-first lg:order-last mb-6 lg:mb-0">
+                            <div class="text-reveal delay-300 relative group scale-90 md:scale-95 lg:scale-100">
+                                <div class="absolute -inset-10 bg-emerald-100 rounded-full blur-3xl opacity-50 animate-pulse"></div>
+                                <div class="relative bg-white/20 backdrop-blur-md p-2.5 md:p-4 rounded-[2.5rem] md:rounded-[3.5rem] border border-white/50 shadow-2xl transition-all duration-700 hover:rotate-2">
+                                    <div class="aspect-[4/5] w-[180px] sm:w-[240px] md:w-[280px] lg:w-[320px] rounded-[2rem] md:rounded-[3rem] overflow-hidden border-4 border-white shadow-inner bg-slate-100">
+                                        @if($appProfile->hero_image_path)
+                                            <img src="{{ asset('storage/' . $appProfile->hero_image_path) }}" 
+                                                 alt="{{ $appProfile->hero_image_alt ?? 'Pimpinan' }}"
+                                                 class="w-full h-full object-cover">
+                                        @else
+                                            <div class="w-full h-full flex items-center justify-center text-slate-300">
+                                                <i class="fas fa-user-circle text-[8rem] md:text-[10rem]"></i>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    <!-- Leader Floating Badge -->
+                                    @if($appProfile->leader_name)
+                                    <div class="absolute -bottom-6 -left-4 md:-left-6 bg-white p-4 md:p-5 rounded-[1.5rem] md:rounded-3xl shadow-xl border border-emerald-50 min-w-[200px] md:min-w-[240px] transform -rotate-3 group-hover:rotate-0 transition-transform">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-1 h-8 md:w-1.5 md:h-10 bg-emerald-500 rounded-full"></div>
+                                            <div>
+                                                <h4 class="text-slate-900 font-black text-xs md:text-sm leading-tight">{{ $appProfile->leader_name }}</h4>
+                                                <p class="text-[8px] md:text-[10px] text-emerald-600 font-bold uppercase tracking-widest mt-1">
+                                                    {{ $appProfile->leader_title ?? 'Pimpinan Wilayah' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
-                        </a>
-                    @endif
-
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Right: Visionary Leaders (Dynamic from Admin) -->
-                @if($isHeroActive)
-                    <div class="w-full lg:w-1/2 relative flex justify-center lg:justify-end gap-0">
-                        @if($heroImage)
-                            <!-- Leadership Image from Admin -->
-                            <div class="relative group">
-                                <div class="relative transition-transform duration-500 group-hover:-translate-y-2">
-                                    <img src="{{ $heroImage }}" class="max-w-full h-auto object-contain drop-shadow-2xl"
-                                        alt="{{ $heroImageAlt }}">
-                                </div>
-                            </div>
-                        @else
-                            <!-- Fallback default leaders if no image uploaded but active -->
-                            <div class="relative group mt-10">
-                                <div
-                                    class="w-64 md:w-80 h-auto overflow-hidden rounded-[2.5rem] relative transition-transform duration-500 group-hover:-translate-y-2">
-                                    <img src="https://kecamatanklasik.probolinggokab.go.id/wp-content/uploads/2024/11/Bupati-Probolinggo-Haris.png"
-                                        class="w-full h-full object-cover grayscale-0 group-hover:scale-110 transition-transform duration-700"
-                                        alt="dr. Mohammad Haris - Bupati Kabupaten Probolinggo">
-                                </div>
-                                <div
-                                    class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[85%] bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-xl border border-slate-100 text-center">
-                                    <h4 class="text-xs font-black text-slate-800 uppercase tracking-tighter">dr. Mohammad Haris
-                                    </h4>
-                                    <p class="text-[9px] font-bold text-teal-600 uppercase tracking-widest mt-0.5">Bupati</p>
-                                </div>
-                            </div>
-                            <div class="relative group -ml-12 md:-ml-20">
-                                <div
-                                    class="w-64 md:w-80 h-auto overflow-hidden rounded-[2.5rem] relative transition-transform duration-500 group-hover:-translate-y-2 delay-75">
-                                    <img src="https://kecamatanklasik.probolinggokab.go.id/wp-content/uploads/2024/11/Wakil-Bupati-Probolinggo-Fahmi.png"
-                                        class="w-full h-full object-cover grayscale-0 group-hover:scale-110 transition-transform duration-700"
-                                        alt="Fahmi AHZ - Wakil Bupati Kabupaten Probolinggo">
-                                </div>
-                                <div
-                                    class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[85%] bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-xl border border-slate-100 text-center">
-                                    <h4 class="text-xs font-black text-slate-800 uppercase tracking-tighter">Fahmi AHZ</h4>
-                                    <p class="text-[9px] font-bold text-teal-600 uppercase tracking-widest mt-0.5">Wakil Bupati
-                                    </p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                @endif
             </div>
+
+            <!-- Slide 2: Digital Public Services -->
+            <div class="swiper-slide hero-slide">
+                <div class="slide-bg opacity-70" style="background-image: url('{{ appProfile()->image_festival ? asset('storage/' . appProfile()->image_festival) : 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=1600' }}');"></div>
+                <div class="slide-overlay"></div>
+                
+                <div class="container mx-auto px-6 hero-content">
+                    <div class="flex flex-col lg:flex-row items-center w-full gap-12">
+                        <!-- Left: Content -->
+                        <div class="w-full lg:w-3/5 text-left">
+                            <div class="text-reveal delay-100 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full mb-6 shadow-sm border border-blue-100">
+                                <span class="w-2 h-2 bg-blue-500 rounded-full shadow-sm"></span>
+                                <span class="text-xs font-bold uppercase tracking-wide">Pelayanan Terpadu & Transparan</span>
+                            </div>
+                            
+                            <h1 class="text-reveal delay-200 text-5xl md:text-7xl font-black text-[#1e293b] mb-6 leading-[1.1] tracking-tight">
+                                Kemudahan<br>
+                                <span class="text-[#0369a1]">Administrasi Kita</span>
+                            </h1>
+                            
+                            <p class="text-reveal delay-300 text-lg md:text-xl text-[#475569] mb-10 leading-relaxed font-medium max-w-xl">
+                                Nikmati kemudahan mengajukan berkas secara online dari mana saja. Transparan, akuntabel, dan bebas ribet.
+                            </p>
+
+                            <div class="text-reveal delay-400 flex flex-wrap gap-4">
+                                <a href="#layanan" 
+                                   class="btn bg-[#0369a1] hover:bg-[#075985] text-white border-0 rounded-2xl px-12 h-16 font-black shadow-xl shadow-blue-200 transition-all">
+                                    Lihat Jenis Layanan <i class="fas fa-arrow-right ml-2"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Right: Visual Balance -->
+                        <div class="hidden lg:flex w-2/5 justify-end relative">
+                            <div class="text-reveal delay-300 relative">
+                                <div class="absolute -inset-10 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+                                <div class="relative bg-white/20 backdrop-blur-sm p-12 rounded-[3rem] border border-white/30 shadow-2xl -rotate-3 hover:rotate-0 transition-all duration-700">
+                                    <i class="fas fa-file-invoice text-blue-600 text-[150px] drop-shadow-2xl"></i>
+                                    <div class="absolute -bottom-4 -left-4 bg-white p-4 rounded-2xl shadow-xl border border-blue-50">
+                                        <i class="fas fa-check-circle text-emerald-500 text-2xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: Regional Potential -->
+            <div class="swiper-slide hero-slide">
+                <div class="slide-bg opacity-70" style="background-image: url('{{ appProfile()->image_pariwisata ? asset('storage/' . appProfile()->image_pariwisata) : 'https://images.unsplash.com/photo-1596328330776-6d9b4b0e503b?q=80&w=1600' }}');"></div>
+                <div class="slide-overlay"></div>
+                
+                <div class="container mx-auto px-6 hero-content">
+                    <div class="flex flex-col lg:flex-row items-center w-full gap-12">
+                        <!-- Left: Content -->
+                        <div class="w-full lg:w-3/5 text-left">
+                            <div class="text-reveal delay-100 inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full mb-6 shadow-sm border border-amber-100">
+                                <span class="w-2 h-2 bg-amber-500 rounded-full shadow-sm"></span>
+                                <span class="text-xs font-bold uppercase tracking-wide">Potensi & Ekonomi Lokal</span>
+                            </div>
+                            
+                            <h1 class="text-reveal delay-200 text-5xl md:text-7xl font-black text-[#1e293b] mb-6 leading-[1.1] tracking-tight">
+                                Pesona & Budaya<br>
+                                {{ appProfile()->region_name }}
+                            </h1>
+                            
+                            <p class="text-reveal delay-300 text-lg md:text-xl text-[#475569] mb-10 leading-relaxed font-medium max-w-xl">
+                                Temukan kekayaan alam, budaya, dan produk UMKM unggulan yang membanggakan dari setiap desa di wilayah kami.
+                            </p>
+
+                            <div class="text-reveal delay-400 flex flex-wrap gap-4">
+                                <a href="{{ route('landing.wilayah') }}" 
+                                   class="btn bg-amber-600 hover:bg-amber-700 text-white border-0 rounded-2xl px-12 h-16 font-black shadow-xl shadow-amber-200 transition-all">
+                                    Eksplorasi Wilayah <i class="fas fa-mountain ml-2"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Right: Visual Balance -->
+                        <div class="hidden lg:flex w-2/5 justify-end relative">
+                            <div class="text-reveal delay-300 relative">
+                                <div class="absolute -inset-10 bg-amber-100 rounded-full blur-3xl opacity-50"></div>
+                                <div class="relative bg-white/20 backdrop-blur-sm p-12 rounded-[3rem] border border-white/30 shadow-2xl rotate-6 hover:rotate-0 transition-all duration-700">
+                                    <i class="fas fa-map-marked-alt text-amber-600 text-[150px] drop-shadow-2xl"></i>
+                                    <div class="absolute -top-4 -left-4 bg-white p-4 rounded-2xl shadow-xl border border-amber-50">
+                                        <i class="fas fa-heart text-red-500 text-2xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <!-- Elegant Wave Divider -->
-        <div class="absolute bottom-0 left-0 w-full leading-[0] z-10 translate-y-px">
-            <svg class="relative block w-full h-[50px]" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path
-                    d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5,73.84-4.36,147.54,16.88,218.32,35.26,69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113,2,1200,34.19V0Z"
-                    fill="#f8fafc" opacity=".5"></path>
-                <path
-                    d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5V0Z"
-                    fill="#f1f5f9"></path>
-            </svg>
-        </div>
+
+        <!-- Add Pagination -->
+        <div class="swiper-pagination"></div>
+        <!-- Add Arrows -->
+        <div class="swiper-button-next hidden lg:flex"></div>
+        <div class="swiper-button-prev hidden lg:flex"></div>
     </div>
 
-    <!-- Section: Layanan Paling Dicari (NEW) -->
-    <div class="relative z-30 -mt-20">
+
+    <!-- Section: Pusat Layanan Digital (Unified) -->
+    <div class="relative z-30 -mt-24 lg:-mt-32">
         <div class="container mx-auto px-6">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div onclick="openSubmissionModal('Kependudukan', 'KTP, KK, Akte Kelahiran')"
-                    class="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] shadow-xl border border-white hover:scale-105 transition-all cursor-pointer group">
-                    <div
-                        class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-id-card text-xl"></i>
+            <div class="max-w-4xl mx-auto">
+                <!-- Group Header -->
+                <div class="flex flex-col items-center mb-8 text-center animate-fade-in">
+                    <div class="inline-flex items-center gap-2 bg-white/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/50 shadow-sm mb-4">
+                        <span class="w-1.5 h-1.5 bg-teal-500 rounded-full"></span>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-teal-700">Pusat Layanan Digital</span>
                     </div>
-                    <h3 class="font-black text-slate-800 text-sm mb-1">Kependudukan</h3>
-                    <p class="text-[10px] text-slate-500 font-medium">KTP, KK, Akte & Surat Pindah</p>
                 </div>
 
-                <div onclick="window.location.href='{{ route('public.loker.create') }}'"
-                    class="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] shadow-xl border border-white hover:scale-105 transition-all cursor-pointer group">
-                    <div
-                        class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-bullhorn text-xl"></i>
-                    </div>
-                    <h3 class="font-black text-slate-800 text-sm mb-1">Loker & Jasa Warga</h3>
-                    <p class="text-[10px] text-slate-500 font-medium">Buka Info Kerja Rakyat</p>
-                </div>
-
-                <div onclick="openSubmissionModal('Bantuan UMKM', '1. Foto KTP (Untuk Verifikasi), 2. Foto Produk atau Tempat Usaha')"
-                    class="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] shadow-xl border border-white hover:scale-105 transition-all cursor-pointer group">
-                    <div
-                        class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-store-alt text-xl"></i>
-                    </div>
-                    <h3 class="font-black text-slate-800 text-sm mb-1">Bantuan Daftar UMKM</h3>
-                    <p class="text-[10px] text-slate-500 font-medium">Dibantu Kecamatan Gratis</p>
-                </div>
-
-                <div onclick="openBotWithQuery('Jam Layanan')"
-                    class="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] shadow-xl border border-white hover:scale-105 transition-all cursor-pointer group">
-                    <div
-                        class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-clock text-xl"></i>
-                    </div>
-                    <h3 class="font-black text-slate-800 text-sm mb-1">Jam Operasional</h3>
-                    <p class="text-[10px] text-slate-500 font-medium">Cek jadwal pelayanan hari ini</p>
-                </div>
-
-                <div onclick="document.getElementById('complaintModal').showModal()"
-                    class="bg-white/90 backdrop-blur-xl p-6 rounded-[2rem] shadow-xl border border-rose-100 hover:scale-105 transition-all cursor-pointer group">
-                    <div
-                        class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-                        <i class="fas fa-exclamation-circle text-xl"></i>
-                    </div>
-                    <h3 class="font-black text-slate-800 text-sm mb-1">Pengaduan</h3>
-                    <p class="text-[10px] text-slate-500 font-medium">Sampaikan Keluhan Anda</p>
-                </div>
-            </div>
-
-            <!-- Section: Lacak Berkas (NEW) -->
-            <div class="mt-8 max-w-2xl mx-auto">
-                <div
-                    class="bg-white/80 backdrop-blur-xl p-2 rounded-3xl shadow-xl border border-white flex flex-col md:flex-row items-center gap-2">
-                    <div class="flex-grow flex items-center px-4 gap-3 w-full">
-                        <i class="fas fa-search text-teal-500"></i>
+                <!-- Lacak Berkas (Search Tool) -->
+                <div class="bg-white/80 backdrop-blur-2xl p-2 rounded-[2.5rem] shadow-2xl border border-white flex flex-col md:flex-row items-center gap-2 mb-8">
+                    <div class="flex-grow flex items-center px-6 gap-3 w-full">
+                        <i class="fas fa-search text-teal-500 text-xl"></i>
                         <input type="text" id="trackingInput" name="q"
-                            placeholder="Cek Status Berkas? Masukkan No. WA atau ID..."
-                            class="bg-transparent border-none focus:ring-0 text-sm font-medium w-full text-slate-700 h-12">
+                            placeholder="Mau Cek Status Berkas? Masukkan No. WhatsApp atau ID Permohonan..."
+                            class="bg-transparent border-none focus:ring-0 text-base font-bold w-full text-slate-800 h-14">
                     </div>
                     <button onclick="handleTracking()"
-                        class="btn bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-2xl px-8 h-12 w-full md:w-auto font-black shadow-lg">
+                        class="btn bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-[1.8rem] px-10 h-14 w-full md:w-auto font-black shadow-xl shadow-teal-900/10">
                         Lacak Berkas
                     </button>
                 </div>
-                <p class="text-center text-[10px] text-slate-400 mt-3 font-medium italic">
-                    <i class="fas fa-info-circle mr-1"></i> Masukkan nomor WhatsApp yang digunakan saat mendaftar untuk
-                    melihat update terbaru.
+
+                <!-- Section: Layanan Paling Dicari (Grid) -->
+                <div class="grid grid-cols-2 md:grid-cols-{{ min(4, count($featuredLayanan) > 0 ? count($featuredLayanan) : 1) }} gap-5">
+                    @forelse($featuredLayanan as $svc)
+                        @php
+                            $bgColor = $svc->warna_bg ?? 'bg-white/90';
+                            $textColor = $svc->warna_text ?? 'text-slate-800';
+                            $iconBg = str_replace('bg-', 'bg-', $svc->warna_bg); // Simple fallback
+                            if (str_contains($iconBg, '-50')) {
+                                $iconBg = str_replace('-50', '-100', $iconBg);
+                            } else {
+                                $iconBg = 'bg-slate-100';
+                            }
+                            
+                            $onClick = "openSubmissionModal('{$svc->nama_layanan}', '{$svc->deskripsi_syarat}', " . json_encode($svc->attachment_requirements ?? []) . ")";
+                            
+                            if ($svc->link_type === 'loker') {
+                                $onClick = "window.location.href='" . route('public.loker.create') . "'";
+                            } elseif ($svc->link_type === 'umkm') {
+                                // Specific UMKM modal call if different
+                                $onClick = "openSubmissionModal('{$svc->nama_layanan}', '{$svc->deskripsi_syarat}', " . json_encode($svc->attachment_requirements ?? []) . ")";
+                            } elseif ($svc->link_type === 'external') {
+                                $onClick = "window.location.href='{$svc->custom_link}'";
+                            }
+                        @endphp
+                        <div onclick="{!! $onClick !!}"
+                            class="bg-white/90 backdrop-blur-xl p-6 rounded-[2.5rem] shadow-lg border border-white hover:scale-105 transition-all cursor-pointer group">
+                            <div
+                                class="w-14 h-14 {{ $svc->warna_bg ?? 'bg-emerald-50' }} {{ $svc->warna_text ?? 'text-emerald-600' }} rounded-2xl flex items-center justify-center mb-4 group-hover:{{ str_replace('text-', 'bg-', $svc->warna_text ?? 'text-emerald-600') }} group-hover:text-white transition-all duration-500 shadow-sm">
+                                <i class="fas {{ $svc->ikon ?? 'fa-star' }} text-2xl"></i>
+                            </div>
+                            <h3 class="font-black text-slate-800 text-sm mb-1 line-clamp-1 group-hover:text-teal-600 transition-colors">{{ $svc->nama_layanan }}</h3>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight line-clamp-1">{{ $svc->estimasi_waktu ?? 'Akses Cepat' }}</p>
+                        </div>
+                    @empty
+                        <div class="col-span-full text-center py-12 bg-white/40 backdrop-blur-md rounded-[3rem] border border-white/50 border-dashed">
+                            <p class="text-slate-400 text-sm font-black italic">Belum ada layanan populer yang diatur.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Subtle Help Text -->
+                <p class="text-center text-[10px] text-slate-400 mt-8 font-black uppercase tracking-widest opacity-60">
+                    <i class="fas fa-info-circle mr-2"></i> Akses data Anda menggunakan nomor yang terdaftar
                 </p>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Section: WhatsApp Slim Banner (NEW) -->
+    <div class="container mx-auto px-6 relative z-10 mt-8 mb-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-1 rounded-[2rem] shadow-xl shadow-emerald-900/10 transition-transform hover:scale-[1.01]">
+                <div class="bg-white/10 backdrop-blur-md rounded-[1.9rem] px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white text-2xl animate-pulse">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-black text-sm md:text-base leading-tight">Butuh Bantuan Cepat?</h4>
+                            <p class="text-white/80 text-[10px] font-bold uppercase tracking-wider">Konsultasi Layanan via Chatbot 24/7</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                        <div class="flex items-center gap-3 text-center sm:text-right">
+                            <div class="block">
+                                <p class="text-white/60 text-[9px] font-black uppercase tracking-widest leading-none mb-1">WhatsApp Center</p>
+                                <p class="text-white font-black text-[13px]">{{ appProfile()->whatsapp_bot_number ?? '08xxxxxxxxxx' }}</p>
+                            </div>
+                        </div>
+                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', appProfile()->whatsapp_bot_number) }}" 
+                           target="_blank"
+                           class="btn bg-white hover:bg-emerald-50 text-emerald-700 border-0 rounded-2xl px-8 h-12 font-black transition-all flex items-center gap-2 w-full sm:w-auto justify-center">
+                            Mulai Chat <i class="fas fa-paper-plane text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -550,261 +648,6 @@
         </div>
     </div>
 
-    <!-- Section: Layanan Pengaduan Modern (Elegant & Integrated) -->
-    <div id="pengaduan" class="relative py-24 overflow-hidden">
-        <!-- Background with Gradient -->
-        <div class="absolute inset-0 z-0 pointer-events-none">
-            <div class="absolute inset-0 bg-gradient-to-br from-slate-50 via-teal-50/30 to-rose-50/20"></div>
-            <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-teal-100/20 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 w-1/3 h-1/2 bg-gradient-to-t from-rose-100/10 to-transparent"></div>
-            <!-- Decorative circles -->
-            <div class="absolute top-20 -right-20 w-80 h-80 bg-teal-200/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-20 -left-20 w-96 h-96 bg-rose-200/10 rounded-full blur-3xl"></div>
-        </div>
-
-        <div class="container mx-auto px-6 relative z-10">
-            <div
-                class="bg-white/70 backdrop-blur-xl rounded-[3rem] p-8 md:p-12 border border-white shadow-2xl overflow-hidden relative">
-                <!-- Decorative Grid Pattern -->
-                <div
-                    class="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#0f766e_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none">
-                </div>
-
-                <div class="flex flex-col lg:flex-row items-center gap-12 lg:gap-16 relative z-10">
-                    <!-- Left Column: Membangun Bersama Messaging & Stats -->
-                    <div class="w-full lg:w-1/2 text-center lg:text-left order-2 lg:order-1">
-                        <div
-                            class="inline-flex items-center gap-2 bg-gradient-to-r from-teal-100 to-emerald-100 text-teal-700 px-4 py-2 rounded-full mb-6 text-[10px] font-black uppercase tracking-widest border border-teal-200/50">
-                            <i class="fas fa-headset"></i>
-                            <span>Layanan Pengaduan</span>
-                        </div>
-
-                        <h2
-                            class="text-4xl md:text-5xl lg:text-5xl font-black text-slate-800 mb-6 tracking-tight leading-[1.15]">
-                            Membangun Bersama <br>
-                            <span
-                                class="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-emerald-500 to-rose-500">
-                                Suara Rakyat
-                            </span>
-                        </h2>
-
-                        <p class="text-lg text-slate-600 mb-8 leading-relaxed font-medium max-w-xl mx-auto lg:mx-0">
-                            Sampaikan keluhan, aspirasi, dan masukan Anda untuk bersama-sama membangun
-                            {{ appProfile()->region_name ?? 'kecamatan' }} yang lebih baik.
-                        </p>
-
-                        <!-- Statistics / Icons -->
-                        <div class="grid grid-cols-2 gap-4 mb-8">
-                            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-100 shadow-sm">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
-                                        <i class="fas fa-bolt text-teal-600"></i>
-                                    </div>
-                                    <div class="text-left">
-                                        <p class="text-2xl font-black text-slate-800">24 Jam</p>
-                                        <p class="text-xs text-slate-500 font-medium">Respons Cepat</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-100 shadow-sm">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center">
-                                        <i class="fas fa-shield-alt text-rose-600"></i>
-                                    </div>
-                                    <div class="text-left">
-                                        <p class="text-2xl font-black text-slate-800">100%</p>
-                                        <p class="text-xs text-slate-500 font-medium">Terjamin</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-100 shadow-sm">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                                        <i class="fas fa-whatsapp text-emerald-600"></i>
-                                    </div>
-                                    <div class="text-left">
-                                        <p class="text-2xl font-black text-slate-800">WhatsApp</p>
-                                        <p class="text-xs text-slate-500 font-medium">Notifikasi Realtime</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-100 shadow-sm">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                                        <i class="fas fa-lock text-blue-600"></i>
-                                    </div>
-                                    <div class="text-left">
-                                        <p class="text-2xl font-black text-slate-800">Privasi</p>
-                                        <p class="text-xs text-slate-500 font-medium">Data Aman</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Trust Badge -->
-                        <div class="flex items-center justify-center lg:justify-start gap-3">
-                            <div class="flex -space-x-2">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
-                                    D</div>
-                                <div
-                                    class="w-8 h-8 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
-                                    S</div>
-                                <div
-                                    class="w-8 h-8 rounded-full bg-rose-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
-                                    K</div>
-                            </div>
-                            <p class="text-xs text-slate-500 font-medium">
-                                <span class="text-slate-800 font-bold">Terpercaya</span> oleh masyarakat
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Modern Complaint Form -->
-                    <div class="w-full lg:w-1/2 order-1 lg:order-2">
-                        <div
-                            class="bg-white rounded-[2.5rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-                            <!-- Form Header -->
-                            <div class="text-center mb-6">
-                                <div
-                                    class="w-14 h-14 bg-gradient-to-br from-rose-400 to-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-rose-500/30">
-                                    <i class="fas fa-exclamation-circle text-white text-xl"></i>
-                                </div>
-                                <h3 class="text-xl font-black text-slate-800">Form Pengaduan</h3>
-                                <p class="text-xs text-slate-500 font-medium mt-1">Sampaikan keluhan Anda dengan jelas
-                                </p>
-                            </div>
-
-                            <!-- Form -->
-                            <form id="inlineComplaintForm" class="space-y-4">
-                                @csrf
-                                <input type="hidden" name="jenis_layanan" value="Pengaduan Publik">
-                                <input type="hidden" name="category" value="pengaduan">
-
-                                <!-- Kategori Pengaduan -->
-                                <div>
-                                    <label
-                                        class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Kategori</label>
-                                    <select name="jenis_pengaduan" id="inlineJenisPengaduan"
-                                        class="select select-bordered w-full mt-1 rounded-xl bg-slate-50 border-slate-200 focus:border-rose-500 text-sm"
-                                        required>
-                                        <option value="">Pilih kategori...</option>
-                                        <option value="Pengaduan">📢 Pengaduan</option>
-                                        <option value="Aspirasi">💡 Aspirasi</option>
-                                        <option value="Permintaan">📋 Permintaan</option>
-                                    </select>
-                                </div>
-
-                                <!-- Nama (Opsional) & WhatsApp -->
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label
-                                            class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Nama
-                                            <span class="text-slate-400">(Ops)</span></label>
-                                        <input type="text" name="nama_pemohon" id="inlineComplaintName"
-                                            class="input input-bordered w-full mt-1 rounded-xl bg-slate-50 border-slate-200 focus:border-rose-500 text-sm h-10"
-                                            placeholder="Nama Anda">
-                                    </div>
-                                    <div>
-                                        <label
-                                            class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">WhatsApp
-                                            <span class="text-rose-500">*</span></label>
-                                        <input type="tel" name="whatsapp" id="inlineComplaintWa"
-                                            class="input input-bordered w-full mt-1 rounded-xl bg-slate-50 border-slate-200 focus:border-rose-500 text-sm h-10"
-                                            placeholder="08xxxxxxxxx" required>
-                                    </div>
-                                </div>
-
-                                <!-- Judul Pengaduan -->
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Judul
-                                        <span class="text-rose-500">*</span></label>
-                                    <input type="text" name="judul_pengaduan" id="inlineComplaintTitle"
-                                        class="input input-bordered w-full mt-1 rounded-xl bg-slate-50 border-slate-200 focus:border-rose-500 text-sm"
-                                        placeholder="Ringkasan pengaduan" required maxlength="100">
-                                </div>
-
-                                <!-- Isi Pengaduan -->
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Detail
-                                        <span class="text-rose-500">*</span></label>
-                                    <textarea name="uraian" id="inlineComplaintMessage" rows="3"
-                                        class="textarea textarea-bordered w-full mt-1 rounded-xl bg-slate-50 border-slate-200 focus:border-rose-500 text-sm"
-                                        placeholder="Jelaskan kronologi dan detail..." required
-                                        maxlength="1000"></textarea>
-                                    <div class="flex justify-between mt-1">
-                                        <p class="text-[9px] text-slate-400" id="inlineCharCountLabel">Min. 20 karakter
-                                        </p>
-                                        <p class="text-[9px] text-slate-400"><span id="inlineCharCount">0</span>/1000
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <!-- Upload Lampiran -->
-                                <div>
-                                    <label
-                                        class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Lampiran
-                                        <span class="text-slate-400">(Opsional)</span></label>
-                                    <div class="mt-1">
-                                        <label for="inlineComplaintFile"
-                                            class="flex items-center gap-2 cursor-pointer bg-slate-50 border border-dashed border-slate-300 hover:border-rose-400 rounded-xl px-4 py-3 transition-colors group">
-                                            <div class="relative shrink-0">
-                                                <i
-                                                    class="fas fa-paperclip text-slate-400 group-hover:text-rose-500 transition-colors"></i>
-                                                <span id="inlineFileCount"
-                                                    class="absolute -top-2 -right-2 w-4 h-4 bg-rose-500 text-white text-[8px] font-bold rounded-full items-center justify-center hidden">0</span>
-                                            </div>
-                                            <span id="inlineFileLabel"
-                                                class="text-sm text-slate-500 group-hover:text-rose-600 transition-colors font-medium">Upload
-                                                Lampiran</span>
-                                        </label>
-                                        <input type="file" id="inlineComplaintFile" name="foto[]" accept="image/*,.pdf"
-                                            multiple class="hidden">
-                                    </div>
-                                    <div id="inlinePhotoPreview" class="flex flex-wrap gap-2 mt-2"></div>
-                                    <p class="text-[9px] text-slate-400 mt-1">JPG, PNG, atau PDF (Maks. 5MB per file)
-                                    </p>
-                                </div>
-
-                                <!-- Anonim / Rahasia -->
-                                <div class="flex items-center gap-5">
-                                    <label class="flex items-center gap-2 cursor-pointer group">
-                                        <input type="checkbox" name="is_anonim"
-                                            class="checkbox checkbox-sm border-slate-300" value="1">
-                                        <span
-                                            class="text-sm text-slate-600 font-medium group-hover:text-rose-600 transition-colors">Anonim</span>
-                                    </label>
-                                    <label class="flex items-center gap-2 cursor-pointer group">
-                                        <input type="checkbox" name="is_rahasia"
-                                            class="checkbox checkbox-sm border-slate-300" value="1">
-                                        <span
-                                            class="text-sm text-slate-600 font-medium group-hover:text-rose-600 transition-colors">Rahasia</span>
-                                    </label>
-                                </div>
-
-                                <!-- Submit Button -->
-                                <button type="submit" id="inlineComplaintSubmitBtn"
-                                    class="btn bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white border-0 rounded-xl w-full h-12 font-black shadow-lg shadow-rose-500/30 transition-all hover:scale-[1.02] uppercase tracking-widest text-base">
-                                    <i class="fas fa-flag mr-2"></i>
-                                    <span>LAPOR!</span>
-                                </button>
-
-                                <!-- Disclaimer -->
-                                <div class="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                                    <p class="text-[10px] text-amber-700 font-medium text-center">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        Dengan submit, Anda menyetujui bahwa pengaduan akan diproses secara resmi.
-                                        Notifikasi akan dikirim via WhatsApp.
-                                    </p>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
 
     <!-- Section: Layanan Terpadu (REFINED) -->
@@ -825,6 +668,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach($masterLayanan as $svc)
+                    @if(in_array($svc->slug, ['kependudukan', 'pengaduan', 'jam-layanan'])) @continue @endif
                     <div
                         class="group bg-white rounded-[2.5rem] p-8 border border-slate-100 hover:border-teal-100 transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(13,148,136,0.12)] relative overflow-hidden flex flex-col h-full">
                         <!-- Top Accent -->
@@ -863,11 +707,18 @@
                             </div>
                         </div>
 
-                        <button
-                            onclick="openSubmissionModal('{{ $svc->nama_layanan }}', '{{ str_replace(["\r", "\n"], ' ', addslashes($svc->deskripsi_syarat)) }}', {{ json_encode($svc->attachment_requirements ?? []) }})"
-                            class="btn btn-sm bg-teal-600 hover:bg-teal-700 border-none text-white rounded-xl px-6 w-full group-hover:shadow-md transition-all py-3 h-auto font-black uppercase tracking-widest text-[10px]">
-                            Ajukan / Hubungi
-                        </button>
+                        @if($svc->slug === 'pengaduan')
+                            <button
+                                onclick="document.getElementById('complaintModal').showModal()"
+                                class="btn btn-sm bg-teal-600 hover:bg-teal-700 border-none text-white rounded-xl px-6 w-full group-hover:shadow-md transition-all py-3 h-auto font-black uppercase tracking-widest text-[10px]">
+                                Ajukan / Hubungi
+                            </button>
+                        @else
+                            <a href="{{ route('apply.form', $svc->slug) }}"
+                                class="btn btn-sm bg-teal-600 hover:bg-teal-700 border-none text-white rounded-xl px-6 w-full group-hover:shadow-md transition-all py-3 h-auto font-black uppercase tracking-widest text-[10px] flex items-center justify-center">
+                                Ajukan Sekarang
+                            </a>
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -875,6 +726,48 @@
     </div>
 
 
+
+    <!-- Section: Pariwisata & Budaya (NEW) -->
+    @if(appProfile()->image_pariwisata || appProfile()->image_festival)
+        <div class="py-24 bg-slate-50 overflow-hidden border-t border-slate-100">
+            <div class="container mx-auto px-6 text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-black text-slate-800 mb-4">Potensi Pariwisata & Budaya</h2>
+                <p class="text-slate-500 max-w-2xl mx-auto font-medium">Temukan kekayaan alam dan warisan budaya yang membanggakan di {{ appProfile()->full_region_name }}.</p>
+            </div>
+            
+            <div class="container mx-auto px-6">
+                <div class="flex flex-col lg:flex-row gap-8 items-center">
+                    @if(appProfile()->image_pariwisata)
+                        <div class="w-full lg:w-1/2 group relative">
+                            <div class="aspect-video rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
+                                <img src="{{ asset('storage/' . appProfile()->image_pariwisata) }}" 
+                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000">
+                                <div class="absolute inset-0 bg-gradient-to-t from-teal-900/60 to-transparent"></div>
+                                <div class="absolute bottom-10 left-10 text-white text-left">
+                                    <h3 class="text-3xl font-black mb-2">Pesona Wisata</h3>
+                                    <p class="text-xs font-bold uppercase tracking-widest opacity-80">Destinasi Unggulan Lokal</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if(appProfile()->image_festival)
+                        <div class="w-full lg:w-1/2 group relative">
+                            <div class="aspect-video rounded-[3rem] overflow-hidden shadow-2xl border-8 border-white">
+                                <img src="{{ asset('storage/' . appProfile()->image_festival) }}" 
+                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000">
+                                <div class="absolute inset-0 bg-gradient-to-t from-amber-900/60 to-transparent"></div>
+                                <div class="absolute bottom-10 left-10 text-white text-left">
+                                    <h3 class="text-3xl font-black mb-2">Event & Festival</h3>
+                                    <p class="text-xs font-bold uppercase tracking-widest opacity-80">Agenda Budaya & Hiburan</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Berita & Informasi Section -->
     <div id="berita" class="py-20 bg-white border-t border-slate-100">
@@ -960,64 +853,7 @@
         </div> <!-- Close Container -->
     </div> <!-- Close Section -->
 
-    <!-- Informasi Operasional Section -->
-    <div id="operasional" class="py-16 bg-white">
-        <div class="container mx-auto px-6">
-            <div
-                class="card bg-gradient-to-br from-teal-50/50 to-blue-50/50 shadow-md border border-gray-200 rounded-2xl">
-                <div class="card-body p-10">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <!-- Left Column -->
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-3">Informasi Operasional</h2>
-                            <p class="text-sm text-gray-600 mb-6">
-                                Kami siap melayani kebutuhan administrasi Anda selama jam kerja sebagai berikut:
-                            </p>
 
-                            <div class="space-y-3">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-11 h-11 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <i class="fas fa-clock text-teal-600 text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-gray-800 text-sm">Senin - Kamis</div>
-                                        <div class="text-xs text-gray-500">08:00 WIB - 15:30 WIB</div>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-11 h-11 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                        <i class="fas fa-calendar-day text-teal-600 text-lg"></i>
-                                    </div>
-                                    <div>
-                                        <div class="font-semibold text-gray-800 text-sm">Jumat</div>
-                                        <div class="text-xs text-gray-500">08:00 WIB - 14:30 WIB</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right Column -->
-                        <div class="bg-white rounded-xl p-7 shadow-sm border border-gray-200 text-center">
-                            <i class="fas fa-bullhorn text-teal-600 text-4xl mb-5"></i>
-                            <h3 class="text-xl font-bold text-gray-800 mb-3">Komitmen Kami</h3>
-                            <p class="text-sm text-gray-600 mb-5 leading-relaxed">
-                                "Melayani dengan Integritas, Menjaga Setiap Amanah untuk Kemajuan Bersama."
-                            </p>
-                            <div class="divider my-4"></div>
-                            <div
-                                class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-5 py-2 rounded-full text-xs font-semibold">
-                                <i class="fas fa-shield-alt"></i>
-                                <span>Petugas Bebas Pungutan Liar</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Section: Survei Kepuasan Masyarakat (SKM) - STRATEGIC LOCATION -->
     <div id="survey-section" class="py-24 bg-white relative overflow-hidden">
@@ -1144,18 +980,18 @@
         </button>
     </div>
 
-    <!-- Floating Action Button -->
+    <!-- Floating Action Button (Chatbot) -->
     <div class="fixed bottom-5 right-5 z-[60] group">
         <div class="absolute bottom-full right-0 mb-3 hidden group-hover:block transition-all animate-bounce">
             <span
-                class="bg-teal-600 text-white text-xs px-3 py-1 rounded-full shadow-lg whitespace-nowrap italic">Hubungi
-                Kami</span>
+                class="bg-teal-600 text-white text-xs px-3 py-1 rounded-full shadow-lg whitespace-nowrap italic">Asisten Digital</span>
         </div>
         <button onclick="document.getElementById('publicServiceModal').showModal()"
             class="btn btn-circle bg-teal-600 hover:bg-teal-700 border-0 shadow-xl w-16 h-16 transform transition-transform hover:scale-110">
-            <i class="fas fa-message text-white text-2xl"></i>
+            <i class="fas fa-robot text-white text-2xl"></i>
         </button>
     </div>
+
 
     <!-- Service Submission Modal (PERFECTED & COMPACT) -->
     <dialog id="permohonanModal" class="modal modal-bottom sm:modal-middle">
@@ -1389,14 +1225,17 @@
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <button onclick="sendQuickChip('KTP')"
-                                class="btn btn-xs bg-white hover:bg-teal-50 text-teal-600 border-teal-200 rounded-full font-medium px-3 normal-case shadow-sm">📦
-                                Cek Syarat KTP</button>
+                                class="btn btn-xs bg-white hover:bg-teal-50 text-teal-600 border-teal-200 rounded-full font-medium px-3 normal-case shadow-sm">🪪
+                                Syarat KTP</button>
                             <button onclick="sendQuickChip('KK')"
                                 class="btn btn-xs bg-white hover:bg-teal-50 text-teal-600 border-teal-200 rounded-full font-medium px-3 normal-case shadow-sm">👨‍👩‍👧‍👦
-                                Cek Syarat KK</button>
-                            <button onclick="sendQuickChip('Akte')"
+                                Syarat KK</button>
+                            <button onclick="sendQuickChip('Pindah')"
+                                class="btn btn-xs bg-white hover:bg-teal-50 text-teal-600 border-teal-200 rounded-full font-medium px-3 normal-case shadow-sm">🚚
+                                Pindah Domisili</button>
+                            <button onclick="sendQuickChip('Akta')"
                                 class="btn btn-xs bg-white hover:bg-teal-50 text-teal-600 border-teal-200 rounded-full font-medium px-3 normal-case shadow-sm">📄
-                                Syarat Akte</button>
+                                Akta Lahir/Mati</button>
                             <button onclick="sendQuickChip('Jam Layanan')"
                                 class="btn btn-xs bg-white hover:bg-teal-50 text-teal-600 border-teal-200 rounded-full font-medium px-3 normal-case shadow-sm">⏰
                                 Jam Layanan</button>
@@ -1625,8 +1464,10 @@
         const botForm = document.getElementById('publicFaqForm');
         const botInput = document.getElementById('botQuery');
         const btnMic = document.getElementById('btnMic');
-        let chatState = 'FAQ'; // 'FAQ' or 'CAPTURE_WA'
+        let chatState = 'FAQ'; // States: FAQ | CAPTURE_NAMA | CAPTURE_WA | CAPTURE_KEPERLUAN
         let lastUserQuery = '';
+        let capturedNama = '';
+        let capturedWa = '';
         let isVoiceInteraction = false;
 
         // Visual Feedback Util
@@ -1665,36 +1506,61 @@
         }
 
         function startClarification() {
-            chatState = 'CAPTURE_WA';
-            appendMessage('bot', 'Baik, untuk bantuan lebih lanjut atau klarifikasi petugas, mohon masukkan **Nomor WhatsApp** Anda di bawah ini.');
-            botInput.placeholder = "Contoh: 08123456789";
-            botInput.type = "tel";
+            chatState = 'CAPTURE_NAMA';
+            appendMessage('bot', '📋 *Tindak Lanjut Petugas*\n\nUntuk mencatat permintaan Anda secara resmi, kami memerlukan beberapa data.\n\nSilakan masukkan **Nama Lengkap** Anda.');
+            botInput.placeholder = "Nama lengkap Anda...";
+            botInput.type = "text";
             botInput.focus();
         }
 
-        function appendMessage(role, text, isSOP = false) {
+        function appendMessage(role, text, options = null) {
             const container = document.createElement('div');
             container.className = role === 'user' ? 'flex justify-end' : 'flex items-start gap-2.5 animate-[slideUp_0.3s_ease-out]';
 
             if (role === 'bot') {
                 let messageHtml = '';
-                if (isSOP) {
-                    // SOP-style Card UI
+                if (options && Array.isArray(options)) {
+                    // Multi-choice / Suggestion Card
+                    const buttons = options.map(opt => 
+                        `<button onclick="sendQuickChip('${opt.question}')" class="btn btn-xs btn-outline btn-teal rounded-lg lowercase text-[9px] block w-full text-left mb-1 truncate">${opt.question}</button>`
+                    ).join('');
+
                     messageHtml = `
+                        <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 shadow-sm border border-teal-200">
+                            <i class="fas fa-robot text-teal-600 text-xs"></i>
+                        </div>
+                        <div class="bg-white border border-teal-100 rounded-2xl shadow-md overflow-hidden max-w-[90%]">
+                            <div class="bg-teal-600 px-4 py-2 text-white flex justify-between items-center">
+                                <span class="text-[10px] font-bold uppercase tracking-wider">Beberapa Hasil Ditemukan</span>
+                            </div>
+                            <div class="p-4">
+                                <p class="text-[10px] text-slate-500 mb-3">Mungkin ini yang Anda cari:</p>
+                                ${buttons}
+                                <div class="pt-3 border-t border-slate-100 mt-2">
+                                    <button onclick="startClarification()" class="text-[9px] font-bold text-teal-600 hover:underline">Tidak ada di atas? Tanya Petugas</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (text.includes('**SOP**') || text.includes('**Jam Operasional**')) {
+                    // SOP-style Card UI for confirmed answers
+                    messageHtml = `
+                        <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 shadow-sm border border-teal-200">
+                            <i class="fas fa-robot text-teal-600 text-xs"></i>
+                        </div>
                         <div class="bg-white border border-teal-100 rounded-2xl shadow-md overflow-hidden max-w-[90%]">
                             <div class="bg-teal-600 px-4 py-2 text-white flex justify-between items-center">
                                 <span class="text-[10px] font-bold uppercase tracking-wider">Informasi Layanan Resmi</span>
-                                <i class="fas fa-check-circle text-xs text-teal-200"></i>
                             </div>
                             <div class="p-4 space-y-3">
-                                <div class="text-xs text-slate-700 leading-relaxed">
+                                <div class="text-[11px] text-slate-700 leading-relaxed">
                                     ${text.replace(/\n/g, '<br>')}
                                 </div>
                                 <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
-                                    <p class="text-[10px] text-slate-400 font-medium">Apakah informasi ini membantu?</p>
+                                    <p class="text-[9px] text-slate-400 font-medium italic">Apakah informasi ini membantu?</p>
                                     <div class="flex gap-2">
-                                        <button onclick="appendMessage('bot', 'Terima kasih atas feedback Anda! Terus tingkatkan pelayanan kami.')" class="btn btn-xs btn-outline btn-success rounded-lg lowercase text-[9px]">Ya, Jelas</button>
-                                        <button onclick="startClarification()" class="btn btn-xs btn-outline btn-warning rounded-lg lowercase text-[9px]">Ingin Bertanya Petugas</button>
+                                        <button onclick="appendMessage('bot', '✅ Terima kasih! Kami senang bisa membantu.')" class="btn btn-xs btn-outline btn-success rounded-lg lowercase text-[9px]">Ya, Jelas</button>
+                                        <button onclick="startClarification()" class="btn btn-xs btn-outline btn-warning rounded-lg lowercase text-[9px]">Tanya Petugas</button>
                                     </div>
                                 </div>
                             </div>
@@ -1705,7 +1571,7 @@
                         <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0 shadow-sm border border-teal-200">
                             <i class="fas fa-robot text-teal-600 text-xs"></i>
                         </div>
-                        <div class="bg-white border border-slate-200 text-slate-700 p-3 rounded-2xl rounded-tl-none text-xs leading-relaxed shadow-sm max-w-[85%] font-medium">
+                        <div class="bg-white border border-slate-200 text-slate-700 p-3 rounded-2xl rounded-tl-none text-[11px] leading-relaxed shadow-sm max-w-[85%] font-medium">
                             ${text.replace(/\n/g, '<br>')}
                         </div>
                     `;
@@ -1713,7 +1579,7 @@
                 container.innerHTML = messageHtml;
             } else {
                 container.innerHTML = `
-                    <div class="bg-teal-600 text-white p-3 rounded-2xl rounded-tr-none text-xs leading-relaxed shadow-md max-w-[85%] font-medium">
+                    <div class="bg-teal-600 text-white p-3 rounded-2xl rounded-tr-none text-[11px] leading-relaxed shadow-md max-w-[85%] font-medium">
                         ${text}
                     </div>
                 `;
@@ -1728,8 +1594,18 @@
             const inputVal = botInput.value.trim();
             if (!inputVal) return;
 
+            if (chatState === 'CAPTURE_NAMA') {
+                handleNamaStep(inputVal);
+                return;
+            }
+
             if (chatState === 'CAPTURE_WA') {
-                handleWaCapture(inputVal);
+                handleWaCaptureStep(inputVal);
+                return;
+            }
+
+            if (chatState === 'CAPTURE_KEPERLUAN') {
+                handleWaCapture(capturedWa, inputVal);
                 return;
             }
 
@@ -1741,35 +1617,75 @@
                 const response = await fetch(`{{ route('api.faq.search', [], false) }}?q=${encodeURIComponent(inputVal)}`);
                 const data = await response.json();
 
-                if (data.found && data.results && data.results.length > 0) {
-                    const top = data.results[0];
-                    const answerText = top.jawaban || top.answer || data.answer;
-                    appendMessage('bot', answerText, !data.is_emergency);
+                if (data.found) {
+                    if (data.multiple) {
+                        appendMessage('bot', 'Beberapa topik ditemukan.', data.results);
+                    } else {
+                        const top = data.results[0];
+                        const answerText = top.jawaban || top.answer || data.answer;
+                        appendMessage('bot', answerText);
 
-                    // Trigger Voice Guide speak if modular JS is active
-                    if (window.VoiceSpeech && window.VoiceState && window.VoiceState.isActive()) {
-                        window.VoiceSpeech.speak(answerText);
-                    }
-                } else if (data.answer) {
-                    // Fallback for direct answer field if results missing
-                    appendMessage('bot', data.answer, !data.is_emergency);
-                    if (window.VoiceSpeech && window.VoiceState && window.VoiceState.isActive()) {
-                        window.VoiceSpeech.speak(data.answer);
+                        // Trigger Voice Guide speak if modular JS is active
+                        if (window.VoiceSpeech && window.VoiceState && window.VoiceState.isActive()) {
+                            window.VoiceSpeech.speak(answerText);
+                        }
                     }
                 } else {
-                    appendMessage('bot', 'Maaf, saya tidak menemukan jawaban pasti. Ingin bertanya langsung pada petugas?');
+                    appendMessage('bot', data.answer || 'Maaf, saya tidak menemukan jawaban pasti. Ingin bertanya langsung pada petugas?');
                 }
             } catch (error) {
                 appendMessage('bot', 'Sepertinya ada gangguan koneksi. Coba lagi nanti ya.');
             }
         });
 
-        async function handleWaCapture(wa) {
+        function handleNamaStep(nama) {
+            botInput.value = '';
+            appendMessage('user', nama);
+
+            if (nama.trim().length < 3) {
+                appendMessage('bot', '⚠️ Mohon masukkan nama lengkap yang valid (minimal 3 karakter).');
+                return;
+            }
+
+            capturedNama = nama.trim();
+            chatState = 'CAPTURE_WA';
+            appendMessage('bot', `Terima kasih, *${capturedNama}*.\n\nSekarang masukkan **Nomor WhatsApp** yang dapat dihubungi oleh petugas.`);
+            botInput.placeholder = "Nomor WA: 08xxxxxxxxx";
+            botInput.type = "tel";
+            botInput.focus();
+        }
+
+        function handleWaCaptureStep(wa) {
+            // Step 1: Capture phone number, then ask for keperluan
             botInput.value = '';
             appendMessage('user', wa);
-            appendMessage('bot', 'Sedang mencatat permintaan Anda untuk petugas...');
+
+            // Normalize WA
+            let cleanWa = wa.replace(/[^0-9]/g, '');
+            if (cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.slice(1);
+            else if (!cleanWa.startsWith('62')) cleanWa = '62' + cleanWa;
+
+            if (cleanWa.length < 10) {
+                appendMessage('bot', '⚠️ Nomor WhatsApp tidak valid. Mohon masukkan nomor yang benar (minimal 10 digit).');
+                return;
+            }
+
+            capturedWa = cleanWa;
+            chatState = 'CAPTURE_KEPERLUAN';
+            appendMessage('bot', `✅ Nomor *${wa}* tercatat.\n\nSekarang, tolong ceritakan secara singkat **keperluan atau pertanyaan** Anda untuk petugas.`);
+            botInput.placeholder = "Contoh: Ingin bertanya syarat pindah domisili...";
+            botInput.type = "text";
+            botInput.focus();
+        }
+
+        async function handleWaCapture(wa, keperluan) {
+            botInput.value = '';
+            appendMessage('user', keperluan);
+            appendMessage('bot', '⏳ Sedang mencatat permintaan Anda secara resmi...');
 
             try {
+                const uraianLengkap = `[Chatbot] Nama: ${capturedNama} | Keperluan: ${keperluan}` + (lastUserQuery ? ` | Pertanyaan awal: "${lastUserQuery}"` : '');
+
                 const response = await fetch("{{ route('public.service.submit', [], false) }}", {
                     method: 'POST',
                     headers: {
@@ -1778,24 +1694,43 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        nama_pemohon: 'Warga (Via Chatbot)',
-                        jenis_layanan: 'Konsultasi Administratif',
-                        uraian: `[Diteruskan dari Bot FAQ] Pertanyaan: "${lastUserQuery}"`,
+                        nama_pemohon: capturedNama,
+                        jenis_layanan: 'Konsultasi via Chatbot',
+                        category: 'pelayanan',
+                        uraian: uraianLengkap,
                         whatsapp: wa,
                         source: 'chatbox',
                         is_agreed: true
                     })
                 });
 
-                if (response.ok) {
-                    appendMessage('bot', '✅ **Permintaan Berhasil Dicatat!**\n\nNomor Anda sudah tersimpan. Petugas akan menghubungi Anda maksimal dalam 1x24 jam kerja.');
+                let result = {};
+                try { result = await response.json(); } catch(e) {}
+
+                if (response.ok && (result.tracking_code || result.uuid || result.message)) {
+                    const pin = result.tracking_code ? `\n🔑 *PIN Lacak:* ${result.tracking_code}` : '';
+                    appendMessage('bot',
+                        `✅ *Permintaan Resmi Tercatat!*\n\n` +
+                        `👤 Nama: *${capturedNama}*\n` +
+                        `📱 WhatsApp: *${wa}*\n` +
+                        `📝 Keperluan: ${keperluan}` +
+                        `${pin}\n\n` +
+                        `Petugas akan menghubungi Anda melalui WhatsApp dalam *1x24 jam kerja*.`
+                    );
+                } else if (response.status === 429) {
+                    appendMessage('bot', '⏳ Permintaan dari nomor ini sudah tercatat hari ini. Petugas akan segera menghubungi Anda. Terima kasih!');
+                } else if (result.errors) {
+                    const errMsg = Object.values(result.errors).flat().join(', ');
+                    appendMessage('bot', `⚠️ Terjadi kendala validasi: ${errMsg}`);
                 } else {
-                    appendMessage('bot', 'Gagal menyimpan data. Pastikan nomor WhatsApp benar.');
+                    appendMessage('bot', `⚠️ ${result.message || 'Gagal menyimpan. Silakan coba lagi atau hubungi petugas langsung.'}`);
                 }
             } catch (error) {
-                appendMessage('bot', 'Terjadi kendala saat mengirim data ke petugas.');
+                appendMessage('bot', 'Terjadi kendala koneksi. Silakan coba lagi beberapa saat.');
             } finally {
                 chatState = 'FAQ';
+                capturedNama = '';
+                capturedWa = '';
                 botInput.placeholder = "Ketik pertanyaan Anda...";
                 botInput.type = "text";
             }
@@ -2179,20 +2114,27 @@
         const storedWa = localStorage.getItem('user_wa');
 
         // Check for WhatsApp in URL parameter (from WhatsApp bot)
+        // Parse standard query parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const waFromUrl = urlParams.get('wa');
-        const namaFromUrl = urlParams.get('nama');
-        const noHpFromUrl = urlParams.get('no_hp');
+        
+        // Also parse query parameters hidden behind a hash e.g. #pengaduan?nama=Panda&no_hp=123
+        const hashParts = window.location.hash.split('?');
+        const hashParams = new URLSearchParams(hashParts.length > 1 ? hashParts[1] : '');
+
+        const waFromUrl = urlParams.get('wa') || hashParams.get('wa');
+        const namaFromUrl = urlParams.get('nama') || hashParams.get('nama') || urlParams.get('name') || hashParams.get('name');
+        const noHpFromUrl = urlParams.get('no_hp') || hashParams.get('no_hp') || waFromUrl;
+        const kategoriFromUrl = urlParams.get('kategori') || hashParams.get('kategori');
 
         // Priority: URL parameter > localStorage > empty
-        const defaultWa = waFromUrl || storedWa || '';
+        const defaultWa = noHpFromUrl || storedWa || '';
 
         // Auto-fill name from URL parameter
         if (namaFromUrl) {
             const nameFields = ['inlineComplaintName', 'complaintName', 'nama_pemohon'];
             nameFields.forEach(id => {
                 const el = document.getElementById(id);
-                if (el && !el.value) el.value = decodeURIComponent(namaFromUrl);
+                if (el) el.value = decodeURIComponent(namaFromUrl);
             });
         }
 
@@ -2201,12 +2143,45 @@
             const waFields = ['inlineComplaintWa', 'complaintWa', 'whatsapp'];
             waFields.forEach(id => {
                 const el = document.getElementById(id);
-                if (el && !el.value) el.value = decodeURIComponent(noHpFromUrl);
+                if (el) el.value = decodeURIComponent(noHpFromUrl);
+            });
+        }
+        
+        // Auto-fill Kategori from URL parameter
+        if (kategoriFromUrl) {
+            const targetVal = decodeURIComponent(kategoriFromUrl).toLowerCase();
+            document.querySelectorAll('[name="jenis_pengaduan"]').forEach(el => {
+                if (el.tagName === 'SELECT') {
+                    for(let i = 0; i < el.options.length; i++) {
+                        if(el.options[i].value.toLowerCase().includes(targetVal) || el.options[i].text.toLowerCase().includes(targetVal)) {
+                            el.selectedIndex = i;
+                            break;
+                        }
+                    }
+                } else {
+                    el.value = decodeURIComponent(kategoriFromUrl);
+                }
             });
         }
 
-        if (!document.getElementById('complaintWa').value) {
+        if (document.getElementById('complaintWa') && !document.getElementById('complaintWa').value) {
             document.getElementById('complaintWa').value = defaultWa;
+        }
+
+        // Trigger the modal if the hash is exactly or starts with #pengaduan
+        if (window.location.hash.startsWith('#pengaduan')) {
+            const complaintModal = document.getElementById('complaintModal');
+            if (complaintModal) {
+                // Short delay ensures rendering is complete before opening dialog
+                setTimeout(() => {
+                    complaintModal.showModal();
+                    // Optionally focus on the message field since name & phone are already filled
+                    if (namaFromUrl && noHpFromUrl) {
+                        const uraianEl = document.getElementById('complaintMessage');
+                        if(uraianEl) uraianEl.focus();
+                    }
+                }, 400);
+            }
         }
 
         // --- INLINE COMPLAINT FORM LOGIC ---
@@ -2998,6 +2973,29 @@
         })();
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const swiper = new Swiper('.hero-swiper', {
+                loop: true,
+                effect: 'fade',
+                fadeEffect: {
+                    crossFade: true
+                },
+                autoplay: {
+                    delay: 7000,
+                    disableOnInteraction: false,
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+            });
+        });
+    </script>
 </body>
 
 </html>

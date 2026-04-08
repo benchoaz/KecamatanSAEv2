@@ -6,6 +6,13 @@ use App\Models\PelayananFaq;
 
 class SyaratHandler
 {
+    protected \App\Services\FaqSearchService $faqSearchService;
+
+    public function __construct(\App\Services\FaqSearchService $faqSearchService)
+    {
+        $this->faqSearchService = $faqSearchService;
+    }
+
     /**
      * Search for requirements/syarat based on query
      */
@@ -24,14 +31,25 @@ class SyaratHandler
             ];
         }
 
-        // Search FAQ for matching keywords
-        $faq = $this->findMatchingFaq($query);
+        // Search using unified FaqSearchService
+        $data = $this->faqSearchService->search($query);
 
-        if ($faq) {
+        if ($data['found']) {
+            if (isset($data['multiple']) && $data['multiple']) {
+                return [
+                    'success' => true,
+                    'intent' => 'syarat_suggestions',
+                    'reply' => $this->formatSuggestions($data['results']),
+                    'state_update' => null,
+                ];
+            }
+
+            // Single match
+            $top = $data['results'][0];
             return [
                 'success' => true,
                 'intent' => 'syarat',
-                'reply' => $this->formatFaqAnswer($faq),
+                'reply' => $this->formatResultAnswer($top),
                 'state_update' => null,
             ];
         }
@@ -46,56 +64,43 @@ class SyaratHandler
     }
 
     /**
-     * Find matching FAQ from database
+     * Format multiple suggestions into a numbered list for WhatsApp
      */
-    protected function findMatchingFaq(string $query): ?PelayananFaq
+    protected function formatSuggestions(array $results): string
     {
-        // 1. Exact match in keywords (with commas) or question
-        $faq = PelayananFaq::where('is_active', true)
-            ->where(function ($q) use ($query) {
-                $q->whereRaw('LOWER(keywords) LIKE ?', ["%{$query}%"])
-                    ->orWhereRaw('LOWER(question) LIKE ?', ["%{$query}%"]);
-            })
-            ->orderBy('priority', 'desc')
-            ->first();
-
-        if ($faq)
-            return $faq;
-
-        // 2. Try matching individual words if the query has multiple words
-        $words = explode(' ', $query);
-        if (count($words) > 1) {
-            foreach ($words as $word) {
-                if (strlen($word) < 3)
-                    continue; // Skip short words
-                $faq = PelayananFaq::where('is_active', true)
-                    ->whereRaw('LOWER(keywords) LIKE ?', ["%{$word}%"])
-                    ->orderBy('priority', 'desc')
-                    ->first();
-                if ($faq)
-                    return $faq;
-            }
+        $reply = "Ditemukan beberapa topik yang relevan:\n\n";
+        foreach ($results as $i => $res) {
+            $num = $i + 1;
+            $reply .= "{$num}. SYARAT " . strtoupper($res['question']) . "\n";
         }
+        $reply .= "\nSilakan ketik kata kunci yang lebih spesifik dari pilihan di atas.\n";
+        $reply .= "Ketik *MENU* untuk kembali.";
+        return $reply;
+    }
 
-        // 3. Last resort: Fuzzy match - only check top 50 by priority to avoid O(N) lag
-        $faqs = PelayananFaq::where('is_active', true)
-            ->orderBy('priority', 'desc')
-            ->limit(50)
-            ->get();
-
-        foreach ($faqs as $faq) {
-            $keywords = explode(',', strtolower($faq->keywords));
-            foreach ($keywords as $keyword) {
-                $keyword = trim($keyword);
-                if (empty($keyword))
-                    continue;
-                if (str_contains($query, $keyword) || str_contains($keyword, $query)) {
-                    return $faq;
-                }
-            }
+    /**
+     * Format single FAQ result for WhatsApp
+     */
+    protected function formatResultAnswer(array $result): string
+    {
+        $title = $result['question'];
+        $answer = $result['answer'];
+        
+        $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
+        
+        $reply = "✅ *{$title}*\n\n";
+        $reply .= $answer;
+        
+        // Add link if relevant (using old logic but simplified)
+        $link = $this->detectServiceLink($title);
+        if ($link) {
+            $reply .= "\n\nAjukan Online:\n";
+            $reply .= "{$baseUrl}/{$link}";
         }
-
-        return null;
+        
+        $reply .= "\n\nKetik *SYARAT* untuk lainnya.\n";
+        $reply .= "Ketik *MENU* untuk kembali.";
+        return $reply;
     }
 
     /**

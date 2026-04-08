@@ -11,7 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('public_services', function (Blueprint $table) {
-            $table->string('whatsapp_suffix', 10)->nullable()->after('whatsapp')->index();
+            if (!Schema::hasColumn('public_services', 'whatsapp_suffix')) {
+                $table->string('whatsapp_suffix', 10)->nullable()->after('whatsapp')->index();
+            }
         });
     }
 

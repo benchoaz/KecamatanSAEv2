@@ -42,6 +42,33 @@
             </div>
         </div>
 
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden border border-slate-100 mb-4 bg-white p-3">
+            <form action="{{ route('kecamatan.pelayanan.inbox') }}" method="GET" class="row g-2 align-items-center m-0">
+                <input type="hidden" name="category" value="{{ $category }}">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-slate-50 border-slate-200 text-slate-400"><i class="fas fa-search"></i></span>
+                        <input type="text" name="search" class="form-control border-slate-200 bg-slate-50 text-sm" placeholder="Cari Nama, PIN, WA, NIK..." value="{{ request('search') }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select border-slate-200 bg-slate-50 text-sm">
+                        <option value="">-- Semua Status --</option>
+                        <option value="Menunggu Verifikasi" {{ request('status') == 'Menunggu Verifikasi' ? 'selected' : '' }}>⏳ Menunggu Verifikasi</option>
+                        <option value="Sedang Diproses" {{ request('status') == 'Sedang Diproses' ? 'selected' : '' }}>🔄 Sedang Diproses</option>
+                        <option value="Selesai" {{ request('status') == 'Selesai' ? 'selected' : '' }}>✅ Selesai</option>
+                        <option value="Ditolak / Tidak Valid" {{ request('status') == 'Ditolak / Tidak Valid' ? 'selected' : '' }}>❌ Ditolak / Tidak Valid</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 rounded-3 text-sm fw-bold">Terapkan Filter</button>
+                    @if(request('search') || request('status'))
+                        <a href="{{ route('kecamatan.pelayanan.inbox', ['category' => $category]) }}" class="btn btn-light rounded-3 text-sm px-3 border border-slate-200" title="Hapus Filter"><i class="fas fa-times text-slate-400"></i></a>
+                    @endif
+                </div>
+            </form>
+        </div>
+
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden border border-slate-100">
             <div class="card-body p-0">
                 <div class="table-responsive">

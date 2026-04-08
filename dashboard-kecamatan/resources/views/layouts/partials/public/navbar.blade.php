@@ -1,14 +1,14 @@
 <div class="navbar bg-white shadow-md px-6 py-3 sticky top-0 z-50 border-b border-gray-200">
     <div class="navbar-start">
         <a href="/" class="flex items-center gap-3">
-            @if(appProfile()->logo_path)
+            @if(appProfile()->logo_path && Storage::disk('public')->exists(appProfile()->logo_path))
                 <img src="{{ asset('storage/' . appProfile()->logo_path) }}"
-                    alt="Logo {{ appProfile()->region_level }} {{ appProfile()->region_name }}"
-                    style="height: 60px; width: auto; object-fit: contain;" class="flex-shrink-0">
+                    alt="Logo {{ appProfile()->region_name }}"
+                    class="h-10 md:h-14 lg:h-16 w-auto object-contain flex-shrink-0 transition-transform hover:scale-105">
             @else
                 <div
-                    class="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-sm">
-                    <i class="fas fa-landmark text-white text-lg"></i>
+                    class="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+                    <img src="{{ asset('assets/images/logo-garuda.png') }}" alt="Logo Garuda" class="h-8 object-contain">
                 </div>
             @endif
             <div>
@@ -24,9 +24,6 @@
             <li><a href="{{ request()->is('/') ? '#layanan' : '/#layanan' }}"
                     class="text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg">Layanan</a>
             </li>
-            <li><a href="{{ request()->is('/') ? '#pengaduan' : '/#pengaduan' }}"
-                    class="text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg">Pengaduan</a>
-            </li>
             <li><a href="{{ route('economy.index') }}"
                     class="text-sm font-medium {{ request()->is('ekonomi*') ? 'text-teal-600 bg-teal-50' : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50' }} rounded-lg">Pusat
                     Ekonomi</a>
@@ -40,8 +37,17 @@
             </li>
         </ul>
     </div>
-    <div class="navbar-end">
+    <div class="navbar-end gap-2">
+        <button onclick="document.getElementById('publicServiceModal').showModal()"
+            class="btn btn-sm btn-ghost text-slate-500 hover:text-teal-600 hover:bg-teal-50 hidden lg:flex rounded-lg px-4 font-bold border-0">
+            <i class="fas fa-headset mr-1"></i> Bantuan
+        </button>
+        <button onclick="document.getElementById('complaintModal').showModal()"
+            class="btn btn-sm bg-rose-100/50 hover:bg-rose-500 text-rose-600 hover:text-white border-0 hidden lg:flex rounded-lg px-5 font-bold shadow-sm transition-colors">
+            <i class="fas fa-exclamation-circle mr-1"></i> Lapor!
+        </button>
+        <div class="hidden lg:block w-px h-6 bg-slate-200 mx-1"></div>
         <a href="{{ route('login') }}"
-            class="btn btn-sm bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-lg px-5 font-medium shadow-sm">Masuk</a>
+            class="btn btn-sm bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-lg px-6 font-bold shadow-md">Portal Admin</a>
     </div>
 </div>

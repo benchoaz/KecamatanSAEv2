@@ -175,7 +175,8 @@ class PemerintahanController extends Controller
             'desa_id' => $desa_id,
             'desas' => $desas,
             'title' => 'Struktur BPD',
-            'kategori' => 'bpd'
+            'kategori' => 'bpd',
+            'store_route' => route('kecamatan.pemerintahan.detail.personil.store')
         ]);
     }
 

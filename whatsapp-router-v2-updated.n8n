@@ -135,7 +135,7 @@
                                                                   "parameters":  [
                                                                                      {
                                                                                          "name":  "Authorization",
-                                                                                         "value":  "=Bearer {{ $credentials.dashboardAuth }}"
+                                                                                         "value":  "=Bearer {{ $env[\"WHATSAPP_API_TOKEN\"] }}"
                                                                                      },
                                                                                      {
                                                                                          "name":  "Accept",
@@ -190,7 +190,7 @@
                                                                   "parameters":  [
                                                                                      {
                                                                                          "name":  "X-Api-Key",
-                                                                                         "value":  "={{ $credentials.wahaAuth }}"
+                                                                                         "value":  "={{ $env[\"WAHA_API_KEY\"] }}"
                                                                                      },
                                                                                      {
                                                                                          "name":  "Content-Type",
@@ -231,6 +231,38 @@
                                        1400,
                                        100
                                    ]
+                  },
+                  {
+                      "parameters":  {
+                                         "httpMethod":  "POST",
+                                         "path":  "whatsapp-reply",
+                                         "responseMode":  "onReceived",
+                                         "options":  {
+ 
+                                                     }
+                                     },
+                      "id":  "dashboard-webhook-node",
+                      "name":  "Dashboard Webhook",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                        0,
+                                        400
+                                    ],
+                      "webhookId":  "whatsapp-reply"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "// NODE: NORMALIZE DASHBOARD REPLY\nconst raw = $input.first().json;\n\nconsole.log(\u0027[NormalizeDashboard] Input:\u0027, JSON.stringify(raw, null, 2));\n\nconst phone = (raw.phone || \u0027\u0027).toString().trim();\nconst message = raw.message || raw.text || \u0027\u0027;\n\nif (!phone) {\n  console.log(\u0027[NormalizeDashboard] DROPPED: No phone number\u0027);\n  return [];\n}\n\n// Ensure chatId has @c.us suffix\nconst chatId = phone.includes(\u0027@\u0027) ? phone : phone + \u0027@c.us\u0027;\n\nreturn [{ json: { chatId, reply: message } }];"
+                                     },
+                      "id":  "normalize-dashboard-node",
+                      "name":  "Normalize Dashboard Reply",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                        200,
+                                        400
+                                    ]
                   }
               ],
     "connections":  {
@@ -315,7 +347,29 @@
                                                                }
                                                            ]
                                                        ]
-                                          }
+                                          },
+                        "Dashboard Webhook":  {
+                                                 "main":  [
+                                                              [
+                                                                  {
+                                                                      "node":  "Normalize Dashboard Reply",
+                                                                      "type":  "main",
+                                                                      "index":  0
+                                                                  }
+                                                              ]
+                                                          ]
+                                             },
+                        "Normalize Dashboard Reply":  {
+                                                         "main":  [
+                                                                      [
+                                                                          {
+                                                                              "node":  "SendText WAHA",
+                                                                              "type":  "main",
+                                                                              "index":  0
+                                                                          }
+                                                                      ]
+                                                                  ]
+                                                     }
                     },
     "settings":  {
                      "executionOrder":  "v1",

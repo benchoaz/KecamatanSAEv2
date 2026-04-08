@@ -106,9 +106,9 @@ class AppServiceProvider extends ServiceProvider
                     'unread_service_count',
                     300,
                     fn() =>
-                    \App\Models\PublicService::where('status', 'Menunggu Klarifikasi')->count()
+                    \App\Models\PublicService::whereIn('status', ['Menunggu', 'Menunggu Klarifikasi'])->count()
                 ));
-                $view->with('recentUnreadServices', \App\Models\PublicService::where('status', 'Menunggu Klarifikasi')
+                $view->with('recentUnreadServices', \App\Models\PublicService::whereIn('status', ['Menunggu', 'Menunggu Klarifikasi'])
                     ->orderBy('created_at', 'desc')
                     ->take(5)
                     ->get());

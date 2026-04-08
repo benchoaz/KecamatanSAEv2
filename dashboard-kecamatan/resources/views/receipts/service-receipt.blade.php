@@ -306,7 +306,7 @@
             <div class="qr-section">
                 <h3>🔍 Lacak Status Berkas Anda</h3>
                 <div class="qr-code">
-                    <img src="data:image/png;base64,{{ $qrCode }}" alt="QR Code" width="200" height="200">
+                    <img src="data:image/svg+xml;base64,{{ $qrCode }}" alt="QR Code" width="200" height="200">
                 </div>
                 <div class="qr-instruction">
                     <strong>Cara menggunakan:</strong><br>

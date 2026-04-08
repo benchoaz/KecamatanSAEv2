@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Public\LayananController;
+use App\Http\Controllers\PublicServiceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,35 +14,23 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Main Layanan Portal
-Route::get('/layanan', [LayananController::class, 'index'])
-    ->name('layanan')
-    ->middleware('cache.headers:public;max_age=300');
+Route::get('/layanan', [PublicServiceController::class, 'trackingPage'])
+    ->name('layanan');
+Route::post('/layanan/check', [PublicServiceController::class, 'checkStatus'])
+    ->name('public.tracking.check');
 
 // Application Routes - KTP, KK, Akta, dll
-Route::get('/ktp', [LayananController::class, 'ktp'])
-    ->name('apply.ktp')
-    ->middleware('cache.headers:public;max_age=300');
+Route::get('/layanan/apply/{type}', [App\Http\Controllers\Public\LayananController::class, 'showForm'])
+    ->name('apply.form');
 
-Route::get('/kk', [LayananController::class, 'kk'])
-    ->name('apply.kk')
-    ->middleware('cache.headers:public;max_age=300');
+// Direct aliases for the chatbot/landing page links
+Route::get('/ktp', fn() => redirect()->route('apply.form', 'ktp'))->name('apply.ktp');
+Route::get('/kk', fn() => redirect()->route('apply.form', 'kk'))->name('apply.kk');
+Route::get('/akta', fn() => redirect()->route('apply.form', 'akta'))->name('apply.akta');
+Route::get('/sktm', fn() => redirect()->route('apply.form', 'sktm'))->name('apply.sktm');
+Route::get('/domisili', fn() => redirect()->route('apply.form', 'domisili'))->name('apply.domisili');
+Route::get('/nikah', fn() => redirect()->route('apply.form', 'nikah'))->name('apply.nikah');
+Route::get('/bpjs', fn() => redirect()->route('apply.form', 'bpjs'))->name('apply.bpjs');
 
-Route::get('/akta', [LayananController::class, 'akta'])
-    ->name('apply.akta')
-    ->middleware('cache.headers:public;max_age=300');
-
-Route::get('/sktm', [LayananController::class, 'sktm'])
-    ->name('apply.sktm')
-    ->middleware('cache.headers:public;max_age=300');
-
-Route::get('/domisili', [LayananController::class, 'domisili'])
-    ->name('apply.domisili')
-    ->middleware('cache.headers:public;max_age=300');
-
-Route::get('/nikah', [LayananController::class, 'nikah'])
-    ->name('apply.nikah')
-    ->middleware('cache.headers:public;max_age=300');
-
-Route::get('/bpjs', [LayananController::class, 'bpjs'])
-    ->name('apply.bpjs')
-    ->middleware('cache.headers:public;max_age=300');
+Route::post('/layanan/apply', [App\Http\Controllers\Public\LayananController::class, 'store'])
+    ->name('apply.store');

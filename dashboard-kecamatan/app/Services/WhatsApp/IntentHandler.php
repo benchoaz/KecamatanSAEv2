@@ -13,6 +13,7 @@ class IntentHandler
     protected LokerHandler $lokerHandler;
     protected ComplaintHandler $complaintHandler;
     protected OwnerHandler $ownerHandler;
+    protected \App\Services\FaqSearchService $faqSearchService;
 
     public function __construct(
         StatusHandler $statusHandler,
@@ -21,7 +22,8 @@ class IntentHandler
         JasaHandler $jasaHandler,
         LokerHandler $lokerHandler,
         ComplaintHandler $complaintHandler,
-        OwnerHandler $ownerHandler
+        OwnerHandler $ownerHandler,
+        \App\Services\FaqSearchService $faqSearchService
     ) {
         $this->statusHandler = $statusHandler;
         $this->syaratHandler = $syaratHandler;
@@ -30,6 +32,7 @@ class IntentHandler
         $this->lokerHandler = $lokerHandler;
         $this->complaintHandler = $complaintHandler;
         $this->ownerHandler = $ownerHandler;
+        $this->faqSearchService = $faqSearchService;
     }
 
     /**
@@ -204,6 +207,34 @@ class IntentHandler
         // Owner toggle intent
         if ($this->matchesIntent($messageLower, ['toggle', 'aktif', 'nonaktif', 'on', 'off', 'kelola'])) {
             return $this->ownerHandler->initiate($phone);
+        }
+
+        // --- FAQ NATURAL LANGUAGE FALLBACK ---
+        // Try searching FAQs before giving up
+        $faqData = $this->faqSearchService->search($messageLower);
+        if ($faqData['found']) {
+            if (isset($faqData['multiple']) && $faqData['multiple']) {
+                $reply = "Ditemukan beberapa topik yang mungkin relevan:\n\n";
+                foreach ($faqData['results'] as $i => $res) {
+                    $num = $i + 1;
+                    $reply .= "{$num}. SYARAT " . strtoupper($res['question']) . "\n";
+                }
+                $reply .= "\nKetik kata kunci yang lebih spesifik atau pilih dari menu.";
+                return [
+                    'success' => true,
+                    'intent' => 'faq_suggestions',
+                    'reply' => $reply,
+                    'state_update' => null,
+                ];
+            }
+
+            $top = $faqData['results'][0];
+            return [
+                'success' => true,
+                'intent' => 'faq_match',
+                'reply' => "✅ *{$top['question']}*\n\n{$top['answer']}\n\nKetik *MENU* untuk kembali.",
+                'state_update' => null,
+            ];
         }
 
         // Unknown intent

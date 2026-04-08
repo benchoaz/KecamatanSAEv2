@@ -29,6 +29,7 @@
                                     Layanan</th>
                                 <th class="py-3 text-slate-400 small fw-bold text-uppercase tracking-wider">Persyaratan</th>
                                 <th class="py-3 text-slate-400 small fw-bold text-uppercase tracking-wider">Estimasi</th>
+                                <th class="py-3 text-slate-400 small fw-bold text-uppercase tracking-wider">Populer</th>
                                 <th class="py-3 text-slate-400 small fw-bold text-uppercase tracking-wider">Status</th>
                                 <th class="pe-4 py-3 text-end text-slate-400 small fw-bold text-uppercase tracking-wider">
                                     Aksi</th>
@@ -61,6 +62,16 @@
                                             class="badge bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1.5 rounded-pill small fw-bold">
                                             <i class="far fa-clock me-1"></i> {{ $item->estimasi_waktu }}
                                         </span>
+                                    </td>
+                                    <td>
+                                        @if($item->is_popular)
+                                            <span
+                                                class="badge bg-amber-50 text-amber-600 px-2 py-1.5 rounded-pill small fw-bold border border-amber-100">
+                                                <i class="fas fa-star me-1 small"></i> Hero
+                                            </span>
+                                        @else
+                                            <span class="text-slate-300 small italic">-</span>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($item->is_active)
