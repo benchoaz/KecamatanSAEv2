@@ -61,15 +61,22 @@ class JasaHandler
 
         foreach ($jasaList as $index => $jasa) {
             $num = $index + 1;
-            $message .= "{$num}. *{$jasa->name}*\n";
+            $opStatus = $jasa->operational_status;
+            $statusPrefix = $opStatus['is_open'] ? "🟢" : "🔴";
+
+            $message .= "{$num}. {$statusPrefix} *{$jasa->name}* [{$opStatus['label']}]\n";
             $message .= "   {$jasa->address}\n";
 
+            if ($jasa->operating_hours) {
+                $message .= "   🕒 Jam: {$jasa->operating_hours}\n";
+            }
+
             if ($jasa->contact_wa) {
-                $message .= "   {$jasa->contact_wa}\n";
+                $message .= "   📱 WA: {$jasa->contact_wa}\n";
             }
 
             if ($jasa->product) {
-                $message .= "   {$jasa->product}\n";
+                $message .= "   🔧 {$jasa->product}\n";
             }
 
             $message .= "\n";

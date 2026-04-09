@@ -66,7 +66,7 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
     // Announcements
     Route::resource('announcements', AnnouncementController::class);
 
-    // UMKM & Loker (Layanan Publik)
+    // UMKM (Layanan Publik)
     Route::prefix('umkm')->name('umkm.')->group(function () {
         Route::get('/', [LayananPublikController::class, 'umkmIndex'])->name('index');
         Route::get('/create', [LayananPublikController::class, 'umkmCreate'])->name('create');
@@ -78,14 +78,7 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
         Route::post('/{id}/reset-akses', [LayananPublikController::class, 'resetAkses'])->name('reset-akses');
     });
 
-    Route::prefix('loker')->name('loker.')->group(function () {
-        Route::get('/', [LayananPublikController::class, 'lokerIndex'])->name('index');
-        Route::get('/create', [LayananPublikController::class, 'lokerCreate'])->name('create');
-        Route::post('/', [LayananPublikController::class, 'lokerStore'])->name('store');
-        Route::get('/{id}/edit', [LayananPublikController::class, 'lokerEdit'])->name('edit');
-        Route::put('/{id}', [LayananPublikController::class, 'lokerUpdate'])->name('update');
-        Route::delete('/{id}', [LayananPublikController::class, 'lokerDestroy'])->name('destroy');
-    });
+
 
     // Restrict other routes to Super Admin & Operator only
     Route::middleware(['role:Operator Kecamatan,Super Admin'])->group(function () {

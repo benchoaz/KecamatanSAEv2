@@ -23,11 +23,12 @@ Route::get('/berita/{slug}', [\App\Http\Controllers\PublicBeritaController::clas
 // Public Service & Economy Routes
 require __DIR__ . '/public/layanan.php';
 require __DIR__ . '/public/economy.php';
+require __DIR__ . '/public/warga.php';
 
 // Route Aliases for Landing Page compatibility
 Route::get('/tracking', [PublicServiceController::class, 'trackingPage'])->name('public.tracking');
 Route::post('/service/submit', [PublicServiceController::class, 'submit'])->name('public.service.submit');
-Route::get('/ekonomi/loker/daftar', [EconomyController::class, 'create'])->name('public.loker.create');
+
 
 // Receipt Routes
 Route::get('/receipt/{uuid}/download', [\App\Http\Controllers\ReceiptController::class, 'generateReceipt'])->name('receipt.download');

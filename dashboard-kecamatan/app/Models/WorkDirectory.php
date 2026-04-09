@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class WorkDirectory extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\OperationalStatus;
 
     protected $table = 'work_directory';
 
@@ -26,10 +26,13 @@ class WorkDirectory extends Model
         'data_source',
         'consent_public',
         'status',
+        'operating_hours',
+        'is_on_holiday',
     ];
 
     protected $casts = [
         'consent_public' => 'boolean',
+        'is_on_holiday' => 'boolean',
     ];
 
     /**

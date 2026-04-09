@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\PembangunanDesa;
 use App\Models\Umkm;
-use App\Models\Loker;
+
 use App\Models\UsulanMusrenbang;
 use App\Models\Submission;
 use Illuminate\Support\Facades\DB;
@@ -161,24 +161,7 @@ class EconomyEarlyWarningService
             ];
         }
 
-        // 2. Lowongan Kerja Expired masih berstatus open
-        $expiredJobs = Loker::where('status', 'aktif')
-            ->where('tanggal_tutup', '<', now())
-            ->get();
 
-        if ($expiredJobs->isNotEmpty()) {
-            $alerts[] = [
-                'level' => 'info',
-                'type' => 'job_expired',
-                'title' => 'Lowongan Expired',
-                'message' => "{$expiredJobs->count()} lowongan sudah expired tapi masih aktif",
-                'data' => $expiredJobs->map(fn($j) => [
-                    'id' => $j->id,
-                    'judul' => $j->judul,
-                    'tanggal_tutup' => $j->tanggal_tutup
-                ])
-            ];
-        }
 
         // 3. UMKM pending verification (>14 hari)
         $pendingUmkm = Umkm::where('status', 'pending')

@@ -47,12 +47,15 @@ class EconomyController extends Controller
             ->distinct()
             ->pluck('job_category');
 
-        // Fetch UMKM Data for the "Etalase" tab
-        $umkms = \App\Models\UmkmLocal::where('is_active', true)->latest()->limit(8)->get();
+        // Ambil UMKM Resmi (Verified) - Prioritas utama
+        $officialUmkms = \App\Models\Umkm::where('status', 'aktif')->latest()->limit(4)->get();
+
+        // Ambil UMKM Lokal (Quick Directory)
+        $localUmkms = \App\Models\UmkmLocal::where('is_active', true)->latest()->limit(8)->get();
 
         $defaultTab = $request->get('tab', 'jasa');
 
-        return view('economy.index', compact('workItems', 'categories', 'umkms', 'defaultTab'));
+        return view('economy.index', compact('workItems', 'categories', 'officialUmkms', 'localUmkms', 'defaultTab'));
     }
 
     /**
@@ -70,6 +73,22 @@ class EconomyController extends Controller
             ->get();
 
         return view('economy.show', compact('workItem', 'relatedItems'));
+    }
+
+    /**
+     * Display detail page of a single UMKM store (UmkmLocal)
+     */
+    public function showProduk($id)
+    {
+        $produk = \App\Models\UmkmLocal::where('is_active', true)->findOrFail($id);
+
+        // Semua produk dari toko yang sama (berdasarkan nama toko)
+        $produkLainnya = \App\Models\UmkmLocal::where('is_active', true)
+            ->where('name', $produk->name)
+            ->where('id', '!=', $produk->id)
+            ->get();
+
+        return view('economy.show_produk', compact('produk', 'produkLainnya'));
     }
 
     /**
@@ -100,9 +119,6 @@ class EconomyController extends Controller
             'short_description' => 'nullable|string|max:500',
         ]);
 
-        // Generate 6-digit PIN
-        $pin = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
         // Create WorkDirectory entry
         $workDir = WorkDirectory::create([
             'display_name' => $request->display_name,
@@ -110,7 +126,7 @@ class EconomyController extends Controller
             'job_type' => $request->job_type,
             'job_title' => $request->job_title,
             'contact_phone' => $request->contact_phone,
-            'owner_pin' => Hash::make($pin),
+            'owner_pin' => null, // PIN dihapus, sistem menggunakan Magic Link
             'service_area' => $request->service_area,
             'service_time' => $request->service_time,
             'short_description' => $request->short_description,
@@ -122,57 +138,36 @@ class EconomyController extends Controller
         // Create Public Service entry for Inbox
         PublicService::create([
             'uuid' => (string) Str::uuid(),
-            'nama_pemohon' => $workDir->display_name,
             'desa_id' => $request->desa_id,
+            'nama_pemohon' => $workDir->display_name,
             'jenis_layanan' => 'Pendaftaran Pekerjaan & Jasa',
-            'uraian' => "Pendaftaran Pekerjaan/Jasa Baru: {$workDir->job_title} ({$workDir->job_category}). Atas nama: {$workDir->display_name}. Kontak: {$workDir->contact_phone}. PIN Pemilik: {$pin}",
+            'uraian' => "Pendaftaran Pekerjaan/Jasa Baru: {$workDir->job_title} ({$workDir->job_category}). Atas nama: {$workDir->display_name}. Kontak: {$workDir->contact_phone}.", // Harusan PIN dihapus
             'whatsapp' => $workDir->contact_phone,
             'status' => PublicService::STATUS_MENUNGGU,
             'category' => PublicService::CATEGORY_PEKERJAAN,
             'source' => 'web_form'
         ]);
 
-        // Send WhatsApp notification with PIN
-        $this->sendWhatsAppNotification($workDir, $pin);
+        // Send WhatsApp notification
+        $this->sendWhatsAppNotification($workDir);
 
-        return redirect()->route('economy.index', ['tab' => 'jasa'])->with('success', 'Terima kasih. Data pekerjaan/jasa Anda akan ditampilkan setelah diverifikasi. PIN Anda: ' . $pin);
+        return redirect()->route('economy.index', ['tab' => 'jasa'])->with('success', 'Terima kasih. Data pekerjaan/jasa Anda akan ditampilkan setelah diverifikasi.');
     }
 
     /**
-     * Show PIN login form for Jasa
+     * Redirect Jasa owner to Portal Warga (PIN-less)
      */
     public function loginForm()
     {
-        return view('economy.login');
+        return redirect()->route('portal_warga.login');
     }
 
     /**
-     * Authenticate Jasa owner using Phone & PIN
+     * Legacy PIN-based auth (Redirect to Portal)
      */
     public function authenticate(Request $request)
     {
-        $request->validate([
-            'contact_phone' => 'required',
-            'owner_pin' => 'required|digits:6',
-        ]);
-
-        $phone = $request->contact_phone;
-        // Basic normalization
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-        if (str_starts_with($phone, '0')) {
-            $phone = '0' . substr($phone, 1); // Keep as is since it's stored as entered usually
-        }
-
-        $workItem = WorkDirectory::where('contact_phone', 'like', "%{$request->contact_phone}%")->first();
-
-        if (!$workItem || !Hash::check($request->owner_pin, $workItem->owner_pin)) {
-            return back()->with('error', 'Nomor WhatsApp atau PIN salah.')->withInput();
-        }
-
-        // Store in session
-        session(['manage_jasa_id' => $workItem->id]);
-
-        return redirect()->route('economy.manage', $workItem->id);
+        return redirect()->route('portal_warga.login');
     }
 
     /**
@@ -220,9 +215,9 @@ class EconomyController extends Controller
     }
 
     /**
-     * Send WhatsApp notification with PIN
+     * Send WhatsApp notification (PIN-less)
      */
-    private function sendWhatsAppNotification($workDir, $pin)
+    private function sendWhatsAppNotification($workDir)
     {
         try {
             $wahaSettings = WahaN8nSetting::getSettings();
@@ -246,16 +241,11 @@ class EconomyController extends Controller
 
 ";
             $message .= "━━━━━━━━━━━━━━━━━\n";
-            $message .= "🔑 *PIN Anda:* `{$pin}`\n";
             $message .= "📝 *Layanan:* {$workDir->job_title}\n";
             $message .= "📅 *Tanggal:* " . now()->format('d/m/Y H:i') . " WIB\n";
             $message .= "━━━━━━━━━━━━━━━━━\n\n";
-            $message .= "Simpan PIN di atas untuk:
-";
-            $message .= "• Mengelola data Anda
-";
-            $message .= "• Mengaktifkan/Mematikan tampilan\n";
-            $message .= "• Mengedit informasi\n\n";
+            $message .= "Untuk merubah status atau mengedit profil Jasa Anda, silakan masuk ke secara aman (tanpa PIN/Password) melalui:\n\n";
+            $message .= "🌐 *Pusat Kendali Warga*: \n" . route('portal_warga.login') . "\n\n";
             $message .= "Ketik *MENU* untuk kembali.";
 
             // Use direct WAHA sendText endpoint

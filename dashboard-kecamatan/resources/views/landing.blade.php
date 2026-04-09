@@ -781,6 +781,105 @@
         </div>
     @endif
 
+    <!-- Section: Pasar Rakyat & Produk UMKM (NEW - Buyer Experience) -->
+    <div id="pasar" class="py-24 bg-slate-50 border-t border-slate-100 relative overflow-hidden">
+        {{-- Background Decorations --}}
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-100/30 rounded-full blur-[100px] translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-100/30 rounded-full blur-[100px] -translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+
+        <div class="container mx-auto px-6 relative z-10">
+            <div class="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
+                <div class="text-left">
+                    <div class="inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full mb-4 text-[10px] font-black uppercase tracking-widest border border-amber-100">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>Ekonomi & UMKM Lokal</span>
+                    </div>
+                    <h2 class="text-3xl md:text-5xl font-black text-slate-800 mb-2">Pasar Rakyat Digital</h2>
+                    <p class="text-slate-500 font-medium max-w-xl">Dukung ekonomi warga dengan membeli produk dan jasa langsung dari tetangga kita.</p>
+                </div>
+                <a href="{{ route('economy.index', ['tab' => 'produk']) }}" class="btn bg-white hover:bg-slate-900 hover:text-white border-slate-200 text-slate-800 rounded-2xl px-8 h-14 font-black transition-all shadow-sm flex items-center gap-2 group">
+                    Eksplorasi Semua Produk <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </a>
+            </div>
+
+            {{-- Grid Produk & Toko --}}
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {{-- Sisi Kiri: Produk Unggulan (Katalog) --}}
+                <div class="lg:col-span-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        @foreach($featuredProducts as $fp)
+                        @php
+                            $waPhone = preg_replace('/[^0-9]/', '', $fp->contact_wa ?? '');
+                            if (str_starts_with($waPhone, '0')) { $waPhone = '62' . substr($waPhone, 1); }
+                            $detailLink = route('economy.produk.show', $fp->id);
+                        @endphp
+                        <div class="group bg-white rounded-[2.5rem] p-4 border border-slate-100 hover:border-teal-200 transition-all duration-500 hover:shadow-2xl hover:shadow-teal-900/5">
+                            <div class="aspect-[4/3] rounded-[2rem] overflow-hidden mb-5 relative">
+                                <img src="{{ $fp->image_path ? asset('storage/' . $fp->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60' }}" 
+                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                <div class="absolute top-4 right-4 flex flex-col items-end gap-2">
+                                    <span class="bg-white/90 backdrop-blur-md text-slate-800 text-[10px] font-black px-3 py-1.5 rounded-xl shadow-sm border border-white">
+                                        Rp {{ number_format($fp->price ?? 0, 0, ',', '.') }}
+                                    </span>
+                                    @php $opStatus = $fp->operational_status; @endphp
+                                    <span class="bg-white/90 backdrop-blur-md text-{{ $opStatus['color'] }}-600 text-[9px] font-black px-3 py-1.5 rounded-xl shadow-sm border border-{{ $opStatus['color'] }}-100 flex items-center gap-1.5">
+                                        <i class="fas {{ $opStatus['icon'] }}"></i> {{ $opStatus['label'] }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="px-2">
+                                <p class="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-1">{{ $fp->name }}</p>
+                                <h4 class="text-lg font-black text-slate-800 mb-4 line-clamp-1 group-hover:text-teal-700 transition-colors">{{ $fp->product }}</h4>
+                                <div class="flex items-center gap-2">
+                                    <a href="{{ $detailLink }}" class="flex-1 bg-slate-50 hover:bg-teal-600 hover:text-white text-slate-600 font-bold py-3 rounded-xl text-xs text-center transition-all">Lihat Detail</a>
+                                    <a href="https://wa.me/{{ $waPhone }}" target="_blank" class="w-11 h-11 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all"><i class="fab fa-whatsapp text-lg"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Sisi Kanan: Toko Terverifikasi (Highlight) --}}
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 h-full flex flex-col">
+                        <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2">
+                            <i class="fas fa-certificate text-amber-500"></i> Toko Terverifikasi
+                        </h4>
+                        
+                        <div class="space-y-6 flex-grow">
+                            @foreach($officialUmkms as $ou)
+                            <a href="{{ route('umkm_rakyat.show', $ou->slug) }}" class="flex items-center gap-4 group/toko">
+                                <div class="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 group-hover/toko:scale-110 transition-transform">
+                                    @if($ou->foto_usaha)
+                                        <img src="{{ asset('storage/' . $ou->foto_usaha) }}" class="w-full h-full object-cover">
+                                    @else
+                                        <div class="w-full h-full flex items-center justify-center text-slate-300"><i class="fas fa-store"></i></div>
+                                    @endif
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h5 class="text-sm font-black text-slate-800 group-hover/toko:text-amber-600 transition-colors truncate">{{ $ou->nama_usaha }}</h5>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{{ $ou->jenis_usaha }} • {{ $ou->desa }}</p>
+                                </div>
+                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover/toko:bg-amber-50 group-hover/toko:text-amber-500 transition-all">
+                                    <i class="fas fa-chevron-right text-[10px]"></i>
+                                </div>
+                            </a>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-8 p-6 bg-amber-50 rounded-3xl border border-amber-100">
+                            <p class="text-xs font-bold text-amber-800 leading-relaxed mb-4">Ingin produk Anda tayang di sini? Daftar sekarang gratis!</p>
+                            <a href="{{ route('umkm_rakyat.create') }}" class="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-2 hover:gap-3 transition-all">
+                                Buka Toko Digital <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Berita & Informasi Section -->
     <div id="berita" class="py-20 bg-white border-t border-slate-100">
         <div class="container mx-auto px-6">

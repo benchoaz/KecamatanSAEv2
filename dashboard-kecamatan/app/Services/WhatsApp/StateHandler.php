@@ -12,7 +12,7 @@ class StateHandler
     protected StatusHandler $statusHandler;
     protected SyaratHandler $syaratHandler;
     protected UmkmHandler $umkmHandler;
-    protected LokerHandler $lokerHandler;
+
     protected JasaHandler $jasaHandler;
 
     public function __construct(
@@ -22,7 +22,6 @@ class StateHandler
         StatusHandler $statusHandler,
         SyaratHandler $syaratHandler,
         UmkmHandler $umkmHandler,
-        LokerHandler $lokerHandler,
         JasaHandler $jasaHandler
     ) {
         $this->intentHandler = $intentHandler;
@@ -31,7 +30,6 @@ class StateHandler
         $this->statusHandler = $statusHandler;
         $this->syaratHandler = $syaratHandler;
         $this->umkmHandler = $umkmHandler;
-        $this->lokerHandler = $lokerHandler;
         $this->jasaHandler = $jasaHandler;
     }
 
@@ -48,7 +46,6 @@ class StateHandler
             str_starts_with($messageLower, 'syarat') ||
             str_starts_with($messageLower, 'umkm') ||
             str_starts_with($messageLower, 'jasa') ||
-            str_starts_with($messageLower, 'loker') ||
             str_starts_with($messageLower, 'pengaduan') ||
             str_starts_with($messageLower, 'cek') ||
             str_starts_with($messageLower, 'status')
@@ -63,7 +60,6 @@ class StateHandler
             'MENU_EKONOMI' => $this->handleMenuEkonomi($session, $messageLower),
             'MENU_JASA' => $this->jasaHandler->search($message),
             'WAITING_UMKM_SEARCH' => $this->umkmHandler->search($message),
-            'WAITING_LOKER_SEARCH' => $this->lokerHandler->search($message),
             // New simplified complaint flow - form link
             'WAITING_COMPLAINT_NAME' => $this->complaintHandler->handleName($session, $message),
             'WAITING_COMPLAINT_WA' => $this->complaintHandler->handleWhatsApp($session, $message),
@@ -156,46 +152,36 @@ class StateHandler
      */
     protected function handleMenuEkonomi(WhatsappSession $session, string $message): array
     {
+        $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
+
         if ($this->isSelection($message, '1')) {
-            // Show links to Loker & Toko/Etalase
-            $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
             return [
                 'success' => true,
-                'intent' => 'loker_etalase_link',
-                'reply' => "LOKER & TOKO\n\n" .
-                    "Pilih kategori:\n\n" .
-                    "1. Loker - Lowongan Kerja\n" .
-                    "   {$baseUrl}/loker\n\n" .
-                    "2. Toko/Etalase - Produk Warga\n" .
-                    "   {$baseUrl}/etalase\n\n" .
+                'intent' => 'umkm_link',
+                'reply' => "🛒 *Etalase Produk UMKM*\n\n" .
+                    "Temukan produk unggulan karya warga sekitar:\n" .
+                    "{$baseUrl}/ekonomi?tab=produk\n\n" .
                     "Ketik *MENU* untuk kembali.",
                 'state_update' => null,
             ];
         }
 
         if ($this->isSelection($message, '2')) {
-            // Show Loker link
-            $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
             return [
                 'success' => true,
-                'intent' => 'loker_link',
-                'reply' => "LOWONGAN KERJA (LOKER)\n\n" .
-                    "Cari lowongan kerja warga:\n\n" .
-                    "{$baseUrl}/loker\n\n" .
+                'intent' => 'jasa_link',
+                'reply' => "🔧 *Direktori Jasa & Tenaga Ahli*\n\n" .
+                    "Temukan tukang, tenaga harian, dan penyedia jasa:\n" .
+                    "{$baseUrl}/ekonomi?tab=jasa\n\n" .
                     "Ketik *MENU* untuk kembali.",
                 'state_update' => null,
             ];
         }
 
-        // Handle specific states if needed, or fallback
-        if ($session->state === 'WAITING_UMKM_SEARCH') {
-            return $this->umkmHandler->search($message);
-        }
-
         return [
             'success' => true,
             'intent' => 'invalid_selection',
-            'reply' => "Pilihan tidak valid. Silakan pilih:\n1. UMKM\n2. Loker\n\nAtau ketik *MENU* untuk kembali.",
+            'reply' => "Pilihan tidak valid. Silakan pilih:\n1. Produk UMKM\n2. Jasa & Tenaga Ahli\n\nAtau ketik *MENU* untuk kembali.",
             'state_update' => 'MENU_EKONOMI',
         ];
     }

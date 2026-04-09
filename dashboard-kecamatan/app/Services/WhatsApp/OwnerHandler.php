@@ -13,194 +13,90 @@ class OwnerHandler
      */
     public function initiate(string $phone): array
     {
-        // Clean phone for lookup
-        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-
-        // Check if phone owns any UMKM/JASA
-        $umkm = UmkmLocal::where('contact_wa', 'LIKE', "%{$cleanPhone}%")->first();
-
-        // Check if phone owns any LOKER
-        $loker = Loker::where('contact_wa', 'LIKE', "%{$cleanPhone}%")->first();
-
-        if (!$umkm && !$loker) {
-            return [
-                'success' => true,
-                'intent' => 'owner_not_found',
-                'reply' => "INFORMASI PROFIL\n\n" .
-                    "Nomor WhatsApp Anda ({$phone}) belum terdaftar sebagai pemilik usaha (UMKM) atau tenaga ahli (Jasa) di sistem kami.\n\n" .
-                    "Pilih nomor 2 atau 3 pada MENU untuk mulai mendaftarkan usaha/jasa Anda.",
-                'state_update' => null,
-            ];
-        }
-
-        // Store detected items for PIN verification
-        $session = WhatsappSession::getOrCreate($phone);
-        if ($umkm) {
-            $session->setTempValue('owner_umkm_id', $umkm->id);
-        }
-        if ($loker) {
-            $session->setTempValue('owner_loker_id', $loker->id);
-        }
-
+        $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
+        
         return [
             'success' => true,
-            'intent' => 'owner_request_pin',
-            'reply' => "PUSAT KENDALI PROFIL\n\n" .
-                "Nomor Anda terdaftar sebagai pemilik data. Silakan masukkan PIN 6-digit Anda untuk masuk ke sistem keamanan.\n\n" .
-                "Lupa PIN? Ketik RESET\n" .
+            'intent' => 'owner_portal_link',
+            'reply' => "🔐 *Akses Pusat Kendali Warga*\n\n" .
+                "Sistem keamanan PIN manual telah kami **hapus** untuk mempermudah Anda.\n" .
+                "Kini, Anda dapat memperbarui status Jasa maupun mengelola produk UMKM secara langsung dengan sistem aman tanpa sandi.\n\n" .
+                "Silakan klik Portal Warga di bawah ini:\n" .
+                "🌐 {$baseUrl}/portal-warga/masuk\n\n" .
                 "Ketik MENU untuk kembali.",
-            'state_update' => 'WAITING_OWNER_PIN',
-        ];
-    }
-
-    /**
-     * Handle PIN input
-     */
-    public function handlePin(WhatsappSession $session, string $message): array
-    {
-        if (strtolower($message) === 'batal') {
-            $session->clear();
-            return [
-                'success' => true,
-                'intent' => 'owner_cancelled',
-                'reply' => "Dibatalkan. Ketik MENU untuk kembali.",
-                'state_update' => null,
-            ];
-        }
-
-        // Check for lupa pin
-        if (
-            str_contains(strtolower($message), 'lupa') ||
-            str_contains(strtolower($message), 'forgot') ||
-            str_contains(strtolower($message), 'reset')
-        ) {
-            return $this->handleForgotOwnerPin($session);
-        }
-
-        $umkmId = $session->getTempValue('owner_umkm_id');
-        $lokerId = $session->getTempValue('owner_loker_id');
-
-        $umkm = $umkmId ? UmkmLocal::where('id', $umkmId)->where('owner_pin', $message)->first() : null;
-        $loker = $lokerId ? Loker::where('id', $lokerId)->where('owner_pin', $message)->first() : null;
-
-        if (!$umkm && !$loker) {
-            return [
-                'success' => true,
-                'intent' => 'owner_pin_invalid',
-                'reply' => "PIN salah. Silakan coba lagi atau ketik BATAL.\n\n" .
-                    "Ketik LUPA PIN untuk bantuan reset PIN.",
-                'state_update' => 'WAITING_OWNER_PIN',
-            ];
-        }
-
-        $session->updateState('WAITING_OWNER_ACTION');
-
-        $reply = "PIN benar!\n\n";
-        $reply .= "Silakan pilih data yang ingin dikelola:\n";
-
-        if ($umkm) {
-            $status = $umkm->is_active ? 'AKTIF' : 'NONAKTIF';
-            $reply .= "UMKM/JASA: {$umkm->name} ({$status})\n";
-            $session->setTempValue('target_type', 'umkm');
-        }
-
-        if ($loker) {
-            $status = ($loker->status === 'aktif') ? 'AKTIF' : 'NONAKTIF';
-            $reply .= "LOKER: {$loker->title} ({$status})\n";
-            // If both exist, we might need a selection step. 
-            // For now, prioritize the one they typed if ambiguous, or handle both as a toggle.
-            // Simplified: Toggle whatever is available.
-            if (!$umkm)
-                $session->setTempValue('target_type', 'loker');
-        }
-
-        $reply .= "\nPilih aksi:\n";
-        $reply .= "1. Ketik AKTIF untuk mengaktifkan\n";
-        $reply .= "2. Ketik NONAKTIF untuk mematikan (tidak bisa dicari)\n";
-        $reply .= "3. Ketik BATAL untuk keluar";
-
-        return [
-            'success' => true,
-            'intent' => 'owner_pin_valid',
-            'reply' => $reply,
-            'state_update' => 'WAITING_OWNER_ACTION',
-        ];
-    }
-
-    /**
-     * Handle toggle action
-     */
-    public function handleAction(WhatsappSession $session, string $message): array
-    {
-        $messageLower = strtolower(trim($message));
-
-        if ($messageLower === 'batal') {
-            $session->clear();
-            return [
-                'success' => true,
-                'intent' => 'owner_cancelled',
-                'reply' => "Dibatalkan. Ketik MENU untuk kembali.",
-                'state_update' => null,
-            ];
-        }
-
-        $umkmId = $session->getTempValue('owner_umkm_id');
-        $lokerId = $session->getTempValue('owner_loker_id');
-
-        $action = ($messageLower === 'aktif');
-        $newStatus = $action ? 'AKTIF' : 'NONAKTIF';
-
-        $summary = "STATUS DIPERBARUI\n\n";
-
-        if ($umkmId) {
-            $umkm = UmkmLocal::find($umkmId);
-            if ($umkm) {
-                $umkm->update(['is_active' => $action, 'last_toggle_at' => now()]);
-                $summary .= "{$umkm->name} -> {$newStatus}\n";
-            }
-        }
-
-        if ($lokerId) {
-            $loker = Loker::find($lokerId);
-            if ($loker) {
-                $lokerStatus = $action ? 'aktif' : 'nonaktif';
-                $loker->update(['status' => $lokerStatus, 'last_toggle_at' => now()]);
-                $summary .= "{$loker->title} -> {$newStatus}\n";
-            }
-        }
-
-        $summary .= "\nData telah diperbarui dan perubahan langsung berlaku di pencarian warga.";
-
-        $session->clear();
-
-        return [
-            'success' => true,
-            'intent' => 'owner_toggled',
-            'reply' => $summary,
             'state_update' => null,
         ];
     }
 
     /**
-     * Handle forgot owner PIN
+     * Handle Forgot PIN - Redirect to PIN-less portal
      */
-    protected function handleForgotOwnerPin(WhatsappSession $session): array
+    public function handleForgotOwnerPin(string $phone): array
     {
-        // Use PUBLIC_BASE_URL if available, fallback to app.url
         $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
-        $loginUrl = $baseUrl . '/owner/login';
 
         return [
             'success' => true,
             'intent' => 'owner_lupa_pin',
-            'reply' => "BANTUAN PIN AKSES\n\n" .
-                "Untuk keamanan data, silakan gunakan link Login Web berikut untuk masuk atau meriset PIN melalui profil Anda:\n\n" .
-                "1. Bagi Jasa & Pekerjaan:\n" .
-                "   {$baseUrl}/ekonomi/login\n\n" .
-                "2. Bagi UMKM (Seller Center):\n" .
-                "   {$baseUrl}/umkm-rakyat/login\n\n" .
-                "Jika masih kendala, silakan hubungi admin di kantor kecamatan.\n\n" .
+            'reply' => "🔐 *Portal Warga Tanpa Sandi*\n\n" .
+                "Sistem kami sekarang tidak lagi menggunakan PIN untuk akses manajemen.\n\n" .
+                "Anda dapat mengelola data secara aman melalui tautan pribadi di bawah ini:\n" .
+                "🌐 {$baseUrl}/portal-warga/masuk\n\n" .
                 "Ketik MENU untuk kembali.",
+            'state_update' => null,
+        ];
+    }
+
+    /**
+     * Quick toggle holiday status for all assets owned by this phone
+     */
+    public function toggleHolidayStatus(string $phone, string $action): array
+    {
+        $action = strtolower($action);
+        $isHoliday = ($action === 'libur');
+        $newStatusLabel = $isHoliday ? 'DILIBURKAN 🔴' : 'DIBUKA KEMBALI 🟢';
+
+        // Normalize phone for searching
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+        $basePhone = $cleanPhone;
+        if (str_starts_with($cleanPhone, '62')) {
+            $basePhone = substr($cleanPhone, 2);
+        } elseif (str_starts_with($cleanPhone, '0')) {
+            $basePhone = substr($cleanPhone, 1);
+        }
+        $likeClause = '%' . ltrim($basePhone, '0') . '%';
+
+        // Update all related assets
+        $umkmCount = \App\Models\Umkm::where('no_wa', 'like', $likeClause)->update(['is_on_holiday' => $isHoliday]);
+        $jasaCount = \App\Models\WorkDirectory::where('contact_phone', 'like', $likeClause)->update(['is_on_holiday' => $isHoliday]);
+        $localCount = \App\Models\UmkmLocal::where('contact_wa', 'like', $likeClause)->update(['is_on_holiday' => $isHoliday]);
+
+        $total = $umkmCount + $jasaCount + $localCount;
+
+        if ($total === 0) {
+            return [
+                'success' => true,
+                'intent' => 'owner_not_found',
+                'reply' => "Maaf, nomor WhatsApp Anda (+{$phone}) belum terdaftar sebagai pemilik UMKM atau Jasa di database kami.\n\nSilakan daftar terlebih dahulu di menu *KELOLA PROFIL*.",
+                'state_update' => null,
+            ];
+        }
+
+        $reply = "✅ *STATUS BERHASIL DIUBAH*\n\n";
+        $reply .= "Seluruh layanan/toko Anda telah {$newStatusLabel}.\n";
+        
+        if ($isHoliday) {
+            $reply .= "\nStatus [LIBUR] akan tampil di hasil pencarian warga agar mereka tahu Anda sedang tidak melayani.";
+        } else {
+            $reply .= "\nStatus [Lagi Buka] akan tampil kembali di hasil pencarian warga.";
+        }
+
+        $reply .= "\n\nKetik *MENU* untuk kembali.";
+
+        return [
+            'success' => true,
+            'intent' => 'owner_holiday_toggled',
+            'reply' => $reply,
             'state_update' => null,
         ];
     }

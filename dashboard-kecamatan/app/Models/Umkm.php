@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class Umkm extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\OperationalStatus;
 
     protected $table = 'umkm';
     public $incrementing = false;
@@ -44,7 +44,9 @@ class Umkm extends Model
         'ownership_status',
         'tokopedia_url',
         'shopee_url',
-        'tiktok_url'
+        'tiktok_url',
+        'operating_hours',
+        'is_on_holiday'
     ];
 
     protected static function boot()

@@ -9,7 +9,7 @@ use App\Models\PengunjungKecamatan;
 use App\Models\MasterLayanan;
 use App\Models\Desa;
 use App\Models\Umkm;
-use App\Models\Loker;
+
 use App\Models\WorkDirectory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -160,8 +160,7 @@ class PelayananController extends Controller
             // New sectoral metrics
             'umkm_total' => Umkm::count(),
             'umkm_active' => Umkm::where('status', Umkm::STATUS_AKTIF)->count(),
-            'loker_total' => Loker::count(),
-            'loker_active' => Loker::where('status', Loker::STATUS_AKTIF)->count(),
+
 
             // Skilled workers directory
             'pekerja_total' => WorkDirectory::count(),

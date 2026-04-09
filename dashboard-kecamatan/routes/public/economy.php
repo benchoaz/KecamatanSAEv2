@@ -23,9 +23,10 @@ Route::get('/ekonomi/daftar', [EconomyController::class, 'create'])
 Route::post('/ekonomi/daftar', [EconomyController::class, 'store'])
     ->name('economy.store');
 
-// Kelola Jasa Mandiri (PIN Based)
-Route::get('/ekonomi/login', [EconomyController::class, 'loginForm'])
-    ->name('economy.login');
+// Kelola Jasa Mandiri (Akses menggunakan Super Dasbor Warga)
+Route::get('/ekonomi/login', function() {
+    return redirect()->route('portal_warga.login');
+})->name('economy.login');
 Route::post('/ekonomi/login', [EconomyController::class, 'authenticate'])
     ->name('economy.authenticate');
 Route::get('/ekonomi/manage/{id}', [EconomyController::class, 'manage'])
@@ -33,7 +34,11 @@ Route::get('/ekonomi/manage/{id}', [EconomyController::class, 'manage'])
 Route::post('/ekonomi/manage/{id}', [EconomyController::class, 'update'])
     ->name('economy.update');
 
-// Detail
+// Detail Produk UMKM (harus sebelum /{id} agar tidak bentrok)
+Route::get('/ekonomi/produk/{id}', [EconomyController::class, 'showProduk'])
+    ->name('economy.produk.show');
+
+// Detail Jasa/WorkDirectory
 Route::get('/ekonomi/{id}', [EconomyController::class, 'show'])
     ->name('economy.show');
 
@@ -62,9 +67,14 @@ Route::prefix('umkm-rakyat')->name('umkm_rakyat.')->group(function () {
     Route::get('/{id}/verifikasi', [UmkmRakyatController::class, 'verifyStep'])->name('verify_step');
     Route::post('/{id}/verifikasi', [UmkmRakyatController::class, 'processVerify'])->name('process_verify');
 
-    // Login Owner
-    Route::get('/login', [UmkmRakyatController::class, 'login'])->name('login');
-    Route::post('/login/request', [UmkmRakyatController::class, 'sendAccessLink'])->name('send_access');
+    // Login Owner (Redirect ke Super Dasbor Warga)
+    Route::get('/login', function() {
+        return redirect()->route('portal_warga.login');
+    })->name('login');
+    // POST request untuk backward compatibility jika ada yg hardcode (opsional, better die/redirect)
+    Route::post('/login/request', function() {
+        return redirect()->route('portal_warga.login');
+    })->name('send_access');
 
     // Dasbor Pemilik UMKM (Menggunakan Token)
     Route::prefix('{token}/manage')->name('manage')->group(function () {

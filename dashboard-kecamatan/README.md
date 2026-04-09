@@ -75,7 +75,8 @@ Landing Page dibangun sebagai **Single Source of Truth** (Etalase Utama) bagi ke
 git clone https://github.com/benchoaz/KecamatanSAEversiKabupaten.git
 cd KecamatanSAEversiKabupaten
 
-# 2. Jalankan Auto-Deploy Script (Otomatis install Docker, dependensi, & migrasi DB)
+# 2. Jalankan Auto-Deploy (Satu Perintah untuk Semua)
+# Script ini akan otomatis mendeteksi VPS, menginstall Docker, dependensi, & migrasi DB.
 bash deploy.sh
 ```
 
@@ -112,8 +113,7 @@ WHATSAPP_API_TOKEN=your_token_here
 
 Guna memaksimalkan keamanan dan kemudahan bagi warga pelaku usaha, sistem portal menggunakan otentikasi aman tanpa pendaftaran akun rumit:
 
-*   **UMKM Seller Center:** Menggunakan sistem **Magic Link via WhatsApp**. Saat warga (pemilik UMKM) memasukkan Nomor WhatsApp, sistem mengotentikasi dan menembakkan tautan akses unik (*Token*) yang aman ke WA warga. Link tersebut berfungsi sebagai akses masuk praktis (*passwordless*) menuju ke **Dasbor Manajemen Toko** khusus yang terisolasi dari sistem Admin Internal. *(Catatan: Tersedia mekanisme Bypass Otomatis khusus mode pengembangan/QA jika Bot WAHA terpantau offline).*
-*   **Kelola Profil Jasa Pekerjaan:** Menggunakan sistem **Autentikasi PIN rahasia 6 Digit** yang distribusinya dipatenkan via WhatsApp.
+*   **Super Dasbor Warga (Tanpa Sandi):** Mengedepankan kemudahan bagi warga. Seluruh akses manajemen UMKM dan profil Jasa/Pekerjaan dipusatkan pada **Portal Warga Passwordless**. Warga cukup memasukkan Nomor WhatsApp, dan sistem akan menembakkan **Magic Link** (Tautan Akses Aman) langsung ke chat warga. Ini menghilangkan kebutuhan untuk menghafal PIN atau Password yang rumit.
 
 ---
 ## 🤖 WhatsApp Bot

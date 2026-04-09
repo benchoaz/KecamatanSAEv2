@@ -10,7 +10,7 @@ class IntentHandler
     protected SyaratHandler $syaratHandler;
     protected UmkmHandler $umkmHandler;
     protected JasaHandler $jasaHandler;
-    protected LokerHandler $lokerHandler;
+
     protected ComplaintHandler $complaintHandler;
     protected OwnerHandler $ownerHandler;
     protected \App\Services\FaqSearchService $faqSearchService;
@@ -20,7 +20,6 @@ class IntentHandler
         SyaratHandler $syaratHandler,
         UmkmHandler $umkmHandler,
         JasaHandler $jasaHandler,
-        LokerHandler $lokerHandler,
         ComplaintHandler $complaintHandler,
         OwnerHandler $ownerHandler,
         \App\Services\FaqSearchService $faqSearchService
@@ -29,7 +28,6 @@ class IntentHandler
         $this->syaratHandler = $syaratHandler;
         $this->umkmHandler = $umkmHandler;
         $this->jasaHandler = $jasaHandler;
-        $this->lokerHandler = $lokerHandler;
         $this->complaintHandler = $complaintHandler;
         $this->ownerHandler = $ownerHandler;
         $this->faqSearchService = $faqSearchService;
@@ -64,32 +62,30 @@ class IntentHandler
         }
 
         if ($this->isSelection($messageLower, '2')) {
-            // Option 2: Loker & Toko (UMKM)
+            // Option 2: Langsung ke Etalase Produk UMKM
             $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
             return [
                 'success' => true,
-                'intent' => 'loker_umkm',
-                'reply' => "LOKER & TOKO/ETALASE\n\n" .
-                    "Pilih kategori:\n\n" .
-                    "1. Loker - Lowongan Kerja\n" .
-                    "   {$baseUrl}/loker\n\n" .
-                    "2. Toko/Etalase - Produk Warga\n" .
-                    "   {$baseUrl}/umkm\n\n" .
+                'intent' => 'umkm_produk',
+                'reply' => "🛍️ *PRODUK UMKM LOKAL*\n\n" .
+                    "Temukan produk olahan dan kerajinan tangan karya warga sekitar:\n\n" .
+                    "👉 {$baseUrl}/ekonomi?tab=produk\n\n" .
                     "Ketik *MENU* untuk kembali.",
                 'state_update' => null,
             ];
         }
 
         if ($this->isSelection($messageLower, '3')) {
-            // Option 3: Jasa - cari tukang/servis
+            // Option 3: Langsung ke Direktori Jasa
             $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
             return [
                 'success' => true,
                 'intent' => 'jasa',
-                'reply' => "JASA - Cari Tukang/Servis\n\n" .
-                    "Lihat daftar penyedia jasa di kecamatan:\n\n" .
-                    "{$baseUrl}/ekonomi?tab=jasa\n\n" .
-                    "Ketik jenis jasa yang Anda butuhkan (contoh: 'tukang', 'service', 'ledeng')\n" .
+                'reply' => "🔧 *CARI JASA & TENAGA AHLI*\n\n" .
+                    "Temukan tukang, ART, ojek, dan tenaga harian di sekitar Anda:\n\n" .
+                    "👉 {$baseUrl}/ekonomi?tab=jasa\n\n" .
+                    "Atau ketik jenis jasa yang Anda cari:\n" .
+                    "Contoh: *jasa tukang*, *jasa ojek*, *jasa ledeng*\n\n" .
                     "Ketik *MENU* untuk kembali.",
                 'state_update' => 'MENU_JASA',
             ];
@@ -158,15 +154,18 @@ class IntentHandler
             return $this->jasaHandler->search($query);
         }
 
-        // LOKER search intent - with link when no query
+        // LOKER keyword - redirect ke Jasa/Direktori karena Loker sudah dihapus
         if ($this->matchesIntent($messageLower, ['loker', 'lowongan', 'kerja'])) {
-            $query = str_replace(['loker', 'lowongan', 'kerja'], '', $messageLower);
-            $query = trim($query);
-            // If just keyword without query, show link
-            if (empty($query) || $messageLower === 'loker' || $messageLower === 'lowongan') {
-                return $this->getLokerLink();
-            }
-            return $this->lokerHandler->search($query);
+            $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
+            return [
+                'success' => true,
+                'intent' => 'jasa_link',
+                'reply' => "🔧 *Direktori Jasa & Tenaga Ahli*\n\n" .
+                    "Temukan tukang, tenaga harian, dan penyedia jasa lokal:\n" .
+                    "{$baseUrl}/ekonomi?tab=jasa\n\n" .
+                    "Ketik *MENU* untuk kembali.",
+                'state_update' => null,
+            ];
         }
 
         // Complaint submission intent
@@ -207,6 +206,11 @@ class IntentHandler
         // Owner toggle intent
         if ($this->matchesIntent($messageLower, ['toggle', 'aktif', 'nonaktif', 'on', 'off', 'kelola'])) {
             return $this->ownerHandler->initiate($phone);
+        }
+
+        // Quick Holiday Toggles (Masyarakat Friendly)
+        if ($messageLower === 'libur' || $messageLower === 'buka') {
+            return $this->ownerHandler->toggleHolidayStatus($phone, $messageLower);
         }
 
         // --- FAQ NATURAL LANGUAGE FALLBACK ---
@@ -270,10 +274,10 @@ class IntentHandler
         $menu = "MENU LAYANAN KECAMATAN {$regionName}\n\n";
         $menu .= "Silakan pilih layanan (Ketik angka):\n\n";
         $menu .= "1. ADMINISTRASI - Cek Syarat dan Status Berkas\n";
-        $menu .= "2. HUB EKONOMI - Lowongan Kerja dan Produk Desa\n";
-        $menu .= "3. DIREKTORI JASA - Cari Tukang dan Tenaga Ahli\n";
+        $menu .= "2. PRODUK UMKM - Belanja Produk & Olahan Warga Lokal\n";
+        $menu .= "3. CARI JASA - Tukang, ART, Ojek, Tenaga Harian\n";
         $menu .= "4. PENGADUAN - Aspirasi dan Laporan Warga\n";
-        $menu .= "5. KELOLA PROFIL - Edit Data dan Status Jasa/UMKM Anda\n\n";
+        $menu .= "5. KELOLA PROFIL - Kelola Data Jasa / Toko UMKM Anda\n\n";
         $menu .= "Ketik MENU kapan saja untuk kembali.";
 
         return [

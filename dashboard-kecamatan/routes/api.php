@@ -59,12 +59,12 @@ Route::post('/reply/test', [\App\Http\Controllers\WhatsAppReplyController::class
 Route::get('/reply/status', [\App\Http\Controllers\WhatsAppReplyController::class, 'getStatus'])
     ->name('api.reply.status');
 
-// External API for WhatsApp Bot (UMKM & Loker)
+// External API for WhatsApp Bot (UMKM & Jasa)
 // Rate limited: 60 requests per minute
 Route::prefix('v1/external')->middleware(['api.token', 'throttle:60,1'])->group(function () {
     Route::get('/umkm/search', [\App\Http\Controllers\ExternalApiController::class, 'searchUmkm']);
     Route::get('/jasa/search', [\App\Http\Controllers\ExternalApiController::class, 'searchJasa']);
-    Route::get('/loker/search', [\App\Http\Controllers\ExternalApiController::class, 'searchLoker']);
+
     Route::get('/faq/search', [\App\Http\Controllers\ExternalApiController::class, 'searchFaq']);
     Route::get('/config', [\App\Http\Controllers\ExternalApiController::class, 'getConfig']);
 

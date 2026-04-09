@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UmkmLocal extends Model
 {
-    use \App\Traits\Auditable;
+    use \App\Traits\Auditable, \App\Traits\OperationalStatus;
 
     protected $fillable = [
         'name',
@@ -25,6 +25,8 @@ class UmkmLocal extends Model
         'owner_pin',
         'last_toggle_at',
         'module',
+        'operating_hours',
+        'is_on_holiday',
     ];
 
     protected $casts = [
@@ -35,6 +37,7 @@ class UmkmLocal extends Model
         'price' => 'decimal:2',
         'original_price' => 'decimal:2',
         'last_toggle_at' => 'datetime',
+        'is_on_holiday' => 'boolean',
     ];
 
     // Auto-hash PIN when setting

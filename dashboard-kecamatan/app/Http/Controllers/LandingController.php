@@ -49,6 +49,19 @@ class LandingController extends Controller
         $resolvedComplaints = \App\Models\PublicService::where('status', 'Selesai')->take(5)->get();
         $desas = \App\Models\Desa::all();
 
+        // Data UMKM & Produk untuk Etalase Landing Page
+        $officialUmkms = \App\Models\Umkm::where('status', 'aktif')->latest()->take(3)->get();
+        $featuredProducts = \App\Models\UmkmLocal::where('is_active', true)
+            ->where('is_featured', true)
+            ->latest()
+            ->take(4)
+            ->get();
+            
+        // Jika tidak ada featured_product, ambil yang terbaru saja
+        if ($featuredProducts->isEmpty()) {
+            $featuredProducts = \App\Models\UmkmLocal::where('is_active', true)->latest()->take(4)->get();
+        }
+
         return view('landing', compact(
             'publicAnnouncements',
             'latestBerita',
@@ -57,6 +70,8 @@ class LandingController extends Controller
             'masterLayanan',
             'resolvedComplaints',
             'desas',
+            'officialUmkms',
+            'featuredProducts',
             'heroBg',
             'bgOpacity',
             'bgBlur',

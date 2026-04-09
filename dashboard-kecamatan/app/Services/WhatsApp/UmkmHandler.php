@@ -61,15 +61,22 @@ class UmkmHandler
 
         foreach ($umkms as $index => $umkm) {
             $num = $index + 1;
-            $message .= "{$num}. *{$umkm->name}*\n";
+            $opStatus = $umkm->operational_status;
+            $statusPrefix = $opStatus['is_open'] ? "🟢" : "🔴";
+            
+            $message .= "{$num}. {$statusPrefix} *{$umkm->name}* [{$opStatus['label']}]\n";
             $message .= "   {$umkm->address}\n";
 
+            if ($umkm->operating_hours) {
+                $message .= "   🕒 Jam: {$umkm->operating_hours}\n";
+            }
+
             if ($umkm->contact_wa) {
-                $message .= "   {$umkm->contact_wa}\n";
+                $message .= "   📱 WA: {$umkm->contact_wa}\n";
             }
 
             if ($umkm->product) {
-                $message .= "   {$umkm->product}\n";
+                $message .= "   🛍️ {$umkm->product}\n";
             }
 
             $message .= "\n";

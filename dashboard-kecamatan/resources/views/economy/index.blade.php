@@ -146,47 +146,56 @@
                                             class="w-14 h-14 bg-teal-50 rounded-xl flex items-center justify-center text-teal-600 text-2xl group-hover:bg-teal-600 group-hover:text-white transition-colors duration-300">
                                             <i class="fas {{ $item->icon }}"></i>
                                         </div>
-                                        <span
-                                            class="px-3 py-1 bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-slate-100">
-                                            {{ $item->job_category }}
-                                        </span>
-                                    </div>
-
-                                    <h3 class="text-lg font-black text-slate-800 mb-1 leading-tight group-hover:text-teal-700 transition-colors">
-                                        {{ $item->job_title }}
-                                    </h3>
-                                    <div class="flex items-center justify-between mb-4">
-                                        <p class="text-xs font-medium text-slate-500">{{ $item->display_name }}</p>
-                                        @if($item->price)
-                                            <span class="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
-                                                Rp {{ number_format($item->price, 0, ',', '.') }}
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span
+                                                class="px-3 py-1 bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-slate-100">
+                                                {{ $item->job_category }}
                                             </span>
-                                        @endif
+                                            @php $opStatus = $item->operational_status; @endphp
+                                            <span class="px-3 py-1 bg-{{ $opStatus['color'] }}-50 text-{{ $opStatus['color'] }}-600 text-[10px] font-extrabold uppercase rounded-lg border border-{{ $opStatus['color'] }}-100 shadow-sm">
+                                                <i class="fas {{ $opStatus['icon'] }} mr-1"></i> {{ $opStatus['label'] }}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <div class="space-y-2 mb-6 text-xs text-slate-500">
-                                        @if($item->service_area)
-                                            <div class="flex items-center gap-2">
-                                                <i class="fas fa-map-marker-alt text-teal-500 w-4 text-center"></i>
-                                                <span>{{ $item->service_area }}</span>
-                                            </div>
-                                        @endif
-                                        @if($item->service_time)
-                                            <div class="flex items-center gap-2">
-                                                <i class="fas fa-clock text-teal-500 w-4 text-center"></i>
-                                                <span>{{ $item->service_time }}</span>
-                                            </div>
-                                        @endif
-                                    </div>
+                                    {{-- Body: Klik ke detail --}}
+                                    <a href="{{ route('economy.show', $item->id) }}" class="block">
+                                        <h3 class="text-lg font-black text-slate-800 mb-1 leading-tight group-hover:text-teal-700 transition-colors">
+                                            {{ $item->job_title }}
+                                        </h3>
+                                        <div class="flex items-center justify-between mb-4">
+                                            <p class="text-xs font-medium text-slate-500">{{ $item->display_name }}</p>
+                                            @if($item->price)
+                                                <span class="text-xs font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100">
+                                                    Rp {{ number_format($item->price, 0, ',', '.') }}
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <div class="space-y-2 mb-6 text-xs text-slate-500">
+                                            @if($item->service_area)
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fas fa-map-marker-alt text-teal-500 w-4 text-center"></i>
+                                                    <span>{{ $item->service_area }}</span>
+                                                </div>
+                                            @endif
+                                            @if($item->service_time)
+                                                <div class="flex items-center gap-2">
+                                                    <i class="fas fa-clock text-teal-500 w-4 text-center"></i>
+                                                    <span>{{ $item->service_time }}</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </a>
 
                                     <div class="flex gap-2 pt-4 border-t border-slate-50">
                                         <a href="{{ $item->whatsapp_link }}" target="_blank"
-                                            class="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-center text-xs transition-colors flex items-center justify-center gap-2">
+                                            class="px-4 py-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 flex-shrink-0">
                                             <i class="fab fa-whatsapp"></i> Chat
                                         </a>
                                         <a href="{{ route('economy.show', $item->id) }}"
-                                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition-colors">
-                                            <i class="fas fa-arrow-right"></i>
+                                            class="flex-1 px-4 py-2.5 bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white rounded-xl font-bold transition-all text-center text-xs flex items-center justify-center">
+                                            Lihat Detail
                                         </a>
                                     </div>
                                 </div>
@@ -246,49 +255,128 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                @forelse($umkms as $u)
-                    <div
-                        class="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-300 flex flex-col h-full relative">
-                        @if($u->is_featured)
-                            <div class="absolute top-4 left-4 z-10">
-                                <span
-                                    class="bg-amber-400 text-amber-950 text-[9px] font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1">
-                                    <i class="fas fa-star"></i> PILIHAN
+            {{-- SUB-TAB 1: UMKM TERVERIFIKASI (OFFICIAL) --}}
+            @if($officialUmkms->count() > 0)
+            <div class="mb-12">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-black text-slate-800 leading-none">Bisnis Terverifikasi</h4>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Unggulan Kecamatan</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    @foreach($officialUmkms as $o)
+                    @php
+                        $oLink = route('umkm_rakyat.show', $o->slug);
+                    @endphp
+                    <a href="{{ $oLink }}" class="group relative bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl hover:-translate-y-2 transition-all duration-500 block h-64">
+                        @if($o->foto_usaha)
+                            <img src="{{ asset('storage/' . $o->foto_usaha) }}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000">
+                        @else
+                            <div class="absolute inset-0 bg-gradient-to-br from-teal-600 to-indigo-700 opacity-80"></div>
+                        @endif
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+                        
+                        <div class="absolute inset-0 p-8 flex flex-col justify-end">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="bg-amber-400 text-amber-950 text-[9px] font-black px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1 uppercase tracking-wider">
+                                    <i class="fas fa-star"></i> OFFICIAL
+                                </span>
+                                <span class="bg-white/10 backdrop-blur-md text-white text-[9px] font-bold px-2.5 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
+                                    {{ $o->jenis_usaha }}
                                 </span>
                             </div>
-                        @endif
-
-                        <div class="aspect-square relative overflow-hidden bg-slate-100">
-                            <img src="{{ $u->image_path ? asset('storage/' . $u->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60' }}"
-                                alt="{{ $u->product }}"
-                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                            <h3 class="text-2xl md:text-3xl font-black text-white mb-1 group-hover:text-amber-300 transition-colors">{{ $o->nama_usaha }}</h3>
+                            <p class="text-white/70 text-sm font-medium flex items-center gap-2">
+                                <i class="fas fa-map-marker-alt text-teal-400"></i> {{ $o->desa }}
+                                <span class="mx-2 text-white/20">|</span>
+                                <i class="fas fa-box-open text-amber-400"></i> {{ $o->products_count ?? 'Lihat Produk' }}
+                            </p>
                         </div>
+                    </a>
+                    @endforeach
+                </div>
+            </div>
+            @endif
 
-                        <div class="p-6 flex flex-col flex-1">
-                            <div class="mb-4">
+            {{-- SUB-TAB 2: KATALOG PRODUK CEPAT (LOCAL) --}}
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-th-large"></i>
+                </div>
+                <div>
+                    <h4 class="text-xl font-black text-slate-800 leading-none">Katalog Produk Warga</h4>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Produk & Olahan Lokal</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                @forelse($localUmkms as $u)
+                    @php
+                        $waPhone = preg_replace('/[^0-9]/', '', $u->contact_wa ?? '');
+                        if (str_starts_with($waPhone, '0')) {
+                            $waPhone = '62' . substr($waPhone, 1);
+                        }
+                        $waLink = $waPhone ? "https://wa.me/{$waPhone}?text=" . urlencode("Halo, saya tertarik dengan produk *{$u->product}* dari *{$u->name}*. Apakah masih tersedia?") : null;
+                        $detailLink = route('economy.produk.show', $u->id);
+                    @endphp
+                    <div class="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-300 flex flex-col h-full relative">
+                        {{-- Gambar & Info: klik ke halaman detail --}}
+                        <a href="{{ $detailLink }}" class="block flex-1 flex flex-col">
+                            <div class="aspect-square relative overflow-hidden bg-slate-100">
+                                <img src="{{ $u->image_path ? asset('storage/' . $u->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60' }}"
+                                    alt="{{ $u->product }}"
+                                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                @if($u->is_featured)
+                                <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                                    <span class="bg-amber-400 text-amber-950 text-[9px] font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1 uppercase">
+                                        <i class="fas fa-bolt"></i> LARIS
+                                    </span>
+                                    @php $opStatus = $u->operational_status; @endphp
+                                    <span class="bg-white/90 backdrop-blur-sm text-{{ $opStatus['color'] }}-600 text-[9px] font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1 uppercase border border-{{ $opStatus['color'] }}-100">
+                                        <i class="fas {{ $opStatus['icon'] }}"></i> {{ $opStatus['label'] }}
+                                    </span>
+                                </div>
+                                @else
+                                <div class="absolute top-4 left-4 z-10">
+                                    @php $opStatus = $u->operational_status; @endphp
+                                    <span class="bg-white/90 backdrop-blur-sm text-{{ $opStatus['color'] }}-600 text-[9px] font-black px-2.5 py-1 rounded-lg shadow-sm flex items-center gap-1 uppercase border border-{{ $opStatus['color'] }}-100">
+                                        <i class="fas {{ $opStatus['icon'] }}"></i> {{ $opStatus['label'] }}
+                                    </span>
+                                </div>
+                                @endif
+                            </div>
+
+                            <div class="p-5 pb-3 flex flex-col flex-1">
                                 <p class="text-[9px] font-bold text-teal-600 uppercase tracking-widest mb-1 truncate">
                                     {{ $u->name }}</p>
-                                <h3
-                                    class="font-extrabold text-slate-800 text-lg leading-tight group-hover:text-teal-700 transition-colors line-clamp-2">
+                                <h3 class="font-extrabold text-slate-800 text-base leading-tight group-hover:text-teal-700 transition-colors line-clamp-2">
                                     {{ $u->product }}
                                 </h3>
+                                @if($u->price)
+                                    <p class="text-base font-black text-slate-900 mt-2">Rp {{ number_format($u->price, 0, ',', '.') }}</p>
+                                @else
+                                    <p class="text-xs font-bold text-slate-400 italic mt-2">Hubungi Penjual</p>
+                                @endif
                             </div>
+                        </a>
 
-                            <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between gap-3">
-                                <div>
-                                    @if($u->price)
-                                        <div class="text-base font-black text-slate-900">Rp
-                                            {{ number_format($u->price, 0, ',', '.') }}</div>
-                                    @else
-                                        <div class="text-xs font-bold text-slate-400 italic">Hubungi Penjual</div>
-                                    @endif
-                                </div>
-                                <a href="{{ route('economy.index', ['tab' => 'produk']) }}"
-                                    class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors">
-                                    <i class="fas fa-arrow-right text-sm"></i>
-                                </a>
-                            </div>
+                        {{-- Footer: Tombol Lihat Detail + WA --}}
+                        <div class="px-5 pb-5 pt-2 border-t border-slate-50 flex items-center gap-2 mt-auto">
+                            <a href="{{ $detailLink }}"
+                                class="flex-1 text-center text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-600 hover:text-white py-2 rounded-xl transition-colors">
+                                Lihat Detail
+                            </a>
+                            @if($waLink)
+                            <a href="{{ $waLink }}" target="_blank" title="Chat WhatsApp Penjual"
+                                class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-colors flex-shrink-0">
+                                <i class="fab fa-whatsapp text-base"></i>
+                            </a>
+                            @endif
                         </div>
                     </div>
                 @empty
@@ -298,7 +386,7 @@
                             <i class="fas fa-store-slash text-3xl"></i>
                         </div>
                         <h3 class="text-lg font-bold text-slate-700">Belum Ada Produk</h3>
-                        <p class="text-slate-500 text-sm">Data produk UMKM belum tersedia saat ini.</p>
+                        <p class="text-slate-500 text-sm">Data katalog produk belum tersedia saat ini.</p>
                     </div>
                 @endforelse
             </div>
