@@ -67,12 +67,23 @@
                 </div>
 
                 @if(session('error'))
-                <div class="bg-rose-50 border border-rose-100 text-rose-600 px-5 py-3 rounded-2xl mb-6 flex flex-col gap-1 ring-4 ring-rose-500/10">
+                <div class="bg-rose-50 border border-rose-100 text-rose-600 px-5 py-4 rounded-3xl mb-6 flex flex-col gap-3 ring-4 ring-rose-500/5 animate__animated animate__shakeX">
                     <div class="flex items-center gap-2">
-                        <i class="fas fa-exclamation-circle text-lg"></i>
+                        <div class="w-8 h-8 bg-rose-100 rounded-xl flex items-center justify-center text-rose-500 shadow-inner">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
                         <span class="font-bold text-sm">Gagal Masuk!</span>
                     </div>
-                    <span class="text-xs font-medium pl-6">{{ session('error') }}</span>
+                    <span class="text-[11px] font-medium pl-1 leading-relaxed opacity-90">{{ session('error') }}</span>
+                    
+                    <div class="pt-2 border-t border-rose-100 flex flex-wrap gap-2">
+                        <a href="{{ route('umkm_rakyat.create') }}" class="text-[9px] bg-rose-600 text-white px-3 py-2 rounded-xl font-black hover:bg-rose-700 transition-all uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-rose-200">
+                            <i class="fas fa-plus-circle"></i> Daftar UMKM
+                        </a>
+                        <a href="{{ route('economy.create') }}" class="text-[9px] bg-white border border-rose-200 text-rose-600 px-3 py-2 rounded-xl font-black hover:bg-rose-50 transition-all uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-briefcase"></i> Daftar Jasa
+                        </a>
+                    </div>
                 </div>
                 @endif
 
@@ -98,6 +109,27 @@
                         </div>
                     </button>
                 </form>
+                
+                {{-- Registration Section --}}
+                <div class="mt-10 pt-8 border-t border-slate-100/60">
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-5 text-center">Belum Terdaftar?</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <a href="{{ route('umkm_rakyat.create') }}" 
+                           class="flex flex-col items-center gap-3 p-4 bg-blue-50/50 hover:bg-blue-100 border border-blue-100/50 rounded-3xl transition-all group overflow-hidden relative">
+                           <div class="w-10 h-10 rounded-2xl bg-white text-blue-500 flex items-center justify-center text-lg shadow-sm group-hover:bg-blue-500 group-hover:text-white transition-all duration-500">
+                               <i class="fas fa-store"></i>
+                           </div>
+                           <span class="text-[9px] font-black text-blue-700 uppercase tracking-tighter text-center">Buka Toko UMKM</span>
+                        </a>
+                        <a href="{{ route('economy.create') }}" 
+                           class="flex flex-col items-center gap-3 p-4 bg-indigo-50/50 hover:bg-indigo-100 border border-indigo-100/50 rounded-3xl transition-all group overflow-hidden relative">
+                           <div class="w-10 h-10 rounded-2xl bg-white text-indigo-500 flex items-center justify-center text-lg shadow-sm group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500">
+                               <i class="fas fa-briefcase"></i>
+                           </div>
+                           <span class="text-[9px] font-black text-indigo-700 uppercase tracking-tighter text-center">Daftar Jasa</span>
+                        </a>
+                    </div>
+                </div>
 
             </div>
         </div>

@@ -31,12 +31,8 @@
             </div>
             <div class="d-flex gap-2">
                 @if($category == 'umkm')
-                    <a href="{{ route('kecamatan.umkm.index') }}" class="btn btn-white border rounded-3 px-3 small fw-bold text-slate-600 shadow-sm">
-                        Kelola Master UMKM <i class="fas fa-arrow-right ms-2 scale-75"></i>
-                    </a>
-                @elseif($category == 'loker')
-                    <a href="{{ route('kecamatan.loker.index') }}" class="btn btn-white border rounded-3 px-3 small fw-bold text-slate-600 shadow-sm">
-                        Kelola Master Loker <i class="fas fa-arrow-right ms-2 scale-75"></i>
+                    <a href="{{ route('kecamatan.umkm.create') }}" class="btn btn-brand-600 rounded-3 px-3 small fw-bold text-white shadow-sm hover-up">
+                        <i class="fas fa-plus me-2"></i> Bantu Daftar UMKM
                     </a>
                 @endif
             </div>

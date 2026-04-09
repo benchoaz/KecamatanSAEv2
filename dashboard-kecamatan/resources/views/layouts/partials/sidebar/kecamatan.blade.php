@@ -55,12 +55,6 @@
                                 <i class="fas fa-store me-2 small"></i> Pendaftaran UMKM
                             </a>
                         </li>
-                        <li class="nav-submenu-item">
-                            <a href="{{ route('kecamatan.pelayanan.inbox', ['category' => 'loker']) }}"
-                                class="nav-sublink {{ request()->query('category') == 'loker' ? 'active' : '' }}">
-                                <i class="fas fa-briefcase me-2 small"></i> Info Loker
-                            </a>
-                        </li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -225,13 +219,6 @@
                             class="nav-link {{ Route::is('kecamatan.umkm.*') ? 'active' : '' }}">
                             <span class="nav-icon"><i class="fas fa-store text-orange-500"></i></span>
                             <span class="nav-text">Etalase UMKM</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('kecamatan.loker.index') }}"
-                            class="nav-link {{ Route::is('kecamatan.loker.*') ? 'active' : '' }}">
-                            <span class="nav-icon"><i class="fas fa-briefcase text-blue-500"></i></span>
-                            <span class="nav-text">Lowongan Kerja</span>
                         </a>
                     </li>
                 </ul>

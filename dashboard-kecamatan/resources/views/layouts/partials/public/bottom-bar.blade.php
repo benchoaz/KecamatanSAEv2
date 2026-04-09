@@ -21,10 +21,10 @@
             <i class="fas fa-map-marked-alt text-lg"></i>
             <span class="text-[9px] font-bold uppercase tracking-tighter">Wilayah</span>
         </a>
-        <button onclick="document.getElementById('publicServiceModal').showModal()"
-            class="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">
-            <i class="fas fa-headset text-lg"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Bantuan</span>
-        </button>
+        <a href="{{ route('economy.index') }}"
+            class="flex flex-col items-center gap-1 {{ request()->is('ekonomi*') ? 'text-teal-600' : 'text-slate-400' }} hover:text-teal-600 transition-colors">
+            <i class="fas fa-store text-lg"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">UMKM</span>
+        </a>
     </div>
 </div>
