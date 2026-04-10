@@ -39,7 +39,7 @@ class LandingController extends Controller
         $whatsappUrl = $profileService->getWhatsappBotUrl('MENU');
 
         // Other required vars for the view
-        $latestBerita = \App\Models\Berita::latest()->take(3)->get();
+        $latestBerita = \App\Models\Berita::published()->latest()->take(3)->get();
         $faqKeywords = [];
         $featuredLayanan = \App\Models\MasterLayanan::where('is_active', true)
             ->where('is_popular', true)
@@ -136,7 +136,7 @@ class LandingController extends Controller
     {
         $profileService = app(ApplicationProfileService::class);
         $appProfile = $profileService->getProfile();
-        $beritas = Berita::where('is_active', true)->latest()->paginate(9);
-        return view('landing.berita', compact('beritas', 'appProfile'));
+        $berita = Berita::published()->latest()->paginate(9);
+        return view('public.berita.index', compact('berita', 'appProfile'));
     }
 }

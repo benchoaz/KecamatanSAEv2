@@ -42,7 +42,8 @@ class UmkmRakyatController extends Controller
     public function create()
     {
         $desas = Desa::orderBy('nama_desa')->get();
-        return view('public.umkm_rakyat.create', compact('desas'));
+        $umkmCategories = Umkm::getStandardCategories();
+        return view('public.umkm_rakyat.create', compact('desas', 'umkmCategories'));
     }
 
     public function store(Request $request)
@@ -185,7 +186,8 @@ class UmkmRakyatController extends Controller
     {
         $umkm = Umkm::where('manage_token', $token)->firstOrFail();
         $desas = Desa::orderBy('nama_desa')->get();
-        return view('public.umkm_rakyat.settings', compact('umkm', 'desas'));
+        $umkmCategories = Umkm::getStandardCategories();
+        return view('public.umkm_rakyat.settings', compact('umkm', 'desas', 'umkmCategories'));
     }
 
     public function updateSettings(Request $request, $token)

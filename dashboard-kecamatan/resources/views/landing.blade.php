@@ -275,7 +275,7 @@
                             
                             <h1 class="text-reveal delay-200 text-5xl md:text-7xl font-black text-[#1e293b] mb-6 leading-[1.1] tracking-tight">
                                 Solusi Cepat<br>
-                                Urusan <span class="text-[#0d9488]">Layanan Publik</span>
+                                Urusan <span class="text-[#0f766e]">Layanan Publik</span>
                             </h1>
                             
                             <p class="text-reveal delay-300 text-lg md:text-xl text-[#475569] mb-10 leading-relaxed font-medium max-w-xl">
@@ -284,7 +284,7 @@
 
                             <div class="text-reveal delay-400">
                                 <a href="#layanan" 
-                                   class="btn bg-[#0d9488] hover:bg-[#0b7a70] text-white border-0 rounded-2xl px-12 h-16 font-black shadow-xl shadow-teal-200 transition-all flex items-center gap-2">
+                                   class="btn bg-[#0f766e] hover:bg-[#115e59] text-white border-0 rounded-2xl px-12 h-16 font-black shadow-xl shadow-slate-200 transition-all flex items-center gap-2">
                                     Mulai Layanan Digital <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
@@ -433,7 +433,8 @@
 
 
     <!-- Section: Pusat Layanan Digital (Unified) -->
-    <div class="relative z-30 -mt-24 lg:-mt-32">
+    @if($featuredLayanan->isNotEmpty())
+    <div class="relative z-30 py-12">
         <div class="container mx-auto px-6">
             <div class="max-w-4xl mx-auto">
                 <!-- Group Header -->
@@ -493,6 +494,7 @@
             </div>
         </div>
     </div>
+    @endif
 
 
 

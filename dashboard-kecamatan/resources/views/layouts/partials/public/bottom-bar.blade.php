@@ -4,7 +4,7 @@
         <a href="/"
             class="flex flex-col items-center gap-1 {{ request()->is('/') ? 'text-teal-600' : 'text-slate-400' }}">
             <i class="fas fa-home text-lg"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Home</span>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Beranda</span>
         </a>
         <a href="{{ request()->is('/') ? '#layanan' : '/#layanan' }}"
             class="flex flex-col items-center gap-1 text-slate-400 hover:text-teal-600 transition-colors">

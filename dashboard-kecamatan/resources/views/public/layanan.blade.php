@@ -11,7 +11,7 @@
         <div class="container mx-auto px-6">
             {{-- Header --}}
             <div class="max-w-4xl mx-auto text-center mb-16 animate__animated animate__fadeIn">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl shadow-xl mb-6 text-teal-600">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl shadow-xl mb-6 text-teal-800">
                     <i class="fas fa-hand-holding-heart text-3xl"></i>
                 </div>
                 <h1 class="text-4xl md:text-5xl font-black text-slate-800 mb-4 tracking-tight">Portal Layanan Publik</h1>
@@ -20,13 +20,13 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 items-start">
                 {{-- Left: Tracking Section --}}
                 <div class="lg:col-span-2 space-y-8 animate__animated animate__fadeInLeft">
-                    <div class="bg-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 p-1 border border-white">
-                        <div class="bg-slate-50/50 rounded-[2rem] p-8 md:p-10 border border-slate-100">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-slate-200/50 p-0.5 md:p-1 border border-white">
+                        <div class="bg-slate-50/50 rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-10 border border-slate-100">
                             <div class="flex items-center gap-4 mb-8">
-                                <div class="w-12 h-12 bg-teal-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+                                <div class="w-12 h-12 bg-teal-800 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-900/20">
                                     <i class="fas fa-search-location text-xl"></i>
                                 </div>
                                 <div>
@@ -46,16 +46,16 @@
                                         </div>
                                         <input type="text" id="identifier" name="identifier" required
                                             placeholder="Contoh: 08123456789 atau PIN berkas"
-                                            class="input input-lg w-full pl-14 bg-white border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 rounded-2xl transition-all font-medium text-slate-700" />
+                                            class="input input-md md:input-lg w-full pl-14 bg-white border-slate-200 focus:border-teal-500 rounded-2xl transition-all font-medium text-slate-700" />
                                     </div>
-                                    <label class="label mt-2">
-                                        <span class="label-text-alt text-slate-400 italic">
+                                    <label class="label mt-1 md:mt-2">
+                                        <span class="label-text-alt text-slate-400 italic text-[10px]">
                                             <i class="fas fa-info-circle mr-1"></i> Masukkan nomor WA yang digunakan saat pendaftaran.
                                         </span>
                                     </label>
                                 </div>
 
-                                <button type="submit" class="btn btn-lg h-16 w-full bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-2xl font-black text-lg shadow-xl shadow-teal-600/20 group uppercase tracking-wider">
+                                <button type="submit" class="btn btn-md md:btn-lg h-14 md:h-16 w-full bg-teal-800 hover:bg-teal-900 text-white border-0 rounded-2xl font-black text-lg shadow-xl shadow-teal-900/20 group uppercase tracking-wider">
                                     Cek Status Sekarang
                                     <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
                                 </button>
@@ -83,7 +83,7 @@
                             </p>
                             <a href="https://wa.me/{{ $waAdminLink }}" target="_blank" class="flex items-center justify-between p-4 bg-white/10 hover:bg-white/20 rounded-2xl transition-all group">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center">
+                                    <div class="w-10 h-10 bg-teal-800 rounded-xl flex items-center justify-center">
                                         <i class="fab fa-whatsapp text-lg"></i>
                                     </div>
                                     <div class="text-left">
@@ -141,7 +141,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                     @foreach($masterLayanan as $svc)
                         <div class="group bg-white rounded-[2rem] p-8 shadow-xl shadow-slate-200/40 border border-white hover:border-teal-100 hover:scale-[1.02] transition-all duration-500 flex flex-col h-full">
                             <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r {{ $svc->warna_bg ?? 'from-teal-500 to-teal-600' }} opacity-0 group-hover:opacity-100 transition-opacity"></div>

@@ -26,6 +26,11 @@ class StatusHandler
         }
         // If a specific query (PIN or UUID) is provided
         if ($query) {
+            $queryLower = strtolower(trim($query));
+            if ($queryLower === 'lupa' || $queryLower === 'forgot' || str_contains($queryLower, 'pin')) {
+                return $this->handleForgotPin($phone);
+            }
+
             // Try cache first for PIN/UUID lookup
             $cacheKey = $this->getCacheKey('pin', $query);
             $cached = Cache::get($cacheKey);
@@ -219,23 +224,32 @@ class StatusHandler
      */
     protected function formatSingleStatus(PublicService $service): string
     {
-        $status = "STATUS BERKAS LAYANAN\n\n";
-        $status .= "Jenis Layanan: {$service->jenis_layanan}\n";
-        $status .= "ID: " . substr($service->uuid, 0, 8) . "...\n";
-        $status .= "PIN Lacak: *{$service->tracking_code}*\n";
-        $status .= "Status: " . $this->getStatusBadge($service->status) . "\n";
-        $status .= "Tanggal: {$service->created_at->format('d/m/Y')}\n";
+        $statusLabel = $this->getStatusBadge($service->status);
+        $baseUrl = config('app.url', 'https://localhost');
+        $trackingUrl = rtrim($baseUrl, '/') . '/layanan?q=' . $service->tracking_code;
+
+        $msg = "📂 *INFORMASI BERKAS ANDA*\n\n";
+        $msg .= "Nama: *{$service->nama_pemohon}*\n";
+        $msg .= "Layanan: {$service->jenis_layanan}\n";
+        $msg .= "━━━━━━━━━━━━━━━━━\n";
+        $msg .= "🔑 *PIN Lacak:* `{$service->tracking_code}`\n";
+        $msg .= "📊 *Status:* {$statusLabel}\n";
+        $msg .= "📅 *Tanggal:* {$service->created_at->format('d/m/Y')}\n";
+        $msg .= "━━━━━━━━━━━━━━━━━\n";
 
         $response = $service->effective_public_response;
         if ($response) {
-            $status .= "\nTanggapan Petugas:\n{$response}";
+            $msg .= "\n💬 *Tanggapan Petugas:*\n_{$response}_\n";
         }
 
         if ($service->completion_type === 'digital' && $service->result_file_path) {
-            $status .= "\n\nDokumen Selesai: Silakan cek di website atau hubungi admin.";
+            $msg .= "\n✨ *Dokumen Selesai:* Silakan cek di website atau hubungi admin.\n";
         }
 
-        return $status;
+        $msg .= "\n🔗 *Cek Detail Lengkap:*\n{$trackingUrl}\n\n";
+        $msg .= "_Ketik MENU untuk kembali._";
+
+        return $msg;
     }
 
     /**
@@ -243,21 +257,27 @@ class StatusHandler
      */
     protected function formatMultipleStatus($services): string
     {
-        $status = "DAFTAR BERKAS LAYANAN ANDA\n\n";
-        $status .= "Ditemukan {$services->count()} berkas:\n\n";
+        $baseUrl = config('app.url', 'https://localhost');
+        
+        $msg = "📂 *DAFTAR BERKAS LAYANAN ANDA*\n\n";
+        $msg .= "Halo! Kami menemukan *{$services->count()}* berkas yang terdaftar dengan nomor ini:\n\n";
 
         foreach ($services as $index => $service) {
             $num = $index + 1;
-            $status .= "{$num}. {$service->jenis_layanan}\n";
-            $status .= "   ID: " . substr($service->uuid, 0, 8) . "...\n";
-            $status .= "   PIN Lacak: *{$service->tracking_code}*\n";
-            $status .= "   Status: " . $this->getStatusBadge($service->status) . "\n";
-            $status .= "   Tanggal: {$service->created_at->format('d/m/Y')}\n\n";
+            $statusLabel = $this->getStatusBadge($service->status);
+            
+            $msg .= "{$num}. *{$service->jenis_layanan}*\n";
+            $msg .= "   📌 PIN: `{$service->tracking_code}`\n";
+            $msg .= "   📊 Status: {$statusLabel}\n";
+            $msg .= "   📅 " . $service->created_at->format('d/m/Y') . "\n\n";
         }
 
-        $status .= "Gunakan PIN Lacak (6 angka) untuk melihat detail lebih lengkap di website atau ketik langsung PIN tersebut di sini.";
+        $msg .= "━━━━━━━━━━━━━━━━━\n\n";
+        $msg .= "💡 *Tips:* Ketik langsung **PIN Lacak** (6 angka) untuk melihat detail lengkap, atau kunjungi portal kami:\n";
+        $msg .= rtrim($baseUrl, '/') . "/layanan\n\n";
+        $msg .= "_Ketik MENU untuk kembali._";
 
-        return $status;
+        return $msg;
     }
 
     /**
@@ -265,13 +285,12 @@ class StatusHandler
      */
     protected function getStatusBadge(string $status): string
     {
-        // statuses from PublicService model or controller logic
         return match (strtolower($status)) {
-            'pending', 'menunggu_verifikasi' => 'Menunggu Verifikasi',
-            'diproses' => 'Sedang Diproses',
-            'selesai' => 'Selesai (Siap Diambil/Download)',
-            'ditolak' => 'Ditolak/Perlu Perbaikan',
-            default => ucfirst($status),
+            'pending', 'menunggu_verifikasi' => '⏳ Menunggu Antrean',
+            'diproses' => '⚙️ Sedang Dikerjakan',
+            'selesai' => '✅ Selesai & Siap Diambil',
+            'ditolak' => '❌ Perlu Perbaikan / Ditolak',
+            default => '📋 ' . ucfirst($status),
         };
     }
 
@@ -280,17 +299,13 @@ class StatusHandler
      */
     protected function formatNotFound(string $phone): string
     {
-        return "Berkas Tidak Ditemukan\n\n" .
-            "Tidak ditemukan berkas layanan yang terdaftar dengan nomor {$phone}.\n\n" .
-            "Kemungkinan:\n" .
-            "- Nomor WA yang digunakan belum terdaftar\n" .
-            "- Atau gunakan PIN Lacak Anda langsung\n\n" .
-            "Cara Cek Status:\n" .
-            "1. Ketik: STATUS (untuk lihat semua berkas)\n" .
-            "2. Atau ketik: STATUS [PIN]\n" .
-            "   Contoh: STATUS 082231\n\n" .
-            "---\n" .
-            "Ketik: MENU untuk kembali";
+        return "❌ *Berkas Tidak Ditemukan*\n\n" .
+            "Kami tidak menemukan berkas layanan yang terdaftar dengan nomor *{$phone}*.\n\n" .
+            "💡 *Saran Aktif:*\n" .
+            "- Ketik langsung **PIN Lacak** (6 angka) jika ada.\n" .
+            "- Ketik **MENU** untuk melihat opsi lain.\n\n" .
+            "━━━━━━━━━━━━━━━━━\n" .
+            "Butuh bantuan? Silakan hubungi petugas kecamatan.";
     }
 
     /**
@@ -298,16 +313,13 @@ class StatusHandler
      */
     protected function formatNoServicesForForgotPin(string $phone): string
     {
-        return "Nomor Tidak Terdaftar\n\n" .
-            "Nomor {$phone} belum terdaftar dalam sistem kami.\n\n" .
-            "Langkah Selanjutnya:\n" .
-            "Silakan mengajukan layanan baru melalui:\n" .
-            "- Website: [lacak-berkas]\n" .
-            "- Atau hubungi petugas\n\n" .
-            "Anda akan mendapatkan PIN Lacak setelah pengajuan\n" .
-            "diterima.\n\n" .
-            "---\n" .
-            "Ketik: MENU untuk kembali";
+        return "⚠️ *Nomor Tidak Terdaftar*\n\n" .
+            "Maaf, nomor *{$phone}* belum terdaftar memiliki layanan aktif di sistem kami.\n\n" .
+            "💡 *Langkah Selanjutnya:*\n" .
+            "- Silakan ajukan layanan baru di website.\n" .
+            "- Atau hubungi petugas jika ini adalah kesalahan.\n\n" .
+            "━━━━━━━━━━━━━━━━━\n" .
+            "Ketik *MENU* untuk kembali";
     }
 
     /**
@@ -315,21 +327,19 @@ class StatusHandler
      */
     protected function formatForgotPinResponse($services): string
     {
-        $reply = "PENCARIAN PIN LACAK\n\n";
-        $reply .= "Berikut daftar PIN Lacak untuk nomor Anda:\n\n";
+        $reply = "🔑 *PENCARIAN PIN LACAK*\n\n";
+        $reply .= "Ditemukan *{$services->count()}* PIN yang terdaftar pada nomor Anda:\n\n";
 
         foreach ($services as $service) {
-            $reply .= "{$service->jenis_layanan}\n";
-            $reply .= "   PIN: {$service->tracking_code}\n";
-            $reply .= "   Status: " . $this->getStatusBadge($service->status) . "\n";
-            $reply .= "   Tanggal: {$service->created_at->format('d/m/Y')}\n\n";
+            $statusLabel = $this->getStatusBadge($service->status);
+            $reply .= "📌 *{$service->jenis_layanan}*\n";
+            $reply .= "   PIN: `{$service->tracking_code}`\n";
+            $reply .= "   Status: {$statusLabel}\n\n";
         }
 
-        $reply .= "Gunakan PIN di atas untuk:\n" .
-            "- Cek status lengkap: STATUS [PIN]\n" .
-            "- Contoh: STATUS {$services->first()->tracking_code}\n\n" .
-            "---\n" .
-            "Ketik: MENU untuk kembali";
+        $reply .= "━━━━━━━━━━━━━━━━━\n";
+        $reply .= "💡 *Tips:* Ketik PIN di atas untuk melihat detail lengkap.\n\n" .
+            "Ketik *MENU* untuk kembali.";
 
         return $reply;
     }

@@ -124,9 +124,23 @@
                     <div>
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Jenis
                             Usaha</label>
-                        <input type="text" name="jenis_usaha" value="{{ $umkm->jenis_usaha }}" required
-                            placeholder="Contoh: Kuliner / Kerajinan"
-                            class="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 py-4 text-sm font-semibold text-slate-700 focus:bg-white focus:border-sky-500/20 focus:ring-4 focus:ring-sky-500/10 transition-all outline-none">
+                        <select name="jenis_usaha" required
+                            class="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 py-4 text-sm font-semibold text-slate-700 focus:bg-white focus:border-sky-500/20 focus:ring-4 focus:ring-sky-500/10 transition-all outline-none appearance-none">
+                            @foreach($umkmCategories as $cat)
+                                <option value="{{ $cat['name'] }}" {{ $umkm->jenis_usaha == $cat['name'] ? 'selected' : '' }}>
+                                    {{ $cat['name'] }}
+                                </option>
+                            @endforeach
+                            
+                            {{-- Fallback: Jika kategori lama tidak ada di daftar standar --}}
+                            @php
+                                $isStandard = collect($umkmCategories)->pluck('name')->contains($umkm->jenis_usaha);
+                            @endphp
+                            @if(!$isStandard && $umkm->jenis_usaha)
+                                <option value="{{ $umkm->jenis_usaha }}" selected>{{ $umkm->jenis_usaha }} (Kustom)</option>
+                            @endif
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-2 ml-1">Pilih kategori yang paling sesuai agar produk Anda muncul dengan ikon yang tepat di etalase.</p>
                     </div>
 
                     <div>

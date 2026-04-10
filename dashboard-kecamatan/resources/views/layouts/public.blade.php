@@ -46,16 +46,16 @@
 
     {{-- Header / Navbar --}}
     <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-100 shadow-sm">
-        <div class="container mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="container mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
             <a href="/" class="flex items-center gap-3 group">
                 <img src="{{ appProfile()->logo_path ? asset('storage/' . appProfile()->logo_path) : '' }}" alt="Logo"
-                    style="height: 40px; width: auto; object-fit: contain;"
-                    class="flex-shrink-0 group-hover:scale-105 transition-transform">
+                    style="height: 32px; width: auto; object-fit: contain;"
+                    class="md:h-12 flex-shrink-0 group-hover:scale-105 transition-transform">
                 <div>
-                    <div class="font-black text-slate-800 leading-none text-sm">
+                    <div class="font-black text-slate-800 leading-none text-xs md:text-sm">
                         {{ strtoupper(appProfile()->full_region_name) }}
                     </div>
-                    <div class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">
+                    <div class="text-[8px] md:text-[10px] text-slate-500 uppercase tracking-widest mt-0.5 md:mt-1">
                         {{ appProfile()->region_parent ?? 'Kabupaten Probolinggo' }}
                     </div>
                 </div>
@@ -80,7 +80,7 @@
     </main>
 
     <!-- Premium Footer Section - Compact -->
-    <footer class="bg-[#020617] text-slate-400 pt-12 pb-8 border-t border-slate-800/60 relative overflow-hidden">
+    <footer class="bg-[#0f172a] text-slate-400 pt-12 pb-8 border-t border-slate-800/60 relative overflow-hidden">
         {{-- Background Accents --}}
         <div
             class="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 blur-[100px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2">

@@ -37,8 +37,9 @@ class JasaHandler
             return [
                 'success' => true,
                 'intent' => 'jasa',
-                'reply' => "Tidak ditemukan penyedia jasa dengan kata kunci \"*{$query}*\".\n\nCoba kata kunci lain atau ketik *MENU* untuk kembali.",
-                'state_update' => null,
+                'reply' => "😔 *Maaf*, tidak ditemukan penyedia jasa dengan kata kunci \"*{$query}*\".\n\n" .
+                    "Silakan coba kata kunci lain atau ketik *MENU* atau *0* untuk kembali.",
+                'state_update' => 'MENU_JASA',
             ];
         }
 

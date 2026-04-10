@@ -99,7 +99,7 @@ class SyaratHandler
         }
         
         $reply .= "\n\nKetik *SYARAT* untuk lainnya.\n";
-        $reply .= "Ketik *MENU* untuk kembali.";
+        $reply .= "Ketik *MENU* atau *0* untuk kembali.";
         return $reply;
     }
 
@@ -122,7 +122,7 @@ class SyaratHandler
         }
 
         $reply .= "\n\nKetik *SYARAT* untuk melihat daftar layanan lainnya.\n";
-        $reply .= "Ketik *MENU* untuk kembali ke menu utama.";
+        $reply .= "Ketik *MENU* atau *0* untuk kembali ke menu utama.";
 
         return $reply;
     }
@@ -193,7 +193,7 @@ class SyaratHandler
         $reply .= "Contoh: *syarat kk*, *syarat ktp*, *syarat domisili*\n\n";
         $reply .= "Ajukan Secara Online:\n";
         $reply .= "{$baseUrl}/#layanan\n\n";
-        $reply .= "Ketik *MENU* untuk kembali ke menu utama.";
+        $reply .= "Ketik *MENU* atau *0* untuk kembali ke menu utama.";
 
         return $reply;
     }
@@ -213,8 +213,8 @@ class SyaratHandler
         $reply .= "- SYARAT DOMISILI\n\n";
         $reply .= "Lihat Semua Layanan:\n";
         $reply .= "{$baseUrl}/#layanan\n\n";
-        $reply .= "Ketik *SYARAT* untuk melihat daftar lengkap.";
-        $reply .= "Ketik *MENU* untuk kembali ke menu utama.";
+        $reply .= "Ketik *SYARAT* untuk melihat daftar lengkap.\n";
+        $reply .= "Ketik *MENU* atau *0* untuk kembali ke menu utama.";
 
         return $reply;
     }

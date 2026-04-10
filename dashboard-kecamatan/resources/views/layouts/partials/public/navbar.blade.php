@@ -21,6 +21,9 @@
     </div>
     <div class="navbar-center hidden lg:flex">
         <ul class="menu menu-horizontal px-1 gap-1">
+            <li><a href="/"
+                    class="text-sm font-medium {{ request()->is('/') ? 'text-teal-600 bg-teal-50' : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50' }} rounded-lg">Beranda</a>
+            </li>
             <li><a href="{{ request()->is('/') ? '#layanan' : '/#layanan' }}"
                     class="text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg">Layanan</a>
             </li>
@@ -38,10 +41,7 @@
         </ul>
     </div>
     <div class="navbar-end gap-2">
-        <button onclick="document.getElementById('publicServiceModal').showModal()"
-            class="btn btn-sm btn-ghost text-slate-500 hover:text-teal-600 hover:bg-teal-50 hidden lg:flex rounded-lg px-4 font-bold border-0">
-            <i class="fas fa-headset mr-1"></i> Bantuan
-        </button>
+
         <button onclick="document.getElementById('complaintModal').showModal()"
             class="btn btn-sm bg-rose-100/50 hover:bg-rose-500 text-rose-600 hover:text-white border-0 hidden lg:flex rounded-lg px-5 font-bold shadow-sm transition-colors">
             <i class="fas fa-exclamation-circle mr-1"></i> Lapor!

@@ -12,7 +12,7 @@
         </div>
 
         <!-- Cover & Profile Header -->
-        <div class="relative h-[28rem] md:h-[32rem] bg-slate-900 overflow-hidden group/cover">
+        <div class="relative h-[20rem] md:h-[32rem] bg-slate-800 overflow-hidden group/cover">
             <!-- Dynamic Cover Image or Fallback -->
             @if($umkm->foto_usaha)
                 <img src="{{ asset('storage/' . $umkm->foto_usaha) }}"
@@ -23,7 +23,7 @@
             @endif
 
             <!-- Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/60 to-slate-50"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-slate-800/10 via-slate-800/40 to-slate-50"></div>
 
             <div class="container mx-auto px-6 h-full relative z-10 flex flex-col justify-end pb-12">
                 <!-- Back Button -->
@@ -32,11 +32,11 @@
                     <i class="fas fa-arrow-left"></i> Kembali ke Katalog
                 </a>
 
-                <div class="flex flex-col md:flex-row items-end gap-10">
+                <div class="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10 -mt-16 md:mt-0">
                     <!-- Store Profile Picture -->
                     <div class="relative group">
                         <div
-                            class="w-36 h-36 md:w-52 md:h-52 rounded-[2.5rem] bg-white p-2 shadow-2xl shadow-slate-900/20 overflow-hidden rotate-0 group-hover:rotate-2 transition-transform duration-500 ease-out shrink-0">
+                            class="w-32 h-32 md:w-52 md:h-52 rounded-[2.5rem] bg-white p-2 shadow-2xl shadow-slate-200/50 overflow-hidden rotate-0 group-hover:rotate-2 transition-transform duration-500 ease-out shrink-0 border border-white">
                             <div
                                 class="w-full h-full rounded-[2rem] overflow-hidden bg-slate-100 flex items-center justify-center relative">
                                 @if($umkm->foto_usaha)
@@ -56,29 +56,29 @@
                         </div>
                     </div>
 
-                    <!-- Store Info -->
-                    <div class="flex-1 pb-4">
-                        <div class="flex flex-wrap items-center gap-3 mb-4 animate-fade-in-up"
-                            style="animation-delay: 100ms">
-                            <span
-                                class="bg-teal-500/20 backdrop-blur-md border border-teal-500/30 text-teal-100 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
-                                {{ $umkm->jenis_usaha }}
-                            </span>
-                            <span
-                                class="bg-white/10 backdrop-blur-md border border-white/20 text-white/90 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm flex items-center gap-2">
-                                <i class="fas fa-map-marker-alt text-rose-400"></i> {{ $umkm->desa }}
-                            </span>
-                        </div>
+                        <!-- Store Info -->
+                        <div class="flex-1 pb-4 text-center md:text-left">
+                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4 animate-fade-in-up"
+                                style="animation-delay: 100ms">
+                                <span
+                                    class="bg-slate-700/10 backdrop-blur-md border border-slate-700/20 text-slate-700 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                    {{ $umkm->jenis_usaha }}
+                                </span>
+                                <span
+                                    class="bg-white/10 backdrop-blur-md border border-white/20 text-white/90 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm flex items-center gap-2">
+                                    <i class="fas fa-map-marker-alt text-amber-500"></i> {{ $umkm->desa }}
+                                </span>
+                            </div>
 
-                        <h1 class="text-4xl md:text-6xl font-black text-slate-800 mb-4 tracking-tight leading-none animate-fade-in-up md:text-slate-900"
-                            style="animation-delay: 200ms; text-shadow: 0 2px 10px rgba(255,255,255,0.5);">
-                            {{ $umkm->nama_usaha }}
-                        </h1>
+                            <h1 class="text-3xl md:text-6xl font-black text-slate-800 mb-4 tracking-tight leading-none animate-fade-in-up"
+                                style="animation-delay: 200ms; text-shadow: 0 4px 15px rgba(255,255,255,0.4);">
+                                {{ $umkm->nama_usaha }}
+                            </h1>
 
-                        <div class="flex flex-wrap items-center gap-6 text-slate-600 font-bold animate-fade-in-up"
-                            style="animation-delay: 300ms">
-                            <div
-                                class="flex items-center gap-3 bg-white/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/40 shadow-sm">
+                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-6 text-slate-600 font-bold animate-fade-in-up"
+                                style="animation-delay: 300ms">
+                                <div
+                                    class="flex items-center gap-3 bg-white/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/40 shadow-sm">
                                 <div
                                     class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
                                     <i class="fas fa-user text-xs"></i>
@@ -155,15 +155,15 @@
                 <div class="lg:col-span-4 space-y-8 h-fit lg:sticky lg:top-24">
                     <!-- Description Card -->
                     <div
-                        class="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group hover:border-indigo-100 transition-colors">
+                        class="bg-white rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group hover:border-teal-100 transition-colors">
                         <div
-                            class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-indigo-50 rounded-full blur-2xl group-hover:bg-indigo-100 transition-colors">
+                            class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-teal-50 rounded-full blur-2xl group-hover:bg-teal-100 transition-colors">
                         </div>
 
                         <div class="relative z-10">
                             <h3
                                 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                <i class="fas fa-info-circle text-indigo-400"></i> Tentang Usaha
+                                <i class="fas fa-info-circle text-teal-400"></i> Tentang Usaha
                             </h3>
                             <p class="text-slate-600 font-medium leading-relaxed mb-8 text-sm">
                                 {{ $umkm->deskripsi ?? 'Pemilik usaha belum menambahkan deskripsi lengkap. Dukung terus produk lokal!' }}
@@ -204,34 +204,33 @@
 
                     <!-- Report Button -->
                     <button
-                        class="w-full group bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 font-bold py-4 rounded-2xl border border-dashed border-slate-200 hover:border-rose-200 transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95">
+                        class="w-full group bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 font-bold py-5 rounded-3xl border border-dashed border-slate-200 hover:border-rose-200 transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 shadow-sm">
                         <i class="fas fa-exclamation-triangle opacity-50 group-hover:opacity-100 transition-opacity"></i>
-                        Laporkan Iklan Ini
+                        Laporkan Profil Toko
                     </button>
                 </div>
 
                 <!-- Right Content: Products -->
                 <div class="lg:col-span-8">
-                    <div class="flex items-end justify-between mb-10">
-                        <div>
+                    <div class="flex flex-col md:flex-row items-center md:items-end justify-between mb-10 gap-6">
+                        <div class="text-center md:text-left">
                             <div
-                                class="inline-flex items-center gap-2 bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-3">
-                                <i class="fas fa-box"></i> Katalog
+                                class="inline-flex items-center gap-2 bg-teal-50 text-teal-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-3">
+                                <i class="fas fa-box"></i> Katalog Produk
                             </div>
-                            <h2 class="text-3xl font-black text-slate-800 mb-1">Daftar Produk</h2>
-                            <p class="text-slate-500 font-medium text-sm">Temukan produk terbaik dari
-                                {{ $umkm->nama_usaha }}</p>
+                            <h2 class="text-3xl font-black text-slate-800 mb-1 leading-tight">Daftar Produk</h2>
+                            <p class="text-slate-500 font-medium text-sm">Temukan koleksi pilihan toko kami</p>
                         </div>
                         <span
-                            class="hidden md:flex bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-slate-900/20 items-center gap-2">
-                            <i class="fas fa-layer-group text-teal-400"></i> {{ count($products) }} Item
+                            class="bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl shadow-lg flex items-center gap-2">
+                            <i class="fas fa-layer-group text-teal-400"></i> {{ count($products) }} Item Tersedia
                         </span>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
                         @forelse($products as $product)
                             <div
-                                class="group bg-white rounded-[2.5rem] p-4 shadow-lg shadow-slate-200/50 border border-slate-100 hover:border-indigo-200 hover:shadow-[0_20px_40px_-15px_rgba(79,70,229,0.2)] transition-all duration-500 hover:-translate-y-2 flex flex-col h-full">
+                                class="group bg-white rounded-[2.5rem] p-4 shadow-lg shadow-slate-200/50 border border-slate-100 hover:border-teal-200 hover:shadow-[0_20px_40px_-15px_rgba(13,148,136,0.15)] transition-all duration-500 hover:-translate-y-2 flex flex-col h-full">
                                 <!-- Product Image -->
                                 <div class="relative aspect-[4/3] rounded-[2rem] overflow-hidden mb-6 shadow-inner bg-slate-50">
                                     @if($product->foto_produk)
@@ -243,9 +242,9 @@
                                         </div>
                                     @endif
 
-                                    <div class="absolute top-4 right-4">
+                                    <div class="absolute top-4 right-4 text-right">
                                         <span
-                                            class="bg-indigo-600/90 backdrop-blur-md text-white font-black px-4 py-2 rounded-xl shadow-lg border border-white/20 text-sm">
+                                            class="bg-slate-900/90 backdrop-blur-md text-white font-black px-4 py-2 rounded-xl shadow-lg border border-white/20 text-sm">
                                             Rp {{ number_format($product->harga, 0, ',', '.') }}
                                             <span class="text-[10px] opacity-60 font-medium lowercase">/{{ $product->satuan_harga ?? 'Pcs' }}</span>
                                         </span>
@@ -255,7 +254,7 @@
                                 <!-- Product Info -->
                                 <div class="px-2 flex-grow flex flex-col">
                                     <h3
-                                        class="text-xl font-black text-slate-800 mb-2 truncate group-hover:text-indigo-600 transition-colors">
+                                        class="text-xl font-black text-slate-800 mb-2 truncate group-hover:text-teal-600 transition-colors">
                                         {{ $product->nama_produk }}
                                     </h3>
                                     <p

@@ -110,4 +110,84 @@ class Umkm extends Model
             default => 'light'
         };
     }
+
+    /**
+     * Master Kategori UMKM Terpusat
+     * Digunakan untuk pendaftaran seller, filter etalase, dan pemetaan ikon.
+     */
+    public static function getStandardCategories()
+    {
+        return [
+            [
+                'name' => 'Oleh-oleh',
+                'slug' => 'oleh-oleh',
+                'icon' => 'fa-gift',
+                'color_class' => 'bg-amber-50 text-amber-600',
+                'keywords' => ['oleh-oleh', 'khas', 'cinderamata']
+            ],
+            [
+                'name' => 'Kuliner',
+                'slug' => 'kuliner',
+                'icon' => 'fa-utensils',
+                'color_class' => 'bg-rose-50 text-rose-500',
+                'keywords' => ['makanan', 'minuman', 'bakso', 'snack', 'warung']
+            ],
+            [
+                'name' => 'Fashion',
+                'slug' => 'fashion',
+                'icon' => 'fa-tshirt',
+                'color_class' => 'bg-blue-50 text-blue-500',
+                'keywords' => ['pakaian', 'baju', 'hijab', 'konveksi', 'sepatu', 'tas']
+            ],
+            [
+                'name' => 'Elektronik',
+                'slug' => 'elektronik',
+                'icon' => 'fa-tv',
+                'color_class' => 'bg-indigo-50 text-indigo-500',
+                'keywords' => ['hp', 'komputer', 'laptop', 'servis', 'gadget']
+            ],
+            [
+                'name' => 'Kecantikan',
+                'slug' => 'kecantikan',
+                'icon' => 'fa-magic',
+                'color_class' => 'bg-pink-50 text-pink-500',
+                'keywords' => ['skincare', 'kosmetik', 'salon', 'makeup']
+            ],
+            [
+                'name' => 'Kesehatan',
+                'slug' => 'kesehatan',
+                'icon' => 'fa-heartbeat',
+                'color_class' => 'bg-emerald-50 text-emerald-600',
+                'keywords' => ['obat', 'jamu', 'herbal', 'pijat', 'apotek']
+            ],
+            [
+                'name' => 'Perabotan',
+                'slug' => 'perabotan',
+                'icon' => 'fa-home',
+                'color_class' => 'bg-orange-50 text-orange-600',
+                'keywords' => ['furniture', 'rumah tangga', 'mebel', 'kasur']
+            ],
+            [
+                'name' => 'Pertanian',
+                'slug' => 'pertanian',
+                'icon' => 'fa-seedling',
+                'color_class' => 'bg-green-50 text-green-600',
+                'keywords' => ['bibit', 'pupuk', 'padi', 'sayur', 'buah', 'ternak']
+            ],
+            [
+                'name' => 'Jasa',
+                'slug' => 'jasa',
+                'icon' => 'fa-tools',
+                'color_class' => 'bg-cyan-50 text-cyan-600',
+                'keywords' => ['servis', 'tukang', 'jahit', 'angkut', 'laundry']
+            ],
+            [
+                'name' => 'Lainnya',
+                'slug' => 'lainnya',
+                'icon' => 'fa-th-large',
+                'color_class' => 'bg-slate-50 text-slate-500',
+                'keywords' => []
+            ],
+        ];
+    }
 }

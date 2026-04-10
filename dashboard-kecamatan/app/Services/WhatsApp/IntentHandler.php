@@ -77,7 +77,7 @@ class IntentHandler
 
         if ($this->isSelection($messageLower, '3')) {
             // Option 3: Langsung ke Direktori Jasa
-            $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
+            $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://localhost'));
             return [
                 'success' => true,
                 'intent' => 'jasa',
@@ -85,8 +85,8 @@ class IntentHandler
                     "Temukan tukang, ART, ojek, dan tenaga harian di sekitar Anda:\n\n" .
                     "👉 {$baseUrl}/ekonomi?tab=jasa\n\n" .
                     "Atau ketik jenis jasa yang Anda cari:\n" .
-                    "Contoh: *jasa tukang*, *jasa ojek*, *jasa ledeng*\n\n" .
-                    "Ketik *MENU* untuk kembali.",
+                    "Contoh: *jasa tukang*, *jasa ojek*\n\n" .
+                    "Ketik *MENU* atau *0* untuk kembali.",
                 'state_update' => 'MENU_JASA',
             ];
         }
@@ -324,7 +324,9 @@ class IntentHandler
      */
     protected function getUnknownIntentMessage(): string
     {
-        return "Maaf, saya tidak mengerti pesan Anda. Ketik *MENU* untuk melihat daftar layanan (1-5).";
+        return "🙏 *Mohon maaf*, saya belum mengenali pesan tersebut.\n\n" .
+            "Agar dapat kami layani dengan baik, silakan pilih nomor layanan (1-5) atau ketik *MENU* untuk melihat daftar layanan utama kami.\n\n" .
+            "Terima kasih atas pengertiannya! 😊";
     }
 
     /**
@@ -338,13 +340,13 @@ class IntentHandler
         return [
             'success' => true,
             'intent' => 'umkm_link',
-            'reply' => "ETALASE PRODUK UMK\n\n" .
-                "Lihat semua produk UMK {$this->getRegionName()} di:\n\n" .
-                "{$umkmUrl}\n\n" .
+            'reply' => "🛍️ *ETALASE PRODUK UMKM*\n\n" .
+                "Lihat semua produk pilihan warga {$this->getRegionName()} di:\n\n" .
+                "👉 {$umkmUrl}\n\n" .
                 "Anda juga bisa ketik nama produk yang dicari.\n" .
                 "Contoh: *umkm bakso*\n\n" .
-                "Ketik *MENU* untuk kembali.",
-            'state_update' => null,
+                "Ketik *MENU* atau *0* untuk kembali.",
+            'state_update' => 'WAITING_UMKM_SEARCH',
         ];
     }
 
@@ -375,7 +377,7 @@ class IntentHandler
     /**
      * 
      */
-    protected function getLayananLink(): array
+    public function getLayananLink(): array
     {
         $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
         $layananUrl = $baseUrl . '/#layanan';
@@ -383,17 +385,16 @@ class IntentHandler
         return [
             'success' => true,
             'intent' => 'syarat_link',
-            'reply' => "LAYANAN KECAMATAN\n\n" .
-                "Silakan pilih layanan yang dibutuhkan:\n\n" .
+            'reply' => "🏛️ *LAYANAN ADMINISTRASI*\n\n" .
+                "Silakan pilih layanan yang Anda butuhkan:\n\n" .
                 "- syarat ktp - Pembuatan KTP\n" .
                 "- syarat kk - Pembuatan KK\n" .
                 "- syarat akta - Akta Kelahiran\n" .
-                "- syarat sktm - SKTM\n" .
                 "- syarat domisili - Surat Domisili\n\n" .
                 "Ajukan Secara Online:\n"
-                . "{$layananUrl}\n\n" .
-                "Ketik *MENU* untuk kembali.",
-            'state_update' => 'ADM_SUBMENU', // Keep user in admin submenu
+                . "👉 {$layananUrl}\n\n" .
+                "Ketik *MENU* atau *0* untuk kembali.",
+            'state_update' => 'ADM_SUBMENU', 
         ];
     }
 
@@ -409,18 +410,15 @@ class IntentHandler
     /**
      * 
      */
-    protected function getAdministrasiSubmenu(): array
+    public function getAdministrasiSubmenu(): array
     {
-        $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
-
-        $reply = "MENU ADMINISTRASI\n\n";
-        $reply .= "Silakan pilih layanan:\n\n";
-        $reply .= "1. STATUS - Lacak Berkas Anda\n";
-        $reply .= "   Ketik: STATUS atau 1\n\n";
-        $reply .= "2. SYARAT - Syarat Layanan & Ajukan Online\n";
-        $reply .= "   Ketik: SYARAT atau 2\n\n";
-        $reply .= "3. MENU - Kembali ke Menu Utama\n";
-        $reply .= "   Ketik: MENU atau 3";
+        $reply = "🏛️ *MENU ADMINISTRASI*\n\n";
+        $reply .= "Silakan pilih layanan yang diinginkan:\n\n";
+        $reply .= "1. *STATUS* - Lacak Berkas Anda\n";
+        $reply .= "2. *SYARAT* - Syarat & Ajukan Online\n";
+        $reply .= "3. *MENU* - Kembali ke Menu Utama\n\n";
+        $reply .= "Ketik angka *1*, *2*, atau *3*.\n";
+        $reply .= "Atau ketik *MENU* kapan saja.";
 
         return [
             'success' => true,

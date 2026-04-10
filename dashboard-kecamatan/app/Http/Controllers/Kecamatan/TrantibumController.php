@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kecamatan;
 use App\Http\Controllers\Controller;
 use App\Models\TrantibumKejadian;
 use App\Models\TrantibumRelawan;
+use App\Models\Submission;
 use Illuminate\Http\Request;
 
 class TrantibumController extends Controller
@@ -61,5 +62,35 @@ class TrantibumController extends Controller
         $relawans = $query->latest()->paginate(12);
 
         return view('kecamatan.trantibum.relawan', compact('relawans'));
+    }
+
+    public function emergencyIndex()
+    {
+        return view('kecamatan.trantibum.kecamatan.darurat');
+    }
+
+    public function taganaIndex(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        
+        $reports = Submission::where('menu_id', 4) // Trantibum menu
+            ->whereYear('created_at', $year)
+            ->with(['desa', 'jawabanIndikator', 'aspek'])
+            ->get();
+
+        return view('kecamatan.trantibum.kecamatan.tagana', compact('reports', 'year'));
+    }
+
+    public function show($id)
+    {
+        $report = Submission::with(['desa', 'aspek', 'buktiDukung'])->findOrFail($id);
+        $layout = auth()->user()->desa_id ? 'layouts.desa' : 'layouts.kecamatan';
+        
+        return view('kecamatan.trantibum.show', compact('report', 'layout'));
+    }
+
+    public function exportAudit()
+    {
+        return back()->with('error', 'Fitur export audit sedang dalam pemeliharaan.');
     }
 }

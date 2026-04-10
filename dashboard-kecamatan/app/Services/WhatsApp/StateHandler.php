@@ -43,14 +43,23 @@ class StateHandler
         // Global commands & Keyword Overrides
         if (
             $messageLower === 'menu' ||
+            $messageLower === 'kembali' ||
+            $messageLower === '0' ||
             str_starts_with($messageLower, 'syarat') ||
             str_starts_with($messageLower, 'umkm') ||
             str_starts_with($messageLower, 'jasa') ||
             str_starts_with($messageLower, 'pengaduan') ||
             str_starts_with($messageLower, 'cek') ||
-            str_starts_with($messageLower, 'status')
+            str_starts_with($messageLower, 'status') ||
+            preg_match('/^[0-9]{6}$/', $messageLower)
         ) {
             \Log::info('StateHandler Keyword Override Triggered', ['message' => $message]);
+            
+            // If it's a numeric override for "Back" (0) or "KEMBALI", ensure we go to menu
+            if ($messageLower === '0' || $messageLower === 'kembali') {
+                $message = 'menu';
+            }
+
             $session->clear();
             return $this->intentHandler->handle($session->phone, $message);
         }
@@ -64,8 +73,7 @@ class StateHandler
             'WAITING_COMPLAINT_NAME' => $this->complaintHandler->handleName($session, $message),
             'WAITING_COMPLAINT_WA' => $this->complaintHandler->handleWhatsApp($session, $message),
             'WAITING_COMPLAINT_CATEGORY' => $this->complaintHandler->handleCategory($session, $message),
-            'WAITING_OWNER_PIN' => $this->ownerHandler->handlePin($session, $message),
-            'WAITING_OWNER_ACTION' => $this->ownerHandler->handleAction($session, $message),
+            'WAITING_STATUS_PIN' => $this->statusHandler->handle($session->phone, $message),
             default => [
                 'success' => true,
                 'intent' => 'state_expired',
@@ -85,55 +93,27 @@ class StateHandler
             return [
                 'success' => true,
                 'intent' => 'status',
-                'reply' => "Cek Status Berkas\n\nSilakan masukkan PIN Lacak (6 angka) untuk melihat status berkas Anda.\n\nAtau ketik STATUS untuk melihat semua berkas Anda.\n\nKetik LUPA PIN jika Anda lupa PIN Lacak Anda.",
+                'reply' => "🏛️ *CEK STATUS BERKAS*\n\n" .
+                    "Silakan masukkan **PIN Lacak** (6 angka) untuk melihat perkembangan berkas Anda.\n\n" .
+                    "💡 *Tips:* Jika Anda lupa PIN, silakan ketik **LUPA**.\n\n" .
+                    "Ketik **MENU** atau **0** untuk kembali.",
                 'state_update' => 'WAITING_STATUS_PIN',
             ];
         }
 
         if ($this->isSelection($message, '2')) {
             // Show layanan/syarat link
-            $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
-            $layananUrl = $baseUrl . '/#layanan';
-            return [
-                'success' => true,
-                'intent' => 'syarat_link',
-                'reply' => "LAYANAN KECAMATAN\n\n" .
-                    "Silakan pilih layanan yang dibutuhkan:\n\n" .
-                    "- syarat ktp - Pembuatan KTP\n" .
-                    "- syarat kk - Pembuatan KK\n" .
-                    "- syarat akta - Akta Kelahiran\n" .
-                    "- syarat sktm - SKTM\n" .
-                    "- syarat domisili - Surat Domisili\n\n" .
-                    "Ajukan Secara Online:\n" .
-                    "{$layananUrl}\n\n" .
-                    "Ketik *MENU* untuk kembali.",
-                'state_update' => 'ADM_SUBMENU',
-            ];
+            return $this->intentHandler->getLayananLink();
         }
 
-        if ($this->isSelection($message, '3') || $message === 'menu' || $message === 'kembali') {
-            // Go back to main menu
-            $regionName = strtoupper(appProfile()->region_name ?? 'BESUK');
-            $menu = "MENU LAYANAN KECAMATAN {$regionName}\n\n";
-            $menu .= "Silakan pilih layanan (Ketik angka):\n\n";
-            $menu .= "1. ADMINISTRASI - Cek Syarat dan Status Berkas\n";
-            $menu .= "2. HUB EKONOMI - Lowongan Kerja dan Produk Desa\n";
-            $menu .= "3. DIREKTORI JASA - Cari Tukang dan Tenaga Ahli\n";
-            $menu .= "4. PENGADUAN - Aspirasi dan Laporan Warga\n";
-            $menu .= "5. KELOLA PROFIL - Edit Data dan Status Jasa/UMKM Anda\n\n";
-            $menu .= "Ketik MENU kapan saja untuk kembali.";
-            return [
-                'success' => true,
-                'intent' => 'menu',
-                'reply' => $menu,
-                'state_update' => null,
-            ];
+        if ($this->isSelection($message, '3') || $message === 'menu' || $message === 'kembali' || $message === '0') {
+            $session->clear();
+            return $this->intentHandler->handle($session->phone, 'menu');
         }
 
         // Check for lupa pin
         if (
             str_contains($message, 'lupa') ||
-            str_contains($message, 'pin') ||
             str_contains($message, 'forgot')
         ) {
             return $this->statusHandler->handleForgotPin($session->phone);
@@ -142,7 +122,12 @@ class StateHandler
         return [
             'success' => true,
             'intent' => 'invalid_selection',
-            'reply' => "Pilihan tidak valid. Silakan pilih:\n1. STATUS - Lacak Berkas\n2. SYARAT - Persyaratan Layanan\n3. MENU - Kembali\n\nAtau ketik LUPA PIN jika lupa PIN Lacak.",
+            'reply' => "⚠️ *Pilihan tidak valid.*\n\n" .
+                "Silakan pilih:\n" .
+                "1. STATUS - Lacak Berkas\n" .
+                "2. SYARAT - Persyaratan Layanan\n" .
+                "3. MENU - Kembali ke Menu Utama\n\n" .
+                "Ketik angka *1*, *2*, atau *3*.",
             'state_update' => 'ADM_SUBMENU',
         ];
     }
@@ -152,7 +137,7 @@ class StateHandler
      */
     protected function handleMenuEkonomi(WhatsappSession $session, string $message): array
     {
-        $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://babette-nonslanderous-randi.ngrok-free.dev'));
+        $baseUrl = env('PUBLIC_BASE_URL', config('app.url', 'https://localhost'));
 
         if ($this->isSelection($message, '1')) {
             return [
@@ -178,10 +163,20 @@ class StateHandler
             ];
         }
 
+        if ($this->isSelection($message, '3') || $message === 'menu' || $message === 'kembali') {
+            $session->clear();
+            return $this->intentHandler->handle($session->phone, 'menu');
+        }
+
         return [
             'success' => true,
             'intent' => 'invalid_selection',
-            'reply' => "Pilihan tidak valid. Silakan pilih:\n1. Produk UMKM\n2. Jasa & Tenaga Ahli\n\nAtau ketik *MENU* untuk kembali.",
+            'reply' => "⚠️ *Pilihan tidak valid.*\n\n" .
+                "Silakan pilih nomor di bawah ini:\n" .
+                "1. Produk UMKM\n" .
+                "2. Jasa & Tenaga Ahli\n" .
+                "3. MENU - Kembali ke Menu Utama\n\n" .
+                "Atau ketik *MENU* kapan saja.",
             'state_update' => 'MENU_EKONOMI',
         ];
     }

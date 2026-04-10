@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\WorkDirectory;
+use App\Models\Umkm;
+use App\Models\UmkmLocal;
 use App\Models\Desa;
 use App\Models\PublicService;
 use App\Models\WahaN8nSetting;
@@ -48,14 +50,35 @@ class EconomyController extends Controller
             ->pluck('job_category');
 
         // Ambil UMKM Resmi (Verified) - Prioritas utama
-        $officialUmkms = \App\Models\Umkm::where('status', 'aktif')->latest()->limit(4)->get();
+        $officialQuery = \App\Models\Umkm::where('status', 'aktif');
+        if ($request->filled('q')) {
+            $search = $request->q;
+            $officialQuery->where(function ($q) use ($search) {
+                $q->where('nama_usaha', 'like', "%{$search}%")
+                    ->orWhere('jenis_usaha', 'like', "%{$search}%")
+                    ->orWhere('desa', 'like', "%{$search}%");
+            });
+        }
+        $officialUmkms = $officialQuery->latest()->limit(4)->get();
 
         // Ambil UMKM Lokal (Quick Directory)
-        $localUmkms = \App\Models\UmkmLocal::where('is_active', true)->latest()->limit(8)->get();
+        $localQuery = \App\Models\UmkmLocal::where('is_active', true);
+        if ($request->filled('q')) {
+            $search = $request->q;
+            $localQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('product', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+        $localUmkms = $localQuery->latest()->limit(20)->get(); // Bakal list lebih banyak jika dicari
 
         $defaultTab = $request->get('tab', 'jasa');
 
-        return view('economy.index', compact('workItems', 'categories', 'officialUmkms', 'localUmkms', 'defaultTab'));
+        // Mengambil kategori master dari Model agar sinkron dengan dashboard seller
+        $umkmCategories = Umkm::getStandardCategories();
+
+        return view('economy.index', compact('workItems', 'categories', 'officialUmkms', 'localUmkms', 'defaultTab', 'umkmCategories'));
     }
 
     /**

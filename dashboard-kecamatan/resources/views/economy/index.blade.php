@@ -25,7 +25,7 @@
         @endsession
 
         {{-- Header Section - Scaled down --}}
-        <div class="bg-gradient-to-r from-teal-600 to-emerald-600 text-white pt-10 pb-16 relative overflow-hidden">
+        <div class="bg-gradient-to-r from-teal-800 to-slate-800 text-white pt-10 pb-16 relative overflow-hidden">
             {{-- Background Patterns --}}
             <div class="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2">
             </div>
@@ -44,20 +44,53 @@
                         Temukan produk lokal unggulan, jasa keahlian, dan peluang karier dalam satu pintu.
                     </p>
 
+                    {{-- Global Search Bar - Glassmorphism --}}
+                    <div class="mt-8 max-w-xl animate__animated animate__fadeInUp animate__delay-1s">
+                        <form action="{{ route('economy.index') }}" method="GET" class="relative group">
+                            {{-- Tetap di tab yang sama saat cari --}}
+                            <input type="hidden" name="tab" :value="activeTab">
+                            
+                            <div class="relative overflow-hidden rounded-2xl">
+                                <input type="text" name="q" value="{{ request('q') }}" 
+                                    placeholder="Cari produk atau jasa..."
+                                    class="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl py-4 md:py-5 pl-11 pr-24 text-white placeholder-teal-100 focus:outline-none focus:bg-white/20 transition-all shadow-2xl text-xs md:text-base">
+                                
+                                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-teal-200">
+                                    <i class="fas fa-search text-lg"></i>
+                                </div>
+
+                                <button type="submit" 
+                                    class="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white text-teal-800 px-4 md:px-6 py-2 md:py-3 rounded-xl font-black text-[10px] md:text-sm hover:bg-teal-50 shadow-lg transform hover:scale-105 active:scale-95 transition-all">
+                                    CARI
+                                </button>
+                            </div>
+                            
+                            {{-- Hint --}}
+                            @if(!request('q'))
+                            <div class="mt-3 flex flex-wrap gap-3 items-center ml-1">
+                                <span class="text-[10px] font-bold text-teal-100/60 uppercase tracking-widest">Populer:</span>
+                                <a href="?q=bakso&tab=produk" class="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg border border-white/10 text-white transition-all">Bakso</a>
+                                <a href="?q=tukang&tab=jasa" class="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg border border-white/10 text-white transition-all">Tukang</a>
+                                <a href="?q=keripik&tab=produk" class="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg border border-white/10 text-white transition-all">Keripik</a>
+                            </div>
+                            @endif
+                        </form>
+                    </div>
+
                     {{-- Tab Navigation --}}
-                    <div class="flex flex-wrap gap-2.5">
+                    <div id="economy-tabs" class="flex flex-wrap gap-2.5 mt-10">
                         <button @click="activeTab = 'jasa'"
-                            :class="activeTab === 'jasa' ? 'bg-white text-teal-700 shadow-lg scale-105' : 'bg-teal-800/40 text-teal-100 hover:bg-teal-800/60 border-teal-500/30'"
+                            :class="activeTab === 'jasa' ? 'bg-white text-teal-800 shadow-lg scale-105' : 'bg-slate-800/40 text-teal-100 hover:bg-slate-800/60 border-slate-500/30'"
                             class="px-5 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center gap-2 border backdrop-blur-sm text-sm">
                             <i class="fas fa-briefcase text-base"
-                                :class="activeTab === 'jasa' ? 'text-teal-600' : 'text-teal-200'"></i>
+                                :class="activeTab === 'jasa' ? 'text-teal-700' : 'text-teal-200'"></i>
                             <span>Pekerjaan & Jasa</span>
                         </button>
                         <button @click="activeTab = 'produk'"
-                            :class="activeTab === 'produk' ? 'bg-white text-teal-700 shadow-lg scale-105' : 'bg-teal-800/40 text-teal-100 hover:bg-teal-800/60 border-teal-500/30'"
+                            :class="activeTab === 'produk' ? 'bg-white text-teal-800 shadow-lg scale-105' : 'bg-slate-800/40 text-teal-100 hover:bg-slate-800/60 border-slate-500/30'"
                             class="px-5 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center gap-2 border backdrop-blur-sm text-sm">
                             <i class="fas fa-store text-base"
-                                :class="activeTab === 'produk' ? 'text-teal-600' : 'text-teal-200'"></i>
+                                :class="activeTab === 'produk' ? 'text-teal-700' : 'text-teal-200'"></i>
                             <span>Etalase Produk UMKM</span>
                         </button>
                     </div>
@@ -217,42 +250,53 @@
             </div>
         </div>
 
-        {{-- TAB 2: PRODUK UMKM --}}
+            {{-- TAB 2: PRODUK UMKM --}}
         <div x-show="activeTab === 'produk'" x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0"
             class="container mx-auto px-6 py-12 -mt-12 relative z-20 min-h-[500px]" style="display: none;">
 
-            {{-- CTA for Self-Registration --}}
-            <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden mb-8">
-                <div class="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/4"></div>
-                <div class="relative z-10">
-                    <h4 class="font-bold text-lg mb-1 flex items-center gap-2">
-                        <i class="fas fa-store text-amber-300"></i>
-                        Punya Produk Unggulan?
-                    </h4>
-                    <p class="text-sm text-white/90 max-w-md">
-                        Buka etalase toko digital Anda di platform kecamatan. Gratis, mudah, dan langsung terhubung ke WhatsApp.
-                    </p>
+            {{-- Shopee-Style Category Grid (Minimalist) --}}
+            <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mb-8 animate__animated animate__fadeIn">
+                <div class="flex items-center justify-between mb-6 px-2">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-[0.2em]">Kategori Pilihan</h3>
+                    <div class="h-px bg-slate-100 flex-grow mx-4"></div>
                 </div>
-                    <div class="flex flex-wrap items-center gap-4 relative z-10">
-                        <a href="{{ route('umkm_rakyat.create') }}"
-                            class="px-6 py-3 bg-white hover:bg-amber-50 text-orange-600 rounded-xl font-bold text-sm shadow-lg transition-all whitespace-nowrap">
-                            <i class="fas fa-store mr-2"></i> Buka Toko Sekarang
-                        </a>
-                        <a href="{{ route('umkm_rakyat.login') }}"
-                            class="px-6 py-3 bg-orange-700/30 hover:bg-orange-700/50 text-white border border-white/20 rounded-xl font-bold text-sm transition-all whitespace-nowrap">
-                            <i class="fas fa-user-circle mr-2"></i> Masuk Seller Center
-                        </a>
-                    </div>
+                
+                <div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-y-8 gap-x-2">
+                    @foreach($umkmCategories as $uCat)
+                    <a href="?q={{ $uCat['name'] }}&tab=produk" class="group flex flex-col items-center gap-2.5 transition-all">
+                        <div class="w-12 h-12 md:w-14 md:h-14 {{ $uCat['color_class'] }} rounded-2xl flex items-center justify-center text-lg md:text-xl shadow-sm group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-300">
+                            <i class="fas {{ $uCat['icon'] }}"></i>
+                        </div>
+                        <span class="text-[10px] md:text-[11px] font-bold text-slate-500 text-center leading-tight group-hover:text-teal-600 transition-colors">
+                            {{ $uCat['name'] }}
+                        </span>
+                    </a>
+                    @endforeach
+                </div>
             </div>
 
-            <div class="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm mb-8 text-center">
-                <h3 class="text-2xl font-black text-slate-800 mb-2">Etalase Produk Unggulan</h3>
-                <p class="text-slate-500 max-w-2xl mx-auto">
-                    Produk olahan dan kerajinan terbaik karya warga {{ appProfile()->region_level }}
-                    {{ appProfile()->region_name }}.
-                    Dukung ekonomi lokal dengan membeli produk tetangga.
-                </p>
+            {{-- CTA for Self-Registration (Minimalist) --}}
+            <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-amber-500 text-xl border border-slate-100">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800">Punya Produk Unggulan?</h4>
+                        <p class="text-xs text-slate-500">Buka etalase toko digital Anda di platform kecamatan gratis.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('umkm_rakyat.create') }}"
+                        class="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-xs shadow-sm transition-all">
+                        Buka Toko
+                    </a>
+                    <a href="{{ route('umkm_rakyat.login') }}"
+                        class="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-sm transition-all">
+                        Masuk Seller Center
+                    </a>
+                </div>
             </div>
 
             {{-- SUB-TAB 1: UMKM TERVERIFIKASI (OFFICIAL) --}}
@@ -273,7 +317,7 @@
                     @php
                         $oLink = route('umkm_rakyat.show', $o->slug);
                     @endphp
-                    <a href="{{ $oLink }}" class="group relative bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-2xl hover:-translate-y-2 transition-all duration-500 block h-64">
+                    <a href="{{ $oLink }}" class="group relative bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl hover:-translate-y-2 transition-all duration-500 block h-64">
                         @if($o->foto_usaha)
                             <img src="{{ asset('storage/' . $o->foto_usaha) }}" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-1000">
                         @else
@@ -324,7 +368,7 @@
                         $waLink = $waPhone ? "https://wa.me/{$waPhone}?text=" . urlencode("Halo, saya tertarik dengan produk *{$u->product}* dari *{$u->name}*. Apakah masih tersedia?") : null;
                         $detailLink = route('economy.produk.show', $u->id);
                     @endphp
-                    <div class="group bg-white rounded-[2rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-300 flex flex-col h-full relative">
+                    <div class="group bg-white rounded-2xl md:rounded-[2rem] overflow-hidden border border-slate-100 hover:shadow-2xl hover:shadow-teal-900/10 transition-all duration-300 flex flex-col h-full relative">
                         {{-- Gambar & Info: klik ke halaman detail --}}
                         <a href="{{ $detailLink }}" class="block flex-1 flex flex-col">
                             <div class="aspect-square relative overflow-hidden bg-slate-100">
@@ -400,3 +444,16 @@
         </div>
     </div>
 @endsection
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('q') && urlParams.get('q').length > 0) {
+            setTimeout(() => {
+                const tabsElement = document.getElementById('economy-tabs');
+                if (tabsElement) {
+                    tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 500);
+        }
+    });
+</script>

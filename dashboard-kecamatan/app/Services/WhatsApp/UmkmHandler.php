@@ -37,8 +37,9 @@ class UmkmHandler
             return [
                 'success' => true,
                 'intent' => 'umkm',
-                'reply' => "Tidak ditemukan UMKM dengan kata kunci \"*{$query}*\".\n\nCoba kata kunci lain atau ketik *MENU* untuk kembali.",
-                'state_update' => null,
+                'reply' => "😔 *Maaf*, tidak ditemukan UMKM dengan kata kunci \"*{$query}*\".\n\n" .
+                    "Silakan coba kata kunci lain atau ketik *MENU* atau *0* untuk kembali.",
+                'state_update' => 'WAITING_UMKM_SEARCH',
             ];
         }
 

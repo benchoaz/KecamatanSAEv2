@@ -3,8 +3,8 @@
 @section('title', $context['title'] . ' - Portal Layanan')
 
 @section('content')
-<div class="min-h-screen bg-slate-50 pt-20 pb-32">
-    <div class="container mx-auto px-6 max-w-4xl">
+<div class="min-h-screen bg-slate-50 pt-24 md:pt-32 pb-32">
+    <div class="container mx-auto px-4 md:px-6 max-w-4xl">
         {{-- Custom Breadcrumb --}}
         <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-8 animate__animated animate__fadeIn">
             <a href="{{ route('layanan') }}" class="hover:text-teal-600 transition-colors">Layanan</a>
@@ -15,7 +15,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
             {{-- Left: Requirements Sidebar --}}
             <div class="lg:col-span-4 space-y-6 animate__animated animate__fadeInLeft">
-                <div class="bg-white rounded-[2rem] p-8 shadow-xl shadow-slate-200/50 border border-white">
+                <div class="bg-white rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-white">
                     <div class="w-16 h-16 bg-{{ $context['color'] }}-100 text-{{ $context['color'] }}-600 rounded-2xl flex items-center justify-center mb-6 text-2xl shadow-inner">
                         <i class="{{ $context['icon'] }}"></i>
                     </div>
@@ -47,8 +47,8 @@
 
             {{-- Right: Main Form --}}
             <div class="lg:col-span-8 animate__animated animate__fadeInRight animate__delay-1s">
-                <div class="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-slate-200/60 p-1 border border-white">
-                    <div class="bg-white rounded-[2rem] p-8 md:p-12 overflow-hidden relative">
+                <div class="bg-white/80 backdrop-blur-xl rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-slate-200/60 p-0.5 md:p-1 border border-white">
+                    <div class="bg-white rounded-[1.5rem] md:rounded-[2rem] p-6 md:p-12 overflow-hidden relative">
                         {{-- Step Indicator --}}
                         <div class="flex justify-between items-center mb-12">
                             <div class="flex gap-2">
@@ -70,31 +70,31 @@
                                         <span class="label-text font-bold text-slate-700">Nama Lengkap Sesuai KTP</span>
                                     </label>
                                     <input type="text" name="nama_pemohon" required placeholder="Contoh: Budi Santoso"
-                                        class="input input-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 rounded-2xl transition-all font-medium" />
+                                        class="input input-md md:input-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 rounded-2xl transition-all font-medium" />
                                 </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                     <div class="form-control">
-                                        <label class="label mb-2">
-                                            <span class="label-text font-bold text-slate-700">NIK (16 Digit)</span>
+                                        <label class="label mb-1 md:mb-2">
+                                            <span class="label-text font-bold text-slate-700 text-sm">NIK (16 Digit)</span>
                                         </label>
                                         <input type="text" name="nik" required minlength="16" maxlength="16" placeholder="3513..."
-                                            class="input input-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 rounded-2xl transition-all font-medium" />
+                                            class="input input-md md:input-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 rounded-2xl transition-all font-medium" />
                                     </div>
                                     <div class="form-control">
-                                        <label class="label mb-2">
-                                            <span class="label-text font-bold text-slate-700">WhatsApp Aktif</span>
+                                        <label class="label mb-1 md:mb-2">
+                                            <span class="label-text font-bold text-slate-700 text-sm">WhatsApp Aktif</span>
                                         </label>
                                         <input type="text" name="whatsapp" required placeholder="0812..."
-                                            class="input input-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 rounded-2xl transition-all font-medium" />
+                                            class="input input-md md:input-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 rounded-2xl transition-all font-medium" />
                                     </div>
                                 </div>
 
                                 <div class="form-control">
-                                    <label class="label mb-2">
-                                        <span class="label-text font-bold text-slate-700">Desa Domisili</span>
+                                    <label class="label mb-1 md:mb-2">
+                                        <span class="label-text font-bold text-slate-700 text-sm">Desa Domisili</span>
                                     </label>
-                                    <select name="desa_id" required class="select select-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 rounded-2xl transition-all font-medium">
+                                    <select name="desa_id" required class="select select-md md:select-lg w-full bg-slate-50 border-slate-100 focus:bg-white focus:border-teal-500 rounded-2xl transition-all font-medium">
                                         <option value="" disabled selected>Pilih Desa...</option>
                                         @foreach($desas as $desa)
                                             <option value="{{ $desa->id }}">{{ $desa->nama_desa }}</option>
@@ -156,14 +156,14 @@
                             </div>
 
                             {{-- Navigation --}}
-                            <div class="flex justify-between items-center pt-8 border-t border-slate-50">
-                                <button type="button" id="prev-btn" class="btn btn-ghost invisible rounded-xl px-8 font-black text-slate-400 normal-case">
+                            <div class="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-slate-50 gap-4">
+                                <button type="button" id="prev-btn" class="btn btn-ghost invisible rounded-xl px-8 font-black text-slate-400 normal-case w-full sm:w-auto">
                                     <i class="fas fa-arrow-left mr-2"></i> Kembali
                                 </button>
-                                <button type="button" id="next-btn" class="btn bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-xl px-12 font-black shadow-lg shadow-teal-500/20 normal-case">
+                                <button type="button" id="next-btn" class="btn bg-teal-800 hover:bg-teal-900 text-white border-0 rounded-xl px-12 font-black shadow-lg shadow-teal-900/20 normal-case w-full sm:w-auto">
                                     Lanjut <i class="fas fa-arrow-right ml-2 transition-transform group-hover:translate-x-1"></i>
                                 </button>
-                                <button type="submit" id="submit-btn" class="btn bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-xl px-12 font-black shadow-lg shadow-teal-500/20 hidden normal-case">
+                                <button type="submit" id="submit-btn" class="btn bg-teal-800 hover:bg-teal-900 text-white border-0 rounded-xl px-12 font-black shadow-lg shadow-teal-900/20 hidden normal-case w-full sm:w-auto">
                                     Kirim Sekarang <i class="fas fa-check-circle ml-2"></i>
                                 </button>
                             </div>
