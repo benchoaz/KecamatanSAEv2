@@ -268,17 +268,11 @@
                         <a href="{{ route('kecamatan.settings.waha-n8n.index') }}"
                             class="nav-link {{ request()->routeIs('kecamatan.settings.waha-n8n.*') ? 'active' : '' }}">
                             <span class="nav-icon"><i class="fab fa-whatsapp"></i></span>
-                            <span class="nav-text">WAHA & n8n</span>
+                            <span class="nav-text">Pengaturan Kontak WA</span>
                         </a>
                     </li>
                     @if(auth()->user()->isSuperAdmin())
-                        <li class="nav-item">
-                            <a href="{{ route('kecamatan.settings.api-tokens.index') }}"
-                                class="nav-link {{ request()->routeIs('kecamatan.settings.api-tokens.*') ? 'active' : '' }}">
-                                <span class="nav-icon"><i class="fas fa-key"></i></span>
-                                <span class="nav-text">API Token</span>
-                            </a>
-                        </li>
+
                         <li class="nav-item">
                             <a href="{{ route('kecamatan.audit-logs.index') }}"
                                 class="nav-link {{ request()->routeIs('kecamatan.audit-logs.*') ? 'active' : '' }}">

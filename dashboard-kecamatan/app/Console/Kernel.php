@@ -14,8 +14,9 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('desa:sync-demografi')->dailyAt('00:00')->withoutOverlapping();
         
-        // Polling TataDesa APIs for news updates
+        // Polling APIs & Scraping for news updates
         $schedule->command('scrape:desa-news')->everyTwoHours()->withoutOverlapping();
+        $schedule->command('scrape:kecamatan-news')->cron('0 */6 * * *')->withoutOverlapping();
     }
 
     /**
