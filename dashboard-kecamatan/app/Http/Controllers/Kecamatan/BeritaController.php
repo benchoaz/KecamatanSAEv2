@@ -14,10 +14,30 @@ class BeritaController extends Controller
     /**
      * List semua berita untuk dashboard internal.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $berita = Berita::with('author')->latest()->paginate(10);
-        return view('kecamatan.berita.index', compact('berita'));
+        $activeTab = $request->get('tab', 'news');
+        $sourceFilter = $request->get('source', 'all');
+        
+        $query = Berita::with(['author', 'desa'])->latest();
+
+        if ($activeTab === 'news') {
+            if ($sourceFilter === 'kecamatan') {
+                $query->whereNull('desa_id');
+            } elseif ($sourceFilter === 'desa') {
+                $query->whereNotNull('desa_id');
+            }
+        }
+
+        $berita = $query->paginate(10);
+        $berita->appends(['tab' => $activeTab, 'source' => $sourceFilter]);
+        
+        $banners = [];
+        if ($activeTab === 'banners') {
+            $banners = \App\Models\NewsBanner::with('creator')->latest()->get();
+        }
+
+        return view('kecamatan.berita.index', compact('berita', 'banners', 'activeTab', 'sourceFilter'));
     }
 
     public function create()

@@ -104,6 +104,31 @@
                                 </div>
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold text-slate-700">Nomor NIB (OSS RBA)</label>
+                                    <div class="input-group">
+                                        <input type="text" name="nib_number"
+                                            class="form-control bg-slate-50 border-slate-200 @error('nib_number') is-invalid @enderror"
+                                            placeholder="13 digit angka" value="{{ old('nib_number') }}">
+                                        <a href="https://oss.go.id" target="_blank" class="btn btn-outline-secondary btn-sm d-flex align-items-center" title="Cek di Website OSS">
+                                            <i class="fas fa-external-link-alt text-xs"></i>
+                                        </a>
+                                    </div>
+                                    <div class="form-text text-[10px]">Opsional. Jika diisi & diverifikasi, akan mendapatkan Centang Biru.</div>
+                                    @error('nib_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold text-slate-700">Status Verifikasi</label>
+                                    <div class="form-check form-switch pt-1">
+                                        <input class="form-check-input" type="checkbox" name="is_verified" id="is_verified" value="1" {{ old('is_verified') ? 'checked' : '' }}>
+                                        <label class="form-check-label small text-slate-600" for="is_verified">
+                                            Tandai Terverifikasi Resmi <i class="fas fa-check-circle text-blue-500 ms-1"></i>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label small fw-bold text-slate-700">Kategori Usaha <span
                                         class="text-danger">*</span></label>

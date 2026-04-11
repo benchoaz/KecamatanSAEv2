@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('umkm', function (Blueprint $table) {
-            //
+            $table->boolean('is_verified')->default(false)->after('status');
+        });
+
+        Schema::table('work_directory', function (Blueprint $table) {
+            $table->boolean('is_verified')->default(false)->after('status');
         });
     }
 
@@ -22,7 +26,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('umkm', function (Blueprint $table) {
-            //
+            $table->dropColumn('is_verified');
+        });
+
+        Schema::table('work_directory', function (Blueprint $table) {
+            $table->dropColumn('is_verified');
         });
     }
 };

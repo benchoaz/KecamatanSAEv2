@@ -14,7 +14,7 @@
 @endphp
 
 <div class="min-h-screen bg-white">
-    {{-- Breadcrumb - Cleaner --}}
+    {{-- Breadcrumb --}}
     <div class="bg-white border-b border-slate-100 hidden md:block">
         <div class="container mx-auto px-6 py-4">
             <nav class="flex items-center gap-2 text-[13px] text-slate-500 font-medium">
@@ -22,23 +22,25 @@
                 <span class="text-slate-300">/</span>
                 <a href="{{ route('economy.index', ['tab' => 'produk']) }}" class="hover:text-teal-600 transition-colors">Produk UMKM</a>
                 <span class="text-slate-300">/</span>
-                <span class="text-slate-400 truncate max-w-[200px]">{{ $produk->name }}</span>
+                <a href="{{ route('economy.index', ['q' => $produk->name, 'tab' => 'produk']) }}" class="hover:text-teal-600 transition-colors truncate max-w-[200px]">{{ $produk->name }}</a>
+                <span class="text-slate-300">/</span>
+                <span class="text-slate-700 font-bold truncate max-w-[200px]">{{ $produk->product }}</span>
             </nav>
         </div>
     </div>
 
     <div class="container mx-auto px-4 md:px-6 py-4 md:py-8">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-            
-            {{-- COLUMN 1: Visuals (Sticky on Desktop) --}}
+
+            {{-- COLUMN 1: Visuals --}}
             <div class="lg:col-span-4">
                 <div class="sticky top-24 space-y-4">
-                    {{-- Main Image Area --}}
+                    {{-- Main Image --}}
                     <div class="aspect-square bg-slate-50 rounded-2xl md:rounded-3xl border border-slate-100 overflow-hidden group relative">
                         <img src="{{ $produk->image_path ? asset('storage/' . $produk->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60' }}"
                             alt="{{ $produk->product }}"
                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                        
+
                         @if($produk->is_featured)
                             <div class="absolute top-4 left-4">
                                 <span class="bg-white/90 backdrop-blur-md text-amber-600 text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg border border-amber-100 flex items-center gap-1.5">
@@ -46,202 +48,218 @@
                                 </span>
                             </div>
                         @endif
+
+                        @php $opStatus = $produk->operational_status; @endphp
+                        <div class="absolute bottom-4 right-4">
+                            <span class="bg-white/90 backdrop-blur-md text-{{ $opStatus['color'] }}-600 text-[10px] font-black px-3 py-1.5 rounded-xl shadow-lg border border-{{ $opStatus['color'] }}-100 flex items-center gap-1.5">
+                                <i class="fas {{ $opStatus['icon'] }}"></i> {{ $opStatus['label'] }}
+                            </span>
+                        </div>
                     </div>
 
-                    {{-- Small Grid Gallery Mockup --}}
-                    <div class="grid grid-cols-5 gap-3">
-                        <div class="aspect-square rounded-lg border-2 border-teal-600 overflow-hidden p-0.5">
-                            <img src="{{ $produk->image_path ? asset('storage/' . $produk->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=60' }}" class="w-full h-full object-cover rounded-md">
+                    {{-- Other products from same shop --}}
+                    @if($produkLainnya->count() > 0)
+                    <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                            {{ $produkLainnya->count() }} Produk Lain dari {{ $produk->name }}
+                        </p>
+                        <div class="grid grid-cols-4 gap-2">
+                            <div class="aspect-square rounded-xl border-2 border-teal-500 overflow-hidden ring-2 ring-teal-200">
+                                <img src="{{ $produk->image_path ? asset('storage/' . $produk->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200' }}" class="w-full h-full object-cover">
+                            </div>
+                            @foreach($produkLainnya->take(3) as $p)
+                            <a href="{{ route('economy.produk.show', $p->id) }}" class="aspect-square rounded-xl border border-slate-200 overflow-hidden hover:border-teal-400 transition-all" title="{{ $p->product }}">
+                                <img src="{{ $p->image_path ? asset('storage/' . $p->image_path) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200' }}"
+                                     alt="{{ $p->product }}" class="w-full h-full object-cover">
+                            </a>
+                            @endforeach
                         </div>
-                        @for ($i = 0; $i < 4; $i++)
-                        <div class="aspect-square rounded-lg border border-slate-100 bg-slate-50 opacity-40"></div>
-                        @endfor
+                        @if($produkLainnya->count() > 3)
+                        <a href="{{ route('economy.index', ['q' => $produk->name, 'tab' => 'produk']) }}"
+                           class="mt-3 flex items-center justify-center gap-1 text-[11px] font-bold text-teal-600 hover:text-teal-800 transition-colors">
+                            Lihat {{ $produkLainnya->count() - 3 }} produk lainnya <i class="fas fa-chevron-right text-[9px]"></i>
+                        </a>
+                        @endif
                     </div>
+                    @endif
                 </div>
             </div>
 
             {{-- COLUMN 2: Info & Details --}}
             <div class="lg:col-span-5 space-y-8">
                 <div>
-                    <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-tight mb-2">
+                    {{-- Shop Name Link --}}
+                    <a href="{{ route('economy.index', ['q' => $produk->name, 'tab' => 'produk']) }}"
+                       class="inline-flex items-center gap-2 mb-3 group">
+                        <div class="w-6 h-6 bg-teal-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-store text-[10px] text-teal-600"></i>
+                        </div>
+                        <span class="text-xs font-black text-teal-700 uppercase tracking-widest group-hover:text-teal-900">{{ $produk->name }}</span>
+                        @if($produkLainnya->count() > 0)
+                        <span class="text-[10px] bg-teal-50 text-teal-600 border border-teal-100 px-1.5 py-0.5 rounded font-bold">
+                            +{{ $produkLainnya->count() }} produk
+                        </span>
+                        @endif
+                        <i class="fas fa-chevron-right text-[10px] text-slate-400 group-hover:text-teal-600"></i>
+                    </a>
+
+                    <h1 class="text-xl md:text-2xl font-black text-slate-800 leading-tight mb-6">
                         {{ $produk->product }}
                     </h1>
-                    <div class="flex items-center gap-4 text-sm mb-6">
-                        <div class="flex items-center gap-1 text-amber-400">
-                            <i class="fas fa-star text-xs"></i>
-                            <i class="fas fa-star text-xs"></i>
-                            <i class="fas fa-star text-xs"></i>
-                            <i class="fas fa-star text-xs"></i>
-                            <i class="fas fa-star text-xs"></i>
-                        </div>
-                        <span class="text-slate-400 text-xs font-medium border-l border-slate-200 pl-4">Terjual 10+</span>
-                    </div>
 
-                    <div class="text-3xl font-black text-slate-900 mb-8 border-b border-slate-50 pb-6 flex items-baseline gap-2">
+                    <div class="text-3xl font-black text-slate-900 mb-8 border-b border-slate-50 pb-6">
                         @if($produk->price)
                             <span>Rp{{ number_format($produk->price, 0, ',', '.') }}</span>
                         @else
-                            <span class="text-lg text-slate-400 italic">Hubungi Penjual</span>
+                            <span class="text-lg text-slate-400 italic font-medium">Hubungi Penjual untuk Harga</span>
                         @endif
                     </div>
                 </div>
 
-                {{-- Tabs-like sections --}}
+                {{-- Detail Tabs --}}
                 <div x-data="{ activeTab: 'detail' }" class="space-y-6">
-                    <div class="flex border-b border-slate-100 overflow-x-auto no-scrollbar">
+                    <div class="flex border-b border-slate-100 overflow-x-auto">
                         <button @click="activeTab = 'detail'" :class="activeTab === 'detail' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-400'" class="pb-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap">Detail Produk</button>
-                        <button @click="activeTab = 'info'" :class="activeTab === 'info' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-400'" class="pb-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap">Informasi Penting</button>
+                        <button @click="activeTab = 'info'" :class="activeTab === 'info' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-400'" class="pb-3 px-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap">Info Penting</button>
                     </div>
 
-                    <div class="py-2" x-show="activeTab === 'detail'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2">
+                    <div x-show="activeTab === 'detail'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" class="py-2">
                         <div class="space-y-4">
-                            <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                                <span class="text-teal-600">Kondisi:</span> Baru
-                                <span class="mx-3 text-slate-200">|</span>
-                                <span class="text-teal-600">Min. Pemesanan:</span> 1
+                            <div class="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                <div><span class="text-teal-600">Kondisi:</span> Baru</div>
+                                <div><span class="text-teal-600">Min. Pesan:</span> 1</div>
+                                <div><span class="text-teal-600">Asal:</span> {{ appProfile()->region_name }}</div>
                             </div>
                             <div class="text-slate-600 text-sm leading-[1.8] font-medium whitespace-pre-line">
-                                {{ $produk->description ?? 'Tidak ada deskripsi untuk produk ini.' }}
+                                {{ $produk->description ?? 'Tidak ada deskripsi. Silakan hubungi penjual untuk keterangan lebih lanjut.' }}
                             </div>
                         </div>
                     </div>
 
-                    <div class="py-2" x-show="activeTab === 'info'" style="display: none;">
+                    <div x-show="activeTab === 'info'" style="display: none;" class="py-2">
                         <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <h4 class="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
-                                <i class="fas fa-info-circle"></i> Catatan Toko:
+                                <i class="fas fa-info-circle"></i> Catatan Penting:
                             </h4>
                             <p class="text-xs text-blue-700 leading-relaxed font-medium">
-                                Produk ini merupakan hasil karya lokal warga {{ appProfile()->region_name }}. Pastikan ketersediaan barang dengan menghubungi penjual melalui WhatsApp sebelum memesan.
+                                Produk ini merupakan hasil karya lokal warga {{ appProfile()->region_name }}. Pastikan ketersediaan barang dengan menghubungi penjual melalui WhatsApp sebelum memesan. Platform ini hanya memfasilitasi informasi, bukan bertindak sebagai makelar.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {{-- Store Info Section --}}
+                {{-- Store Info --}}
                 <div class="pt-8 border-t border-slate-50">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 overflow-hidden">
+                            <div class="w-14 h-14 bg-teal-50 rounded-2xl flex items-center justify-center border border-teal-100 overflow-hidden">
                                 @if($produk->image_path)
                                     <img src="{{ asset('storage/' . $produk->image_path) }}" class="w-full h-full object-cover">
                                 @else
-                                    <i class="fas fa-store text-2xl text-slate-400"></i>
+                                    <i class="fas fa-store text-2xl text-teal-400"></i>
                                 @endif
                             </div>
                             <div>
                                 <h4 class="font-black text-slate-800 flex items-center gap-1.5">
                                     {{ $produk->name }}
-                                    <i class="fas fa-check-circle text-teal-500 text-xs shadow-sm"></i>
+                                    @if($produk->is_verified)
+                                        <i class="fas fa-check-circle text-blue-500 text-xs shadow-sm" title="Terverifikasi Resmi oleh Kecamatan"></i>
+                                    @else
+                                        <i class="fas fa-check-circle text-teal-500 text-xs opacity-50" title="Warga Terdaftar"></i>
+                                    @endif
                                 </h4>
-                                <p class="text-[11px] font-bold text-teal-600 uppercase tracking-widest mt-0.5">
-                                    Online <span class="text-slate-300 mx-1">•</span> Desa {{ $produk->address ?? appProfile()->region_name }}
+                                <p class="text-[11px] font-bold text-slate-400 mt-0.5">
+                                    {{ $produk->address ?? appProfile()->region_name }}
                                 </p>
                             </div>
                         </div>
-                        <a href="{{ route('economy.index', ['tab' => 'produk']) }}" class="btn btn-sm bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl px-4 font-bold normal-case">
-                            Kunjungi Toko
+                        <a href="{{ route('economy.index', ['q' => $produk->name, 'tab' => 'produk']) }}"
+                           class="btn btn-sm bg-white hover:bg-teal-50 text-teal-700 border border-teal-200 rounded-xl px-4 font-bold normal-case text-xs">
+                            <i class="fas fa-store mr-1"></i> Lihat Toko
                         </a>
                     </div>
                 </div>
 
-                {{-- Shipping Info Mockup --}}
+                {{-- Shipping --}}
                 <div class="pt-8 border-t border-slate-50">
-                    <h4 class="font-black text-slate-800 mb-4 text-sm">Pengiriman</h4>
+                    <h4 class="font-black text-slate-800 mb-4 text-sm">Informasi Pengiriman</h4>
                     <div class="flex items-start gap-3 text-sm text-slate-500">
-                        <i class="fas fa-truck-moving text-slate-400 mt-1"></i>
+                        <i class="fas fa-truck-moving text-teal-400 mt-0.5"></i>
                         <div>
                             <p class="font-bold text-slate-600">Dikirim dari {{ appProfile()->region_name }}</p>
-                            <p class="text-[11px] mt-0.5">Produk lokal, pengiriman cepat & aman via Kurir Lokal atau Pickup.</p>
+                            <p class="text-[11px] mt-0.5">Pengiriman via Kurir Lokal atau Ambil Sendiri. Konfirmasi ke penjual untuk detail ongkos kirim.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- COLUMN 3: Buy Box (Sticky Card) --}}
+            {{-- COLUMN 3: Contact Card --}}
             <div class="lg:col-span-3">
                 <div class="sticky top-24">
-                    <div class="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-6 space-y-6">
-                        <h4 class="font-black text-slate-800 text-sm">Atur jumlah dan catatan</h4>
-                        
-                        <div class="flex items-center gap-4">
-                            <div class="flex items-center gap-2 border border-slate-200 rounded-xl p-1 bg-slate-50">
-                                <button class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-teal-600"><i class="fas fa-minus text-xs"></i></button>
-                                <span class="w-10 text-center font-black text-slate-800">1</span>
-                                <button class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-teal-600"><i class="fas fa-plus text-xs"></i></button>
-                            </div>
-                            <p class="text-xs font-medium text-slate-400">Tersedia <span class="text-slate-600 font-bold">10+</span></p>
+                    <div class="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 p-6 space-y-5">
+
+                        <div class="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl p-4">
+                            <i class="fas fa-info-circle text-amber-500 mt-0.5 shrink-0"></i>
+                            <p class="text-xs text-amber-700 font-medium leading-relaxed">
+                                Transaksi dilakukan <strong>langsung dengan penjual</strong> via WhatsApp atau tatap muka.
+                            </p>
                         </div>
 
-                        <div class="flex items-center justify-between pt-4">
-                            <span class="text-slate-500 font-medium">Subtotal</span>
-                            <span class="text-lg font-black text-slate-800">
-                                @if($produk->price)
-                                    Rp{{ number_format($produk->price, 0, ',', '.') }}
-                                @else
-                                    -
-                                @endif
-                            </span>
+                        @if($produk->price)
+                        <div class="flex items-center justify-between py-3 border-b border-slate-50">
+                            <span class="text-slate-500 font-medium text-sm">Harga Referensi</span>
+                            <span class="text-lg font-black text-slate-800">Rp{{ number_format($produk->price, 0, ',', '.') }}</span>
                         </div>
+                        @endif
 
-                        <div class="space-y-3 pt-2">
+                        <div class="space-y-3">
                             @if($waLink)
                                 <a href="{{ $waLink }}" target="_blank"
-                                    class="w-full flex items-center justify-center gap-2 bg-teal-800 hover:bg-teal-900 text-white font-black py-4 rounded-2xl shadow-lg shadow-teal-900/10 transition-all hover:-translate-y-1">
-                                    <i class="fas fa-shopping-cart text-sm"></i> Beli Langsung
+                                    class="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5a] text-white font-black py-4 rounded-2xl shadow-lg shadow-green-500/20 transition-all hover:-translate-y-0.5 active:scale-95">
+                                    <i class="fab fa-whatsapp text-xl"></i> Hubungi via WhatsApp
                                 </a>
-                                <a href="{{ $waLink }}" target="_blank"
-                                    class="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-teal-800 border-2 border-teal-800 font-black py-4 rounded-2xl transition-all">
-                                    <i class="fab fa-whatsapp text-lg"></i> Chat Penjual
+                                @if($waPhone)
+                                <a href="tel:+{{ $waPhone }}"
+                                    class="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-black py-3.5 rounded-2xl transition-all text-sm">
+                                    <i class="fas fa-phone text-slate-400"></i> Telepon Penjual
                                 </a>
+                                @endif
+                            @else
+                                <p class="text-center text-slate-400 text-sm font-medium py-4">Kontak tidak tersedia.</p>
                             @endif
                         </div>
 
-                        {{-- Footer Action Symbols --}}
-                        <div class="flex items-center justify-around text-xs font-bold text-slate-400 pt-4 border-t border-slate-50">
-                            <button class="flex items-center gap-1.5 hover:text-teal-600"><i class="fas fa-share-alt"></i> Bagikan</button>
-                            <span class="text-slate-100">|</span>
-                            <button class="flex items-center gap-1.5 hover:text-red-500"><i class="fas fa-heart"></i> Wislist</button>
-                        </div>
+                        <p class="text-center text-[10px] text-slate-400 font-medium">
+                            Tanyakan stok, harga, dan detail produk langsung ke penjual.
+                        </p>
                     </div>
                 </div>
             </div>
 
         </div>
 
-        {{-- Mobile CTA Bar (Fixed Bottom) --}}
-        <div class="md:hidden fixed bottom-16 left-0 w-full bg-white border-t border-slate-100 p-4 z-40 flex items-center gap-3 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
-            <div class="flex-grow">
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Harga</p>
-                <p class="text-base font-black text-slate-900">
-                    @if($produk->price)
-                        Rp{{ number_format($produk->price, 0, ',', '.') }}
-                    @else
-                        -
-                    @endif
-                </p>
-            </div>
+        {{-- Mobile CTA Bar --}}
+        <div class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-100 p-4 z-40 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
             @if($waLink)
-                <a href="{{ $waLink }}" target="_blank" class="bg-teal-800 text-white px-6 py-3 rounded-xl font-black text-sm flex items-center gap-2">
-                    Beli <i class="fas fa-arrow-right"></i>
+                <a href="{{ $waLink }}" target="_blank" class="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white px-6 py-4 rounded-2xl font-black text-base">
+                    <i class="fab fa-whatsapp text-xl"></i> Hubungi Penjual via WhatsApp
                 </a>
             @endif
         </div>
 
-        {{-- Spacer for Mobile Bar --}}
         <div class="h-24 md:hidden"></div>
 
-        {{-- Produk Lain dari Toko --}}
+        {{-- More products from same shop --}}
         @if($produkLainnya->count() > 0)
         <div class="mt-16 pt-12 border-t border-slate-100">
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <h2 class="text-xl font-black text-slate-800">Lainnya di Toko Ini</h2>
-                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Produk Serupa dari {{ $produk->name }}</p>
+                    <h2 class="text-xl font-black text-slate-800">Produk Lainnya dari Toko Ini</h2>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">{{ $produkLainnya->count() }} produk • {{ $produk->name }}</p>
                 </div>
-                <a href="{{ route('economy.index', ['tab' => 'produk']) }}" class="text-teal-600 font-black text-sm hover:underline">Lihat Semua</a>
+                <a href="{{ route('economy.index', ['q' => $produk->name, 'tab' => 'produk']) }}" class="text-teal-600 font-black text-sm hover:underline">Lihat Toko <i class="fas fa-arrow-right ml-1"></i></a>
             </div>
-            
+
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
                 @foreach($produkLainnya as $p)
                 <a href="{{ route('economy.produk.show', $p->id) }}"
@@ -252,7 +270,6 @@
                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
                     </div>
                     <div class="p-4 flex flex-col flex-1">
-                        <p class="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-1">{{ $p->name }}</p>
                         <h3 class="font-bold text-slate-800 text-sm leading-snug group-hover:text-teal-700 transition-colors line-clamp-2 mb-3">
                             {{ $p->product }}
                         </h3>
@@ -273,4 +290,3 @@
     </div>
 </div>
 @endsection
-

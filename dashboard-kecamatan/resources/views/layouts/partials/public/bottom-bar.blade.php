@@ -16,10 +16,10 @@
             <i class="fas fa-exclamation-circle mt-3 text-lg"></i>
             <span class="text-[7px] font-black uppercase tracking-tighter mt-0.5">Pengaduan</span>
         </button>
-        <a href="{{ route('landing.wilayah') }}"
-            class="flex flex-col items-center gap-1 {{ request()->is('wilayah') ? 'text-teal-600' : 'text-slate-400' }} hover:text-teal-600 transition-colors">
-            <i class="fas fa-map-marked-alt text-lg"></i>
-            <span class="text-[9px] font-bold uppercase tracking-tighter">Wilayah</span>
+        <a href="{{ route('landing.statistik.index') }}"
+            class="flex flex-col items-center gap-1 {{ request()->is('statistik*') ? 'text-teal-600' : 'text-slate-400' }} hover:text-teal-600 transition-colors">
+            <i class="fas fa-chart-bar text-lg"></i>
+            <span class="text-[9px] font-bold uppercase tracking-tighter">Statistik</span>
         </a>
         <a href="{{ route('economy.index') }}"
             class="flex flex-col items-center gap-1 {{ request()->is('ekonomi*') ? 'text-teal-600' : 'text-slate-400' }} hover:text-teal-600 transition-colors">

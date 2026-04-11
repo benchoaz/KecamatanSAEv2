@@ -35,7 +35,12 @@
                             <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-teal-600">
                                 <i class="fas fa-store"></i>
                             </div>
-                            <span>{{ $umkm->name }}</span>
+                            <span class="flex items-center gap-1.5">
+                                {{ $umkm->name }}
+                                @if($umkm->is_verified)
+                                    <i class="fas fa-check-circle text-blue-500 text-sm" title="Terverifikasi Resmi"></i>
+                                @endif
+                            </span>
                         </div>
                     </div>
 

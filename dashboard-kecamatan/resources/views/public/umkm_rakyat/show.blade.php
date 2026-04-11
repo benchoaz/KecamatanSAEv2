@@ -1,155 +1,132 @@
 @extends('layouts.public')
 
 @section('content')
-    <div class="min-h-screen bg-slate-50 relative overflow-hidden font-sans">
+    <div class="min-h-screen bg-gray-50 font-sans">
 
-        <!-- Background Decorations -->
-        <div
-            class="fixed top-0 left-0 w-[600px] h-[600px] bg-teal-200/20 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-        </div>
-        <div
-            class="fixed bottom-0 right-0 w-[600px] h-[600px] bg-indigo-200/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2 pointer-events-none">
-        </div>
-
-        <!-- Cover & Profile Header -->
-        <div class="relative h-[20rem] md:h-[32rem] bg-slate-800 overflow-hidden group/cover">
-            <!-- Dynamic Cover Image or Fallback -->
-            @if($umkm->foto_usaha)
-                <img src="{{ asset('storage/' . $umkm->foto_usaha) }}"
-                    class="w-full h-full object-cover opacity-60 scale-105 blur-sm group-hover/cover:scale-110 transition-transform duration-[2s]"
-                    alt="{{ $umkm->nama_usaha }}">
-            @else
-                <div class="w-full h-full bg-slate-800 pattern-grid-lg"></div>
-            @endif
-
-            <!-- Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-b from-slate-800/10 via-slate-800/40 to-slate-50"></div>
-
-            <div class="container mx-auto px-6 h-full relative z-10 flex flex-col justify-end pb-12">
+        <!-- Compact White Header -->
+        <div class="bg-white border-b border-gray-100 shadow-sm">
+            <div class="container mx-auto px-6 py-6">
                 <!-- Back Button -->
                 <a href="{{ route('umkm_rakyat.index') }}"
-                    class="absolute top-8 left-6 md:left-0 text-white/80 hover:text-white flex items-center gap-2 font-bold text-xs uppercase tracking-widest transition-colors">
-                    <i class="fas fa-arrow-left"></i> Kembali ke Katalog
+                    class="inline-flex items-center gap-2 text-slate-400 hover:text-slate-700 font-bold text-xs uppercase tracking-widest transition-colors mb-6">
+                    <i class="fas fa-arrow-left text-[10px]"></i> Kembali ke Katalog
                 </a>
 
-                <div class="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-10 -mt-16 md:mt-0">
-                    <!-- Store Profile Picture -->
-                    <div class="relative group">
-                        <div
-                            class="w-32 h-32 md:w-52 md:h-52 rounded-[2.5rem] bg-white p-2 shadow-2xl shadow-slate-200/50 overflow-hidden rotate-0 group-hover:rotate-2 transition-transform duration-500 ease-out shrink-0 border border-white">
-                            <div
-                                class="w-full h-full rounded-[2rem] overflow-hidden bg-slate-100 flex items-center justify-center relative">
-                                @if($umkm->foto_usaha)
-                                    <img src="{{ asset('storage/' . $umkm->foto_usaha) }}"
-                                        class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
-                                @else
-                                    <i class="fas fa-store text-5xl text-slate-300"></i>
-                                @endif
-                                <div
-                                    class="absolute inset-0 border-[6px] border-white/10 rounded-[2rem] pointer-events-none">
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <!-- Store Logo -->
+                    <div class="relative shrink-0">
+                        <div class="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-gray-100 overflow-hidden border-2 border-gray-100 shadow-sm">
+                            @if($umkm->foto_usaha)
+                                <img src="{{ asset('storage/' . $umkm->foto_usaha) }}"
+                                    class="w-full h-full object-cover" alt="{{ $umkm->nama_usaha }}">
+                            @else
+                                <div class="w-full h-full flex items-center justify-center text-gray-300">
+                                    <i class="fas fa-store text-3xl"></i>
                                 </div>
-                            </div>
+                            @endif
                         </div>
-                        <div
-                            class="absolute -bottom-4 -right-4 bg-emerald-500 text-white w-12 h-12 rounded-full flex items-center justify-center border-4 border-slate-50 shadow-lg animate-bounce">
-                            <i class="fas fa-check text-lg"></i>
+                        @if($umkm->is_verified)
+                        <div class="absolute -bottom-2 -right-2 bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow-sm" title="Terverifikasi Resmi">
+                            <i class="fas fa-check text-xs"></i>
+                        </div>
+                        @else
+                        <div class="absolute -bottom-2 -right-2 bg-emerald-500 text-white w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                            <i class="fas fa-check text-xs"></i>
+                        </div>
+                        @endif
+                    </div>
+
+                    <!-- Store Info -->
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class="bg-teal-50 text-teal-700 border border-teal-100 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                {{ $umkm->jenis_usaha }}
+                            </span>
+                            <span class="bg-amber-50 text-amber-700 border border-amber-100 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                                <i class="fas fa-map-marker-alt text-[8px]"></i> {{ $umkm->desa }}
+                            </span>
+
+                            @php $opStatus = $umkm->operational_status; @endphp
+                            <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest {{ $opStatus['bg'] }} {{ $opStatus['text'] }} border {{ $opStatus['is_open'] ? 'border-emerald-100' : 'border-rose-100' }}">
+                                <i class="fas fa-circle text-[6px] mr-1"></i> {{ $opStatus['label'] }}
+                            </span>
+
+                            @if($umkm->verification_level == 'legal')
+                            <span class="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                                <i class="fas fa-certificate text-[8px]"></i> Legalitas NIB
+                            </span>
+                            @elseif($umkm->verification_level == 'warga')
+                            <span class="bg-teal-50 text-teal-700 border border-teal-100 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                                <i class="fas fa-user-check text-[8px]"></i> Warga Terverifikasi
+                            </span>
+                            @endif
+                        </div>
+
+                        <h1 class="text-2xl md:text-3xl font-black text-slate-800 leading-tight mb-1 flex items-center gap-2">
+                            {{ $umkm->nama_usaha }}
+                            @if($umkm->verification_level == 'legal')
+                                <i class="fas fa-check-circle text-blue-500 text-xl shadow-sm" title="Terverifikasi Legal (NIB)"></i>
+                            @elseif($umkm->verification_level == 'warga')
+                                <i class="fas fa-check-circle text-teal-500 text-xl shadow-sm" title="Warga Terverifikasi"></i>
+                            @endif
+                        </h1>
+
+                        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 font-medium">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fas fa-user text-xs text-slate-300"></i> {{ $umkm->nama_pemilik }}
+                            </span>
+                            @if($umkm->operating_hours)
+                                <span class="flex items-center gap-1.5">
+                                    <i class="fas fa-clock text-xs text-slate-300"></i> {{ $umkm->operating_hours }}
+                                </span>
+                            @endif
+                            <span class="flex items-center gap-1.5">
+                                <i class="fas fa-calendar-alt text-xs text-slate-300"></i> Bergabung {{ $umkm->created_at->format('M Y') }}
+                            </span>
                         </div>
                     </div>
 
-                        <!-- Store Info -->
-                        <div class="flex-1 pb-4 text-center md:text-left">
-                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-4 animate-fade-in-up"
-                                style="animation-delay: 100ms">
-                                <span
-                                    class="bg-slate-700/10 backdrop-blur-md border border-slate-700/20 text-slate-700 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
-                                    {{ $umkm->jenis_usaha }}
-                                </span>
-                                <span
-                                    class="bg-white/10 backdrop-blur-md border border-white/20 text-white/90 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm flex items-center gap-2">
-                                    <i class="fas fa-map-marker-alt text-amber-500"></i> {{ $umkm->desa }}
-                                </span>
-                            </div>
-
-                            <h1 class="text-3xl md:text-6xl font-black text-slate-800 mb-4 tracking-tight leading-none animate-fade-in-up"
-                                style="animation-delay: 200ms; text-shadow: 0 4px 15px rgba(255,255,255,0.4);">
-                                {{ $umkm->nama_usaha }}
-                            </h1>
-
-                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-6 text-slate-600 font-bold animate-fade-in-up"
-                                style="animation-delay: 300ms">
-                                <div
-                                    class="flex items-center gap-3 bg-white/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/40 shadow-sm">
-                                <div
-                                    class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
-                                    <i class="fas fa-user text-xs"></i>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span
-                                        class="text-[9px] uppercase tracking-widest opacity-60 leading-none mb-0.5">Pemilik</span>
-                                    <span class="text-xs text-slate-800">{{ $umkm->nama_pemilik }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CTA Actions -->
-                    <div class="flex gap-4 mb-4 shrink-0 animate-fade-in-up w-full md:w-auto"
-                        style="animation-delay: 400ms">
+                    <!-- CTA -->
+                    <div class="flex flex-col gap-3 shrink-0 w-full md:w-auto">
                         <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $umkm->no_wa) }}" target="_blank"
-                            class="group relative overflow-hidden bg-[#25D366] text-white font-black px-8 py-5 rounded-[1.5rem] shadow-xl shadow-green-500/30 hover:shadow-green-500/50 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-3 w-full md:w-auto">
-                            <div
-                                class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shimmer">
-                            </div>
-                            <i class="fab fa-whatsapp text-2xl"></i>
-                            <div class="flex flex-col items-start leading-none">
-                                <span class="text-[9px] uppercase tracking-widest opacity-80 font-bold">Chat WhatsApp</span>
-                                <span class="text-base">Hubungi Penjual</span>
+                            class="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-black px-6 py-3.5 rounded-xl shadow-md shadow-green-500/20 hover:bg-[#1ebe5a] hover:-translate-y-0.5 transition-all active:scale-95">
+                            <i class="fab fa-whatsapp text-xl"></i>
+                            <div class="flex flex-col items-start leading-tight">
+                                <span class="text-[9px] uppercase tracking-widest opacity-80">Chat Langsung</span>
+                                <span class="text-sm">Hubungi Penjual</span>
                             </div>
                         </a>
+
+                        @if($umkm->tokopedia_url || $umkm->shopee_url || $umkm->tiktok_url)
+                            <div class="flex gap-2">
+                                @if($umkm->tokopedia_url)
+                                    <a href="{{ $umkm->tokopedia_url }}" target="_blank"
+                                        class="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-slate-600 font-bold px-3 py-2 rounded-lg hover:border-[#42b549] hover:text-[#42b549] hover:bg-[#42b549]/5 transition-all text-xs">
+                                        <img src="https://assets.tokopedia.net/assets-tokopedia-lite/v2/zeus/kratos/6046e723.png" class="w-4 h-4" alt="Tokopedia"> Tokopedia
+                                    </a>
+                                @endif
+                                @if($umkm->shopee_url)
+                                    <a href="{{ $umkm->shopee_url }}" target="_blank"
+                                        class="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-slate-600 font-bold px-3 py-2 rounded-lg hover:border-[#ee4d2d] hover:text-[#ee4d2d] hover:bg-[#ee4d2d]/5 transition-all text-xs">
+                                        <img src="https://logospng.org/download/shopee/logo-shopee-icon-1024.png" class="w-4 h-4" alt="Shopee"> Shopee
+                                    </a>
+                                @endif
+                                @if($umkm->tiktok_url)
+                                    <a href="{{ $umkm->tiktok_url }}" target="_blank"
+                                        class="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-slate-600 font-bold px-3 py-2 rounded-lg hover:border-black hover:text-black hover:bg-black/5 transition-all text-xs">
+                                        <i class="fab fa-tiktok"></i> TikTok
+                                    </a>
+                                @endif
+                            </div>
+                        @endif
                     </div>
-                        
-                    <!-- Marketplace Links (Secondary Actions) -->
-                    @if($umkm->tokopedia_url || $umkm->shopee_url || $umkm->tiktok_url)
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full animate-fade-in-up" style="animation-delay: 500ms">
-                            @if($umkm->tokopedia_url)
-                                <a href="{{ $umkm->tokopedia_url }}" target="_blank"
-                                    class="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold px-4 py-3 rounded-xl hover:border-[#42b549] hover:text-[#42b549] hover:bg-[#42b549]/5 transition-all shadow-sm">
-                                    <img src="https://assets.tokopedia.net/assets-tokopedia-lite/v2/zeus/kratos/6046e723.png" class="w-5 h-5" alt="Tokopedia">
-                                    <span class="text-xs">Buka di Tokopedia</span>
-                                </a>
-                            @endif
-                            @if($umkm->shopee_url)
-                                <a href="{{ $umkm->shopee_url }}" target="_blank"
-                                    class="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold px-4 py-3 rounded-xl hover:border-[#ee4d2d] hover:text-[#ee4d2d] hover:bg-[#ee4d2d]/5 transition-all shadow-sm">
-                                    <img src="https://logospng.org/download/shopee/logo-shopee-icon-1024.png" class="w-5 h-5" alt="Shopee">
-                                    <span class="text-xs">Buka di Shopee</span>
-                                </a>
-                            @endif
-                            @if($umkm->tiktok_url)
-                                <a href="{{ $umkm->tiktok_url }}" target="_blank"
-                                    class="flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-bold px-4 py-3 rounded-xl hover:border-black hover:text-black hover:bg-black/5 transition-all shadow-sm">
-                                    <i class="fab fa-tiktok text-lg"></i>
-                                    <span class="text-xs">Buka di TikTok</span>
-                                </a>
-                            @endif
-                        </div>
-                        
-                        <!-- Disclaimer Marketplace -->
-                        <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100 flex gap-3 items-start animate-fade-in-up" style="animation-delay: 600ms">
-                            <i class="fas fa-info-circle text-slate-400 text-xs mt-0.5"></i>
-                            <p class="text-[10px] text-slate-500 leading-relaxed font-medium">
-                                <strong>Disclaimer:</strong> Tautan marketplace di atas dikelola langsung oleh pemilik UMKM. 
-                                Pemerintah Kecamatan tidak bertanggung jawab atas transaksi yang terjadi di platform pihak ketiga.
-                            </p>
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>
 
         <!-- Main Content Body -->
-        <div class="container mx-auto px-6 py-16 relative z-10">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div class="container mx-auto px-6 py-10 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
                 <!-- Left Sidebar -->
                 <div class="lg:col-span-4 space-y-8 h-fit lg:sticky lg:top-24">
@@ -182,6 +159,20 @@
                                             {{ $umkm->created_at->format('d M Y') }}</p>
                                     </div>
                                 </div>
+                                @if($umkm->nib_number)
+                                <div class="flex items-center gap-4 group/item">
+                                    <div
+                                        class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-400 group-hover/item:bg-blue-100 group-hover/item:text-blue-600 transition-colors border border-blue-100">
+                                        <i class="fas fa-certificate"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-0.5">
+                                            No. NIB OSS</h4>
+                                        <p class="text-sm font-black text-slate-800">
+                                            {{ $umkm->nib_number }}</p>
+                                    </div>
+                                </div>
+                                @endif
                                 <div class="flex items-center gap-4 group/item">
                                     <div
                                         class="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover/item:bg-teal-50 group-hover/item:text-teal-500 transition-colors border border-slate-100">
@@ -262,11 +253,11 @@
                                         {{ $product->deskripsi ?? 'Produk berkualitas tinggi dari ' . $umkm->nama_usaha }}
                                     </p>
 
-                                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $umkm->no_wa) }}?text={{ urlencode('Halo ' . $umkm->nama_usaha . ', saya tertarik dengan produk *' . $product->nama_produk . '* seharga Rp ' . number_format($product->harga, 0, ',', '.')) }}"
+                                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $umkm->no_wa) }}?text={{ urlencode('Halo ' . $umkm->nama_usaha . ', saya tertarik dengan produk *' . $product->nama_produk . '*. Apakah masih tersedia?') }}"
                                         target="_blank"
-                                        class="mt-auto w-full inline-flex items-center justify-center gap-2 bg-slate-50 text-slate-700 font-black py-4 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all transform active:scale-95 text-xs uppercase tracking-widest shadow-sm hover:shadow-emerald-500/30 group/btn border border-slate-100 hover:border-emerald-500">
-                                        <i class="fab fa-whatsapp text-lg group-hover/btn:scale-110 transition-transform"></i>
-                                        <span>Beli Sekarang</span>
+                                        class="mt-auto w-full inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-black py-4 rounded-2xl hover:bg-[#1ebe5a] transition-all active:scale-95 text-xs shadow-sm hover:shadow-green-500/30">
+                                        <i class="fab fa-whatsapp text-lg"></i>
+                                        <span>Tanya via WhatsApp</span>
                                     </a>
                                 </div>
                             </div>
@@ -288,32 +279,9 @@
     </div>
 
     <style>
-        .pattern-grid-lg {
-            background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
-
         @keyframes shimmer {
-            100% {
-                transform: translateX(100%);
-            }
+            100% { transform: translateX(100%); }
         }
-
-        .animate-shimmer {
-            animation: shimmer 2s infinite;
-        }
-
-        .animate-fade-in-up {
-            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        .animate-shimmer { animation: shimmer 2s infinite; }
     </style>
 @endsection

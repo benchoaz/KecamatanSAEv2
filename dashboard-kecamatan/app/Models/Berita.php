@@ -26,6 +26,14 @@ class Berita extends Model
         'view_count',
         'author_id',
         'published_at',
+        'desa_id',
+        'scope',
+        'source_type',
+        'external_url',
+        'external_source',
+        'external_id',
+        'clickbait_headline',
+        'priority_level',
     ];
 
     protected $casts = [
@@ -48,6 +56,14 @@ class Berita extends Model
     public function author()
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    /**
+     * Relationship to the village (Desa).
+     */
+    public function desa()
+    {
+        return $this->belongsTo(Desa::class, 'desa_id');
     }
 
     /**

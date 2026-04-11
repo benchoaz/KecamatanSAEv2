@@ -17,8 +17,16 @@ use Illuminate\Support\Facades\Route;
 // Root Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/test-ping', function() { return 'pong'; });
-Route::get('/wilayah', [LandingController::class, 'wilayah'])->name('landing.wilayah');
-Route::get('/berita', [LandingController::class, 'berita'])->name('public.berita.index');
+// Laporan Demografi & Statistik (Separate Pages)
+Route::prefix('statistik')->group(function () {
+    Route::get('/', [LandingController::class, 'statistik'])->name('landing.statistik.index');
+    Route::get('/pendidikan', [LandingController::class, 'statPendidikan'])->name('landing.statistik.pendidikan');
+    Route::get('/pekerjaan', [LandingController::class, 'statPekerjaan'])->name('landing.statistik.pekerjaan');
+    Route::get('/agama', [LandingController::class, 'statAgama'])->name('landing.statistik.agama');
+    Route::get('/kesehatan', [LandingController::class, 'statKesehatan'])->name('landing.statistik.kesehatan');
+    Route::get('/kesejahteraan', [LandingController::class, 'statKesejahteraan'])->name('landing.statistik.kesejahteraan');
+});
+Route::get('/berita', [\App\Http\Controllers\PublicBeritaController::class, 'index'])->name('public.berita.index');
 Route::get('/berita/{slug}', [\App\Http\Controllers\PublicBeritaController::class, 'show'])->name('public.berita.show');
 // Public Service & Economy Routes
 require __DIR__ . '/public/layanan.php';

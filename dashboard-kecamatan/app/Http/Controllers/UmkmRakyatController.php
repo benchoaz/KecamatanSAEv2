@@ -52,11 +52,13 @@ class UmkmRakyatController extends Controller
             'nama_usaha' => 'required|string|max:255',
             'nama_pemilik' => 'required|string|max:255',
             'nik' => 'required|string|digits:16',
-            'no_wa' => 'required|string|max:20',
+            'no_wa' => 'required|string|max:20|unique:umkm,no_wa',
             'desa' => 'required|string',
             'patokan_lokasi' => 'required|string|max:255',
             'jenis_usaha' => 'required|string',
             'foto_usaha' => 'nullable|image|max:2048',
+        ], [
+            'no_wa.unique' => 'Nomor WhatsApp ini sudah terdaftar sebagai UMKM. Satu nomor hanya diperbolehkan mengelola satu toko resmi.'
         ]);
 
         $umkm = new Umkm($request->except('foto_usaha'));

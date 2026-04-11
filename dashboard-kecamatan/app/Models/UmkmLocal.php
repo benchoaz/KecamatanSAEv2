@@ -27,6 +27,7 @@ class UmkmLocal extends Model
         'module',
         'operating_hours',
         'is_on_holiday',
+        'name_updated_at',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class UmkmLocal extends Model
         'original_price' => 'decimal:2',
         'last_toggle_at' => 'datetime',
         'is_on_holiday' => 'boolean',
+        'name_updated_at' => 'datetime',
     ];
 
     // Auto-hash PIN when setting

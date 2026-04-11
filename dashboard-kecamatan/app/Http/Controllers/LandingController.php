@@ -83,9 +83,121 @@ class LandingController extends Controller
         ));
     }
     
-    public function wilayah()
+    public function statistik()
     {
-        $desas = Desa::orderBy('nama_desa')->get();
+        $common = $this->prepareStatistikData();
+        $desas = $common['desas'];
+
+        // Calculate Overview Summary Safely
+        $summary = [
+            'pendidikan_tinggi' => $desas->sum(function($d) {
+                $stat = $d->stat_pendidikan;
+                if (is_string($stat)) $stat = json_decode($stat, true);
+                if (!is_array($stat)) return 0;
+                $item = collect($stat)->firstWhere('nama', 'Sarjana') ?? collect($stat)->firstWhere('nama', 'S1');
+                return $item['jumlah'] ?? 0;
+            }),
+            'stunting_cases' => $desas->sum(function($d) {
+                $stat = $d->stat_kesehatan;
+                if (is_string($stat)) $stat = json_decode($stat, true);
+                if (!is_array($stat)) return 0;
+                return $stat['totalStunting'] ?? 0;
+            }),
+            'kk_total' => $desas->sum('jumlah_kk'),
+            'poverty_avg' => $desas->avg(function($d) {
+                $stat = $d->stat_kesejahteraan;
+                if (is_string($stat)) $stat = json_decode($stat, true);
+                if (!is_array($stat)) return 0;
+                return $stat['desil_1'] ?? 0;
+            }),
+        ];
+
+        return view('landing.statistik.index', array_merge($common, ['summary' => $summary]));
+    }
+
+    public function statPendidikan()
+    {
+        $common = $this->prepareStatistikData();
+        $statPendidikan = [];
+        foreach ($common['desas'] as $desa) {
+            $stats = is_string($desa->stat_pendidikan) ? json_decode($desa->stat_pendidikan, true) : ($desa->stat_pendidikan ?? []);
+            foreach ($stats as $item) {
+                $nama = $item['nama'] ?? '';
+                if ($nama) $statPendidikan[$nama] = ($statPendidikan[$nama] ?? 0) + ($item['jumlah'] ?? 0);
+            }
+        }
+        arsort($statPendidikan);
+        $topPendidikan = array_keys(array_slice($statPendidikan, 0, 8));
+        
+        return view('landing.statistik.pendidikan', array_merge($common, compact('statPendidikan', 'topPendidikan')));
+    }
+
+    public function statPekerjaan()
+    {
+        $common = $this->prepareStatistikData();
+        $statPekerjaan = [];
+        foreach ($common['desas'] as $desa) {
+            $stats = is_string($desa->stat_pekerjaan) ? json_decode($desa->stat_pekerjaan, true) : ($desa->stat_pekerjaan ?? []);
+            foreach ($stats as $item) {
+                $nama = $item['nama'] ?? '';
+                if ($nama) $statPekerjaan[$nama] = ($statPekerjaan[$nama] ?? 0) + ($item['jumlah'] ?? 0);
+            }
+        }
+        arsort($statPekerjaan);
+        $topPekerjaan = array_keys(array_slice($statPekerjaan, 0, 8));
+
+        return view('landing.statistik.pekerjaan', array_merge($common, compact('statPekerjaan', 'topPekerjaan')));
+    }
+
+    public function statAgama()
+    {
+        $common = $this->prepareStatistikData();
+        $statAgama = [];
+        foreach ($common['desas'] as $desa) {
+            $stats = is_string($desa->stat_agama) ? json_decode($desa->stat_agama, true) : ($desa->stat_agama ?? []);
+            foreach ($stats as $item) {
+                $nama = $item['nama'] ?? '';
+                if ($nama) $statAgama[$nama] = ($statAgama[$nama] ?? 0) + ($item['jumlah'] ?? 0);
+            }
+        }
+        arsort($statAgama);
+        $topAgama = array_keys(array_slice($statAgama, 0, 5));
+
+        return view('landing.statistik.agama', array_merge($common, compact('statAgama', 'topAgama')));
+    }
+
+    public function statKesehatan()
+    {
+        $common = $this->prepareStatistikData();
+        return view('landing.statistik.kesehatan', $common);
+    }
+
+    public function statKesejahteraan()
+    {
+        $common = $this->prepareStatistikData();
+        return view('landing.statistik.kesejahteraan', $common);
+    }
+
+    /**
+     * Helper to prepare common data for all statistik pages
+     */
+    private function prepareStatistikData()
+    {
+        $desas = Desa::orderBy('nama_desa', 'asc')->get();
+        
+        $totalPenduduk = $desas->sum('jumlah_penduduk');
+        $totalLaki = $desas->sum('jumlah_laki_laki');
+        $totalPerempuan = $desas->sum('jumlah_perempuan');
+        $totalKk = $desas->sum('jumlah_kk');
+        $totalLuas = $desas->sum('luas_wilayah');
+        
+        $demografiStats = [
+            'total_penduduk' => $totalPenduduk,
+            'total_laki' => $totalLaki,
+            'total_perempuan' => $totalPerempuan,
+            'total_kk' => $totalKk,
+            'total_luas' => $totalLuas,
+        ];
 
         // Settings for Header/Footer consistency
         $profileService = app(ApplicationProfileService::class);
@@ -110,7 +222,6 @@ class LandingController extends Controller
             ->values()
             ->toArray();
 
-        // Public Announcements for header (if needed)
         $publicAnnouncements = Announcement::where('target_type', 'public')
             ->where('is_active', true)
             ->where('start_date', '<=', now())
@@ -119,17 +230,18 @@ class LandingController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('landing.wilayah', compact(
-            'desas',
-            'publicAnnouncements',
-            'heroBg',
-            'bgOpacity',
-            'bgBlur',
-            'isHeroActive',
-            'heroImage',
-            'heroImageAlt',
-            'faqKeywords'
-        ));
+        return [
+            'desas' => $desas,
+            'demografiStats' => $demografiStats,
+            'publicAnnouncements' => $publicAnnouncements,
+            'heroBg' => $heroBg,
+            'bgOpacity' => $bgOpacity,
+            'bgBlur' => $bgBlur,
+            'isHeroActive' => $isHeroActive,
+            'heroImage' => $heroImage,
+            'heroImageAlt' => $heroImageAlt,
+            'faqKeywords' => $faqKeywords,
+        ];
     }
 
     public function berita()

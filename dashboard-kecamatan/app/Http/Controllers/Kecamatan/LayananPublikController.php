@@ -7,6 +7,7 @@ use App\Models\Umkm;
 use App\Models\UmkmAdminLog;
 use App\Models\Desa;
 use App\Models\PublicService;
+use App\Models\WorkDirectory;
 use App\Traits\HasWhatsAppNotifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,15 +22,29 @@ class LayananPublikController extends Controller
 
     public function umkmIndex(Request $request)
     {
-        $query = Umkm::latest();
+        $activeTab = $request->query('tab', 'umkm');
+        $q = $request->query('q');
 
-        if ($request->has('q')) {
-            $query->where('nama_usaha', 'like', '%' . $request->q . '%')
-                ->orWhere('nama_pemilik', 'like', '%' . $request->q . '%');
+        $umkm = null;
+        $jasa = null;
+
+        if ($activeTab == 'umkm') {
+            $query = Umkm::latest();
+            if ($q) {
+                $query->where('nama_usaha', 'like', '%' . $q . '%')
+                    ->orWhere('nama_pemilik', 'like', '%' . $q . '%');
+            }
+            $umkm = $query->paginate(10)->appends($request->all());
+        } else {
+            $query = WorkDirectory::latest();
+            if ($q) {
+                $query->where('display_name', 'like', '%' . $q . '%')
+                    ->orWhere('job_title', 'like', '%' . $q . '%');
+            }
+            $jasa = $query->paginate(10)->appends($request->all());
         }
 
-        $umkm = $query->paginate(10);
-        return view('kecamatan.layanan.umkm.index', compact('umkm'));
+        return view('kecamatan.layanan.umkm.index', compact('umkm', 'jasa', 'activeTab'));
     }
 
     public function umkmCreate(Request $request)
@@ -56,7 +71,9 @@ class LayananPublikController extends Controller
             'no_wa' => 'required|string|max:20', // Format 62...
             'jenis_usaha' => 'required|string|max:100',
             'desa' => 'required|string',
-            'notes' => 'nullable|string', // Catatan bantuan
+            'notes' => 'nullable|string',
+            'nib_number' => 'nullable|string|max:50',
+            'is_verified' => 'nullable|boolean',
         ]);
 
         // Create UMKM
@@ -66,6 +83,8 @@ class LayananPublikController extends Controller
         $umkm->no_wa = $validated['no_wa'];
         $umkm->jenis_usaha = $validated['jenis_usaha'];
         $umkm->desa = $validated['desa'];
+        $umkm->is_verified = $request->boolean('is_verified');
+        $umkm->nib_number = $validated['nib_number'] ?? null;
 
         // System fields
         $umkm->source = Umkm::SOURCE_ADMIN; // created_by kecamatan
@@ -139,8 +158,11 @@ class LayananPublikController extends Controller
             'no_wa' => 'required|string|max:20',
             'jenis_usaha' => 'required|string',
             'desa' => 'required|string',
+            'nib_number' => 'nullable|string|max:50',
+            'is_verified' => 'nullable|boolean',
         ]);
 
+        $validated['is_verified'] = $request->boolean('is_verified');
         $umkm->update($validated);
 
         UmkmAdminLog::create([
@@ -176,5 +198,149 @@ class LayananPublikController extends Controller
 
         return redirect()->route('kecamatan.umkm.handover', $umkm->id)
             ->with('success', 'Akses UMKM berhasil di-reset. Silakan berikan link baru.');
+    }
+
+    /**
+     * --- JASA & TENAGA FACILITATOR SECTION ---
+     */
+
+    public function jasaCreate(Request $request)
+    {
+        $desas = Desa::orderBy('nama_desa')->get();
+        $categories = WorkDirectory::getCategories();
+        
+        $prefill = [
+            'from_inbox' => $request->query('from_inbox'),
+            'display_name' => $request->query('nama'),
+            'contact_phone' => $request->query('wa'),
+            'service_area' => $request->query('desa') ? Desa::find($request->query('desa'))?->nama_desa : null,
+        ];
+
+        return view('kecamatan.layanan.umkm.jasa_form', compact('desas', 'categories', 'prefill'));
+    }
+
+    public function jasaStore(Request $request)
+    {
+        $validated = $request->validate([
+            'display_name' => 'required|string|max:255',
+            'job_title' => 'required|string|max:255',
+            'job_category' => 'required|string',
+            'contact_phone' => 'required|string|max:20',
+            'service_area' => 'required|string',
+            'job_type' => 'required|in:jasa,transportasi,keliling,harian',
+            'is_verified' => 'nullable|boolean',
+        ]);
+
+        $jasa = WorkDirectory::create($validated + [
+            'status' => 'active',
+            'data_source' => 'admin',
+            'consent_public' => true,
+            'is_verified' => $request->boolean('is_verified'),
+        ]);
+
+        // Automate Inbox Sync
+        if ($request->filled('from_inbox')) {
+            $inbox = PublicService::find($request->from_inbox);
+            if ($inbox) {
+                $inbox->update([
+                    'status' => PublicService::STATUS_SELESAI,
+                    'public_response' => "Layanan Jasa Anda ({$jasa->job_title}) telah terdaftar. Silakan kelola melalui link yang dikirimkan.",
+                    'handled_by' => auth()->id(),
+                    'handled_at' => now(),
+                    'responded_at' => now(),
+                ]);
+                $this->sendWaNotification($inbox, 'status_update');
+            }
+        }
+
+        return redirect()->route('kecamatan.jasa.handover', $jasa->id)
+            ->with('success', 'Jasa berhasil didaftarkan.');
+    }
+
+    public function jasaHandover($id)
+    {
+        $jasa = WorkDirectory::findOrFail($id);
+        $manageLink = route('portal_warga.login'); // Generic portal link for services
+
+        $waMessage = "Halo {$jasa->display_name},\n\n";
+        $waMessage .= "Berikut adalah link akses untuk mengelola Jasa Anda ({$jasa->job_title}).\n\n";
+        $waMessage .= "Silakan login menggunakan nomor WhatsApp Anda di:\n";
+        $waMessage .= $manageLink . "\n\n";
+        
+        $waUrl = "https://wa.me/{$jasa->contact_phone}?text=" . urlencode($waMessage);
+
+        return view('kecamatan.layanan.umkm.jasa_handover', compact('jasa', 'manageLink', 'waUrl', 'waMessage'));
+    }
+
+    public function jasaEdit($id)
+    {
+        $jasa = WorkDirectory::findOrFail($id);
+        $desas = Desa::orderBy('nama_desa')->get();
+        $categories = WorkDirectory::getCategories();
+        return view('kecamatan.layanan.umkm.jasa_edit', compact('jasa', 'desas', 'categories'));
+    }
+
+    public function jasaUpdate(Request $request, $id)
+    {
+        $jasa = WorkDirectory::findOrFail($id);
+        $validated = $request->validate([
+            'display_name' => 'required|string|max:255',
+            'job_title' => 'required|string|max:255',
+            'job_category' => 'required|string',
+            'contact_phone' => 'required|string|max:20',
+            'service_area' => 'required|string',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $jasa->update($validated);
+
+        return redirect()->route('kecamatan.umkm.index', ['tab' => 'jasa'])->with('success', 'Data Jasa diperbarui.');
+    }
+
+    public function jasaDestroy($id)
+    {
+        $jasa = WorkDirectory::findOrFail($id);
+        $jasa->delete();
+
+        return redirect()->route('kecamatan.umkm.index', ['tab' => 'jasa'])->with('success', 'Jasa dinonaktifkan.');
+    }
+
+    public function jasaResetAkses($id)
+    {
+        $jasa = WorkDirectory::findOrFail($id);
+        $jasa->manage_token = Str::random(40);
+        $jasa->save();
+
+        return redirect()->route('kecamatan.jasa.handover', $jasa->id)
+            ->with('success', 'Akses Jasa di-reset.');
+    }
+
+    public function umkmToggleVerify($id)
+    {
+        $umkm = Umkm::findOrFail($id);
+        $umkm->is_verified = !$umkm->is_verified;
+        $umkm->save();
+
+        $status = $umkm->is_verified ? 'diverifikasi (Centang Biru aktif)' : 'batal diverifikasi';
+
+        UmkmAdminLog::create([
+            'umkm_id' => $umkm->id,
+            'action' => $umkm->is_verified ? 'verify' : 'unverify',
+            'actor' => 'admin',
+            'notes' => "Unit usaha {$status} oleh kecamatan.",
+        ]);
+
+        return back()->with('success', "UMKM {$umkm->nama_usaha} berhasil {$status}.");
+    }
+
+    public function jasaToggleVerify($id)
+    {
+        $jasa = WorkDirectory::findOrFail($id);
+        $jasa->is_verified = !$jasa->is_verified;
+        $jasa->save();
+
+        $status = $jasa->is_verified ? 'diverifikasi (Centang Biru aktif)' : 'batal diverifikasi';
+
+        return back()->with('success', "Jasa {$jasa->job_title} berhasil {$status}.");
     }
 }

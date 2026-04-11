@@ -10,11 +10,21 @@ class Desa extends Model
     protected $table = 'desa';
     protected $guarded = ['id']; // Allow mass assignment for now, but will protect kode_desa in controller
 
+    protected $fillable = [
+        'tatadesa_domain',
+        'website_url',
+    ];
+
     const STATUS_AKTIF = 'aktif';
     const STATUS_TIDAK_AKTIF = 'tidak_aktif';
 
     protected $casts = [
         'is_active' => 'boolean',
+        'stat_pendidikan' => 'array',
+        'stat_pekerjaan' => 'array',
+        'stat_agama' => 'array',
+        'stat_kesehatan' => 'array',
+        'stat_desil' => 'array',
     ];
 
     public function scopeActive($query)
@@ -25,6 +35,11 @@ class Desa extends Model
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    public function beritas()
+    {
+        return $this->hasMany(Berita::class, 'desa_id');
     }
 
     public function submissions()

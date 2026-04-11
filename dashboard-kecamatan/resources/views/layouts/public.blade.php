@@ -40,6 +40,10 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
     </style>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    @stack('styles')
 </head>
 
 <body class="bg-slate-50 text-slate-900">
@@ -213,6 +217,7 @@
     </footer>
 
 
+    @stack('scripts')
 </body>
 
 </html>

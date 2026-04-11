@@ -48,8 +48,11 @@
                                         class="inline-block px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold rounded-full mb-2">
                                         {{ $workItem->job_category }}
                                     </span>
-                                    <h1 class="text-2xl md:text-3xl font-black mb-1">
+                                    <h1 class="text-2xl md:text-3xl font-black mb-1 flex items-center gap-2">
                                         {{ $workItem->job_title }}
+                                        @if($workItem->is_verified)
+                                            <i class="fas fa-check-circle text-blue-400 text-xl shadow-sm" title="Terverifikasi Resmi oleh Kecamatan"></i>
+                                        @endif
                                     </h1>
                                     <p class="text-base text-teal-50 opacity-90">
                                         <i class="fas fa-user mr-1.5 text-xs"></i>

@@ -46,7 +46,16 @@ class Umkm extends Model
         'shopee_url',
         'tiktok_url',
         'operating_hours',
-        'is_on_holiday'
+        'is_on_holiday',
+        'name_updated_at',
+        'is_verified',
+        'nib_number'
+    ];
+
+    protected $casts = [
+        'name_updated_at' => 'datetime',
+        'is_on_holiday' => 'boolean',
+        'is_verified' => 'boolean'
     ];
 
     protected static function boot()
@@ -108,6 +117,34 @@ class Umkm extends Model
             self::STATUS_AKTIF => 'success',
             self::STATUS_NONAKTIF => 'secondary',
             default => 'light'
+        };
+    }
+
+    /**
+     * Verification Level Accessor
+     * Level 1: Basic (WA Only)
+     * Level 2: Warga (WA + NIK)
+     * Level 3: Legal (WA + NIK + NIB)
+     */
+    public function getVerificationLevelAttribute()
+    {
+        if ($this->nib_number && $this->nik && $this->is_verified) {
+            return 'legal'; // Centang Biru
+        }
+        
+        if ($this->nik && $this->is_verified) {
+            return 'warga'; // Verified Citizen
+        }
+        
+        return 'basic'; // Just registered
+    }
+
+    public function getVerificationLevelLabelAttribute()
+    {
+        return match($this->verification_level) {
+            'legal' => 'Terverifikasi Legal (OSS NIB)',
+            'warga' => 'Warga Terverifikasi',
+            default => 'Penyedia Umum'
         };
     }
 

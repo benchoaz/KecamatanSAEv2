@@ -21,6 +21,7 @@ Route::prefix('portal-warga')->name('portal_warga.')->group(function () {
     
     // Operational & Holiday Management
     Route::post('/status-update', [WargaPortalController::class, 'updateOperationalStatus'])->name('status_update');
+    Route::post('/update-name', [WargaPortalController::class, 'updateName'])->name('update_name');
 
     // Bridge for Jasa (Using Session)
     Route::get('/jasa/{id}/bridge', [WargaPortalController::class, 'bridgeJasa'])->name('bridge.jasa');

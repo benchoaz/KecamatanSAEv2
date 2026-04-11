@@ -66,7 +66,7 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
     // Announcements
     Route::resource('announcements', AnnouncementController::class);
 
-    // UMKM (Layanan Publik)
+    // UMKM & Jasa (Layanan Publik)
     Route::prefix('umkm')->name('umkm.')->group(function () {
         Route::get('/', [LayananPublikController::class, 'umkmIndex'])->name('index');
         Route::get('/create', [LayananPublikController::class, 'umkmCreate'])->name('create');
@@ -76,6 +76,19 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
         Route::put('/{id}', [LayananPublikController::class, 'umkmUpdate'])->name('update');
         Route::delete('/{id}', [LayananPublikController::class, 'umkmDestroy'])->name('destroy');
         Route::post('/{id}/reset-akses', [LayananPublikController::class, 'resetAkses'])->name('reset-akses');
+        Route::post('/{id}/toggle-verify', [LayananPublikController::class, 'umkmToggleVerify'])->name('toggle-verify');
+    });
+
+    // Jasa Management (Parallel to UMKM)
+    Route::prefix('jasa')->name('jasa.')->group(function () {
+        Route::get('/create', [LayananPublikController::class, 'jasaCreate'])->name('create');
+        Route::post('/', [LayananPublikController::class, 'jasaStore'])->name('store');
+        Route::get('/{id}/handover', [LayananPublikController::class, 'jasaHandover'])->name('handover');
+        Route::get('/{id}/edit', [LayananPublikController::class, 'jasaEdit'])->name('edit');
+        Route::put('/{id}', [LayananPublikController::class, 'jasaUpdate'])->name('update');
+        Route::delete('/{id}', [LayananPublikController::class, 'jasaDestroy'])->name('destroy');
+        Route::post('/{id}/reset-akses', [LayananPublikController::class, 'jasaResetAkses'])->name('reset-akses');
+        Route::post('/{id}/toggle-verify', [LayananPublikController::class, 'jasaToggleVerify'])->name('toggle-verify');
     });
 
 
@@ -256,6 +269,10 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
             Route::put('/{id}', [\App\Http\Controllers\Kecamatan\BeritaController::class, 'update'])->name('update');
             Route::delete('/{id}', [\App\Http\Controllers\Kecamatan\BeritaController::class, 'destroy'])->name('destroy');
             Route::patch('/{id}/toggle-status', [\App\Http\Controllers\Kecamatan\BeritaController::class, 'toggleStatus'])->name('toggle-status');
+
+            // Sub-Modul: Banner Iklan
+            Route::resource('banners', \App\Http\Controllers\Kecamatan\NewsBannerController::class)->except(['show']);
+            Route::patch('banners/{id}/toggle-status', [\App\Http\Controllers\Kecamatan\NewsBannerController::class, 'toggleStatus'])->name('banners.toggle-status');
         });
     });
 });

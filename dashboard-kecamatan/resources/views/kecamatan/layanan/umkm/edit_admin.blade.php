@@ -64,17 +64,31 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold text-slate-700">Kategori Usaha</label>
-                                <select name="jenis_usaha" class="form-select bg-slate-50 border-slate-200" required>
-                                    <option value="Makanan & Minuman" {{ old('jenis_usaha', $umkm->jenis_usaha) == 'Makanan & Minuman' ? 'selected' : '' }}>Makanan & Minuman</option>
-                                    <option value="Kerajinan Tangan" {{ old('jenis_usaha', $umkm->jenis_usaha) == 'Kerajinan Tangan' ? 'selected' : '' }}>Kerajinan Tangan</option>
-                                    <option value="Fashion & Konveksi" {{ old('jenis_usaha', $umkm->jenis_usaha) == 'Fashion & Konveksi' ? 'selected' : '' }}>Fashion & Konveksi</option>
-                                    <option value="Pertanian & Perkebunan" {{ old('jenis_usaha', $umkm->jenis_usaha) == 'Pertanian & Perkebunan' ? 'selected' : '' }}>Pertanian &
-                                        Perkebunan</option>
-                                    <option value="Jasa" {{ old('jenis_usaha', $umkm->jenis_usaha) == 'Jasa' ? 'selected' : '' }}>Jasa</option>
-                                    <option value="Lainnya" {{ old('jenis_usaha', $umkm->jenis_usaha) == 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
                                 </select>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold text-slate-700">Nomor NIB (OSS RBA)</label>
+                                    <div class="input-group">
+                                        <input type="text" name="nib_number"
+                                            class="form-control bg-slate-50 border-slate-200"
+                                            value="{{ old('nib_number', $umkm->nib_number) }}" placeholder="13 digit angka">
+                                        <a href="https://oss.go.id" target="_blank" class="btn btn-outline-secondary btn-sm d-flex align-items-center" title="Cek di Website OSS">
+                                            <i class="fas fa-external-link-alt text-xs"></i>
+                                        </a>
+                                    </div>
+                                    @error('nib_number') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label small fw-bold text-slate-700">Status Verifikasi</label>
+                                    <div class="form-check form-switch pt-1">
+                                        <input class="form-check-input" type="checkbox" name="is_verified" id="is_verified" value="1" {{ old('is_verified', $umkm->is_verified) ? 'checked' : '' }}>
+                                        <label class="form-check-label small text-slate-600" for="is_verified">
+                                            Tandai Terverifikasi Resmi <i class="fas fa-check-circle text-blue-500 ms-1"></i>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
 
                             <hr class="border-light my-4">

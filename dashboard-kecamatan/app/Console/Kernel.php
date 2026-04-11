@@ -12,7 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('desa:sync-demografi')->dailyAt('00:00')->withoutOverlapping();
+        
+        // Polling TataDesa APIs for news updates
+        $schedule->command('scrape:desa-news')->everyTwoHours()->withoutOverlapping();
     }
 
     /**

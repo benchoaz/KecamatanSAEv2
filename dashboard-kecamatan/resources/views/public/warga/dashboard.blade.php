@@ -81,11 +81,7 @@
             </div>
 
             <div class="grid grid-cols-1 gap-4">
-                @php 
-                    $allAssets = collect($umkms->map(fn($item) => ['data' => $item, 'type' => 'umkm']))
-                        ->concat($umkmLocals->map(fn($item) => ['data' => $item, 'type' => 'umkm_local']))
-                        ->concat($jasas->map(fn($item) => ['data' => $item, 'type' => 'jasa']));
-                @endphp
+
 
                 @foreach($allAssets as $asset)
                 @php 
@@ -102,11 +98,24 @@
                         <div>
                             <div class="flex items-center gap-2 mb-1">
                                 <h4 class="font-black text-slate-800">{{ $name }}</h4>
+                                <button onclick="openRenameModal('{{ $type }}', '{{ $item->id }}', '{{ addslashes($name) }}', {{ $asset['name_cooldown'] }})" class="w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg flex items-center justify-center transition-all text-[10px]" title="Ubah Nama">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                                @if(isset($item->product_count))
+                                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200" title="Terdiri dari {{ $item->product_count }} produk">
+                                        {{ $item->product_count }} Produk
+                                    </span>
+                                @endif
                                 <span class="text-[9px] font-black px-2 py-0.5 rounded-md {{ $opStatus['bg'] }} {{ $opStatus['text'] }} uppercase">{{ $opStatus['label'] }}</span>
                             </div>
                             <p class="text-xs font-bold text-slate-400">
-                                Jam Operasional: <span class="text-slate-600">{{ $item->operating_hours ?: 'Belum diatur (Selalu Buka)' }}</span>
+                                <i class="fas fa-clock mr-1 opacity-50"></i> {{ $item->operating_hours ?: 'Buka Full 24 Jam' }}
                             </p>
+                            @if(isset($item->all_products))
+                                <p class="text-[10px] text-slate-400 font-medium mt-1 italic truncate max-w-[200px]">
+                                    Produk: {{ $item->all_products }}
+                                </p>
+                            @endif
                         </div>
                     </div>
 
@@ -167,6 +176,43 @@
                 <button>close</button>
             </form>
         </dialog>
+        
+        <!-- Rename Modal -->
+        <dialog id="renameModal" class="modal">
+            <div class="modal-box rounded-3xl p-8 bg-white max-w-sm">
+                <h3 class="font-black text-xl mb-4 text-slate-800">Ubah Nama Identitas</h3>
+                <form id="renameForm" action="{{ route('portal_warga.update_name') }}" method="POST" class="space-y-4">
+                    @csrf
+                    <input type="hidden" name="type" id="rename_type">
+                    <input type="hidden" name="id" id="rename_id">
+                    
+                    <div id="renameCooldownMsg" class="hidden bg-amber-50 border border-amber-100 p-4 rounded-2xl mb-4">
+                        <div class="flex gap-3">
+                            <i class="fas fa-history text-amber-500 mt-1"></i>
+                            <div>
+                                <p class="text-xs font-black text-amber-800 uppercase tracking-tight">Cooldown Aktif</p>
+                                <p class="text-[11px] text-amber-700 leading-relaxed">Nama hanya bisa diubah setiap 30 hari. Anda perlu menunggu <span id="renameDaysLeft" class="font-black">0</span> hari lagi.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="renameInputGroup" class="space-y-2">
+                        <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Nama Toko / Jasa</label>
+                        <input type="text" name="name" id="rename_input" placeholder="Masukkan nama baru..." 
+                               class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 font-bold text-slate-800 focus:ring-2 focus:ring-teal-500 transition-all">
+                        <p class="text-[10px] text-slate-400 font-medium italic">* Nama ini akan tampil di katalog publik kecamanatan.</p>
+                    </div>
+
+                    <div class="pt-4 flex gap-3">
+                        <button type="button" onclick="renameModal.close()" class="flex-1 bg-slate-100 text-slate-600 p-4 rounded-2xl font-black text-xs hover:bg-slate-200 transition-all">Batal</button>
+                        <button type="submit" id="renameSubmitBtn" class="flex-1 bg-blue-600 text-white p-4 rounded-2xl font-black text-xs shadow-lg shadow-blue-900/20 transition-all hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop bg-slate-900/20 backdrop-blur-sm">
+                <button>close</button>
+            </form>
+        </dialog>
 
         <script>
             function openHoursModal(type, id, currentHours) {
@@ -175,6 +221,30 @@
                 document.getElementById('modal_hours').value = currentHours || '08:00 - 17:00';
                 document.getElementById('modal_is_holiday').value = 0; // Assume we want them open if setting hours
                 document.getElementById('hoursModal').showModal();
+            }
+
+            function openRenameModal(type, id, currentName, cooldownDays) {
+                document.getElementById('rename_type').value = type;
+                document.getElementById('rename_id').value = id;
+                document.getElementById('rename_input').value = currentName;
+                
+                const cooldownMsg = document.getElementById('renameCooldownMsg');
+                const inputGroup = document.getElementById('renameInputGroup');
+                const submitBtn = document.getElementById('renameSubmitBtn');
+                const daysLeftSpan = document.getElementById('renameDaysLeft');
+
+                if (cooldownDays > 0) {
+                    cooldownMsg.classList.remove('hidden');
+                    inputGroup.classList.add('opacity-50', 'pointer-events-none');
+                    submitBtn.disabled = true;
+                    daysLeftSpan.innerText = cooldownDays;
+                } else {
+                    cooldownMsg.classList.add('hidden');
+                    inputGroup.classList.remove('opacity-50', 'pointer-events-none');
+                    submitBtn.disabled = false;
+                }
+
+                document.getElementById('renameModal').showModal();
             }
         </script>
 

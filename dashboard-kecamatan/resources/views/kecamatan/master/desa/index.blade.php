@@ -111,14 +111,22 @@
                                 <td>{{ $desa->nama_desa }}</td>
                                 <td>{{ $desa->kecamatan }}</td>
                                 <td>
-                                    @if($desa->website)
-                                        <a href="{{ $desa->website }}" target="_blank"
-                                            class="btn btn-xs btn-light border py-1 px-2 rounded-3" style="font-size: 10px;">
-                                            <i class="fas fa-external-link-alt text-primary me-1"></i> Profil Desa
-                                        </a>
-                                    @else
-                                        <span class="text-muted small">-</span>
-                                    @endif
+                                    <div class="d-flex flex-column gap-1">
+                                        @if($desa->website)
+                                            <a href="{{ Str::startsWith($desa->website, ['http://', 'https://']) ? $desa->website : 'https://' . $desa->website }}" target="_blank"
+                                                class="btn btn-xs btn-light border py-1 px-2 rounded-3 w-fit" style="font-size: 10px;">
+                                                <i class="fas fa-external-link-alt text-primary me-1"></i> Profil Desa
+                                            </a>
+                                        @endif
+                                        @if($desa->tatadesa_domain)
+                                            <span class="badge bg-soft-info text-info border border-info rounded-pill py-1 px-2 w-fit" style="font-size: 9px;">
+                                                <i class="fas fa-rss me-1"></i> News Sync Active
+                                            </span>
+                                        @endif
+                                        @if(!$desa->website && !$desa->tatadesa_domain)
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="text-center">
                                     @if($desa->status == 'aktif')
@@ -129,7 +137,7 @@
                                 </td>
                                 <td class="pe-4 text-end">
                                     <button type="button" class="btn btn-sm btn-icon btn-light rounded-circle me-1"
-                                        onclick="editDesa('{{ $desa->id }}', '{{ $desa->nama_desa }}', '{{ $desa->status }}', '{{ $desa->kode_desa }}', '{{ $desa->website }}')"
+                                        onclick="editDesa('{{ $desa->id }}', '{{ $desa->nama_desa }}', '{{ $desa->status }}', '{{ $desa->kode_desa }}', '{{ $desa->website }}', '{{ $desa->tatadesa_domain }}')"
                                         title="Edit Data" style="background-color: #3b82f6; color: white; border: none;">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -200,9 +208,15 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Link Website Desa (Opsional)</label>
+                            <label class="form-label fw-bold">Link Website Resmi Desa (Opsional)</label>
                             <input type="text" name="website" class="form-control"
-                                placeholder="Contoh: www.nama-desa.desa.id">
+                                placeholder="Contoh: https://nama-desa.desa.id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">Domain TataDesa (Untuk Agregasi Berita)</label>
+                            <input type="text" name="tatadesa_domain" class="form-control border-primary"
+                                placeholder="Contoh: alasnyiur.tatadesa.com">
+                            <div class="form-text small text-primary"><i class="fas fa-info-circle"></i> Jika diisi, berita dari website desa akan ditarik otomatis ke portal kecamatan.</div>
                         </div>
                         <input type="hidden" name="status" value="aktif">
                     </div>
@@ -239,9 +253,14 @@
                             <input type="text" name="nama_desa" id="edit_nama_desa" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Link Website Desa</label>
+                            <label class="form-label fw-bold">Link Website Resmi Desa</label>
                             <input type="text" name="website" id="edit_website" class="form-control"
-                                placeholder="Contoh: www.nama-desa.desa.id">
+                                placeholder="Contoh: https://nama-desa.desa.id">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-teal">Domain TataDesa (Untuk Agregasi Berita)</label>
+                            <input type="text" name="tatadesa_domain" id="edit_tatadesa_domain" class="form-control border-teal"
+                                placeholder="Contoh: alasnyiur.tatadesa.com">
                         </div>
                         <div class="mb-0">
                             <label class="form-label fw-bold">Status Referensi</label>
@@ -263,7 +282,7 @@
 
 @push('scripts')
     <script>
-        function editDesa(id, nama, status, kode, website) {
+        function editDesa(id, nama, status, kode, website, tatadesa_domain) {
             const form = document.getElementById('editDesaForm');
             form.action = `/kecamatan/master/desa/${id}`;
 
@@ -272,6 +291,7 @@
             document.getElementById('edit_status').value = status;
             document.getElementById('edit_kode_desa').value = kode;
             document.getElementById('edit_website').value = website || '';
+            document.getElementById('edit_tatadesa_domain').value = tatadesa_domain || '';
 
             // Show modal using getOrCreateInstance to prevent multiple backdrops
             const modalEl = document.getElementById('editDesaModal');

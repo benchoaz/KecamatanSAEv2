@@ -184,53 +184,53 @@
         .desa-topbar-user {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-        }
-
-        .desa-user-info {
-            text-align: right;
-        }
-
-        .desa-user-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--desa-text);
-            display: block;
-        }
-
-        .desa-user-desa {
-            font-size: 11px;
-            color: var(--desa-text-muted);
-        }
-
-        .desa-user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--desa-primary), var(--desa-secondary));
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
         }
 
         .desa-dropdown {
             position: relative;
         }
 
+        .desa-dropdown-trigger {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.5rem 0.625rem;
+            border-radius: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+
+        .desa-dropdown-trigger:hover {
+            background: rgba(22, 163, 74, 0.04);
+        }
+
+        .desa-dropdown.show .desa-dropdown-trigger {
+            background: #ffffff;
+            border-color: var(--desa-border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
         .desa-dropdown-menu {
             position: absolute;
-            top: 100%;
+            top: calc(100% + 0.5rem);
             right: 0;
-            margin-top: 0.5rem;
             background: white;
             border: 1px solid var(--desa-border);
-            border-radius: 8px;
-            min-width: 180px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            min-width: 200px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             display: none;
+            overflow: hidden;
+            z-index: 1001;
+            transform-origin: top right;
+            animation: dropdownFadeIn 0.2s ease-out;
+        }
+
+        @keyframes dropdownFadeIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .desa-dropdown.show .desa-dropdown-menu {
@@ -238,17 +238,30 @@
         }
 
         .desa-dropdown-item {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1rem;
             color: var(--desa-text);
             text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             font-size: 13px;
+            transition: all 0.15s ease;
         }
 
         .desa-dropdown-item:hover {
-            background: var(--desa-bg);
+            background: #f8fafc;
+            color: var(--desa-primary);
+        }
+
+        .desa-dropdown-item i {
+            width: 16px;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
+        .desa-dropdown-item--logout:hover {
+            background: #fff1f2;
+            color: #dc2626;
         }
 
         .desa-content {
@@ -353,6 +366,36 @@
             background-color: #d1fae5;
             color: #065f46;
         }
+
+        /* Ticker Animation for Announcements */
+        .ticker-move-internal {
+            display: inline-block;
+            white-space: nowrap;
+            padding-right: 100%;
+            animation: ticker 30s linear infinite;
+        }
+
+        .hover\:pause-animation:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Utility classes for ticker/announcements if Tailwind is not present */
+        .bg-blue-50\/50 { background-color: rgba(239, 246, 255, 0.5); }
+        .border-blue-100 { border-color: #dbeafe !important; }
+        .text-blue-500 { color: #3b82f6; }
+        .text-slate-600 { color: #475569; }
+        .whitespace-nowrap { white-space: nowrap; }
+        .tracking-tighter { letter-spacing: -0.05em; }
     </style>
 
     <!-- Premium Forms CSS -->
@@ -373,6 +416,41 @@
 
             <!-- Content Area -->
             <div class="desa-content">
+                <!-- Kecamatan Announcements -->
+                @if(isset($internalAnnouncements) && $internalAnnouncements->count() > 0)
+                    <div class="mb-4">
+                        @foreach($internalAnnouncements as $ann)
+                            @if($ann->display_mode == 'ticker')
+                                <div class="bg-blue-50/50 border border-blue-100 rounded-3 overflow-hidden py-1 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="px-3 border-end border-blue-100 text-[10px] fw-bold text-blue-500 uppercase tracking-tighter">
+                                            INFO KECAMATAN
+                                        </div>
+                                        <div class="flex-grow-1 overflow-hidden whitespace-nowrap">
+                                            <div class="ticker-move-internal hover:pause-animation">
+                                                <span class="text-slate-600 small fw-medium px-3">
+                                                    {{ $ann->content }} &nbsp;&bull;&nbsp; {{ $ann->title }}
+                                                </span>
+                                                <span class="text-slate-600 small fw-medium px-3">
+                                                    {{ $ann->content }} &nbsp;&bull;&nbsp; {{ $ann->title }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="alert {{ $ann->priority == 'important' ? 'alert-danger border-0 shadow-sm' : 'alert-primary border-0 shadow-sm' }} d-flex align-items-center py-2 px-3 rounded-4 mb-3">
+                                    <i class="fas {{ $ann->priority == 'important' ? 'fa-exclamation-circle' : 'fa-info-circle' }} me-2"></i>
+                                    <div class="flex-grow-1">
+                                        <strong class="small">{{ $ann->title }}:</strong> 
+                                        <span class="small">{{ $ann->content }}</span>
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+
                 <!-- Flash Messages -->
                 @if(session('success'))
                     <div class="desa-flash desa-flash-success">
@@ -431,17 +509,27 @@
             });
         }
 
-        // User Dropdown
+        // User Dropdown - Premium Toggle
         const userDropdown = document.getElementById('userDropdown');
         if (userDropdown) {
             userDropdown.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 userDropdown.classList.toggle('show');
             });
 
+            // Close when clicking outside
             document.addEventListener('click', () => {
                 userDropdown.classList.remove('show');
             });
+
+            // Prevent closing when clicking inside menu
+            const dropdownMenu = userDropdown.querySelector('.desa-dropdown-menu');
+            if (dropdownMenu) {
+                dropdownMenu.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
         }
 
         // Auto-hide flash messages after 5 seconds

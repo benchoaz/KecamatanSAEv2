@@ -26,14 +26,33 @@ class WorkDirectory extends Model
         'data_source',
         'consent_public',
         'status',
+        'manage_token',
+        'slug',
         'operating_hours',
         'is_on_holiday',
+        'name_updated_at',
+        'is_verified',
     ];
 
     protected $casts = [
         'consent_public' => 'boolean',
         'is_on_holiday' => 'boolean',
+        'name_updated_at' => 'datetime',
+        'is_verified' => 'boolean',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (!$model->manage_token) {
+                $model->manage_token = \Illuminate\Support\Str::random(40);
+            }
+            if (!$model->slug) {
+                $model->slug = \Illuminate\Support\Str::slug($model->job_title) . '-' . \Illuminate\Support\Str::random(5);
+            }
+        });
+    }
 
     /**
      * Get available categories

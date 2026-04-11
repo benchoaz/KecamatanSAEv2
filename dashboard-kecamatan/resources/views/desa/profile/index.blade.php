@@ -59,7 +59,7 @@
             <div class="col-xl-9 col-lg-8">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between">
-                        <div class="header-title">
+                        <div class="header-title" id="password-section">
                             <h4 class="card-title">Pengaturan Akun</h4>
                         </div>
                     </div>

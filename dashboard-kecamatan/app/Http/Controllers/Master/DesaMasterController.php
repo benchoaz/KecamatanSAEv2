@@ -48,11 +48,12 @@ class DesaMasterController extends Controller
             'kabupaten' => 'required|string|max:100',
             'status' => 'required|in:aktif,tidak_aktif',
             'website' => 'nullable|string|max:255',
+            'tatadesa_domain' => 'nullable|string|max:255',
         ]);
 
         if ($validated['website'] && !filter_var($validated['website'], FILTER_VALIDATE_URL)) {
             if (!preg_match("~^(?:f|ht)tps?://~i", $validated['website'])) {
-                $validated['website'] = "http://" . $validated['website'];
+                $validated['website'] = "https://" . $validated['website'];
             }
         }
 
@@ -77,11 +78,12 @@ class DesaMasterController extends Controller
             'telepon' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:100',
             'website' => 'nullable|string|max:255',
+            'tatadesa_domain' => 'nullable|string|max:255',
         ]);
 
         if ($validated['website'] && !filter_var($validated['website'], FILTER_VALIDATE_URL)) {
             if (!preg_match("~^(?:f|ht)tps?://~i", $validated['website'])) {
-                $validated['website'] = "http://" . $validated['website'];
+                $validated['website'] = "https://" . $validated['website'];
             }
         }
 

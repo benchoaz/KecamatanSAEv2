@@ -193,8 +193,11 @@
 
                                     {{-- Body: Klik ke detail --}}
                                     <a href="{{ route('economy.show', $item->id) }}" class="block">
-                                        <h3 class="text-lg font-black text-slate-800 mb-1 leading-tight group-hover:text-teal-700 transition-colors">
+                                        <h3 class="text-lg font-black text-slate-800 mb-1 leading-tight group-hover:text-teal-700 transition-colors flex items-center gap-1.5">
                                             {{ $item->job_title }}
+                                            @if($item->is_verified)
+                                                <i class="fas fa-check-circle text-blue-500 text-sm" title="Terverifikasi Resmi"></i>
+                                            @endif
                                         </h3>
                                         <div class="flex items-center justify-between mb-4">
                                             <p class="text-xs font-medium text-slate-500">{{ $item->display_name }}</p>
@@ -333,8 +336,24 @@
                                 <span class="bg-white/10 backdrop-blur-md text-white text-[9px] font-bold px-2.5 py-1 rounded-lg border border-white/20 uppercase tracking-widest">
                                     {{ $o->jenis_usaha }}
                                 </span>
+                                @if($o->verification_level == 'legal')
+                                <span class="bg-blue-500/80 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-lg border border-blue-400 shadow-sm flex items-center gap-1 uppercase tracking-wider">
+                                    <i class="fas fa-certificate"></i> NIB LEGAL
+                                </span>
+                                @elseif($o->verification_level == 'warga')
+                                <span class="bg-teal-500/80 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-lg border border-teal-400 shadow-sm flex items-center gap-1 uppercase tracking-wider">
+                                    <i class="fas fa-user-check"></i> WARGA
+                                </span>
+                                @endif
                             </div>
-                            <h3 class="text-2xl md:text-3xl font-black text-white mb-1 group-hover:text-amber-300 transition-colors">{{ $o->nama_usaha }}</h3>
+                            <h3 class="text-2xl md:text-3xl font-black text-white mb-1 group-hover:text-amber-300 transition-colors flex items-center gap-2">
+                                {{ $o->nama_usaha }}
+                                @if($o->verification_level == 'legal')
+                                    <i class="fas fa-check-circle text-blue-400 text-xl shadow-sm" title="Terverifikasi Legal (NIB)"></i>
+                                @elseif($o->verification_level == 'warga')
+                                    <i class="fas fa-check-circle text-teal-400 text-xl shadow-sm" title="Warga Terverifikasi"></i>
+                                @endif
+                            </h3>
                             <p class="text-white/70 text-sm font-medium flex items-center gap-2">
                                 <i class="fas fa-map-marker-alt text-teal-400"></i> {{ $o->desa }}
                                 <span class="mx-2 text-white/20">|</span>
@@ -397,9 +416,13 @@
 
                             <div class="p-5 pb-3 flex flex-col flex-1">
                                 <p class="text-[9px] font-bold text-teal-600 uppercase tracking-widest mb-1 truncate">
-                                    {{ $u->name }}</p>
-                                <h3 class="font-extrabold text-slate-800 text-base leading-tight group-hover:text-teal-700 transition-colors line-clamp-2">
+                                    {{ $u->name }}
+                                </p>
+                                <h3 class="font-extrabold text-slate-800 text-base leading-tight group-hover:text-teal-700 transition-colors line-clamp-2 flex items-center gap-1.5">
                                     {{ $u->product }}
+                                    @if($u->is_verified)
+                                        <i class="fas fa-check-circle text-blue-500 text-xs shadow-sm"></i>
+                                    @endif
                                 </h3>
                                 @if($u->price)
                                     <p class="text-base font-black text-slate-900 mt-2">Rp {{ number_format($u->price, 0, ',', '.') }}</p>

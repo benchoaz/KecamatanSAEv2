@@ -377,31 +377,32 @@
 
             <!-- Slide 3: Regional Potential -->
             <div class="swiper-slide hero-slide">
-                <div class="slide-bg opacity-70" style="background-image: url('{{ appProfile()->image_pariwisata ? asset('storage/' . appProfile()->image_pariwisata) : 'https://images.unsplash.com/photo-1596328330776-6d9b4b0e503b?q=80&w=1600' }}');"></div>
+                <!-- Statistic Background -->
+                <div class="slide-bg opacity-70" style="background-image: url('{{ asset('assets/images/hero_statistics_bg.png') }}');"></div>
                 <div class="slide-overlay"></div>
                 
                 <div class="container mx-auto px-6 hero-content">
                     <div class="flex flex-col lg:flex-row items-center w-full gap-12">
                         <!-- Left: Content -->
                         <div class="w-full lg:w-3/5 text-left">
-                            <div class="text-reveal delay-100 inline-flex items-center gap-2 bg-amber-50 text-amber-700 px-4 py-1.5 rounded-full mb-6 shadow-sm border border-amber-100">
-                                <span class="w-2 h-2 bg-amber-500 rounded-full shadow-sm"></span>
-                                <span class="text-xs font-bold uppercase tracking-wide">Potensi & Ekonomi Lokal</span>
+                            <div class="text-reveal delay-100 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full mb-6 shadow-sm border border-blue-100">
+                                <span class="w-2 h-2 bg-blue-500 rounded-full shadow-sm"></span>
+                                <span class="text-xs font-bold uppercase tracking-wide">Laporan & Statistik Publik</span>
                             </div>
                             
                             <h1 class="text-reveal delay-200 text-5xl md:text-7xl font-black text-[#1e293b] mb-6 leading-[1.1] tracking-tight">
-                                Pesona & Budaya<br>
+                                Statistik Terpadu<br>
                                 {{ appProfile()->region_name }}
                             </h1>
                             
                             <p class="text-reveal delay-300 text-lg md:text-xl text-[#475569] mb-10 leading-relaxed font-medium max-w-xl">
-                                Temukan kekayaan alam, budaya, dan produk UMKM unggulan yang membanggakan dari setiap desa di wilayah kami.
+                                Pantau perkembangan wilayah melalui data kependudukan, kesehatan, dan ekonomi yang akurat dan transparan dari 17 desa.
                             </p>
 
                             <div class="text-reveal delay-400 flex flex-wrap gap-4">
-                                <a href="{{ route('landing.wilayah') }}" 
+                                <a href="{{ route('landing.statistik.index') }}" 
                                    class="btn bg-amber-600 hover:bg-amber-700 text-white border-0 rounded-2xl px-12 h-16 font-black shadow-xl shadow-amber-200 transition-all">
-                                    Eksplorasi Wilayah <i class="fas fa-mountain ml-2"></i>
+                                    Data Statistik <i class="fas fa-chart-line ml-2"></i>
                                 </a>
                             </div>
                         </div>
