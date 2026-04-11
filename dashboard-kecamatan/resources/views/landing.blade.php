@@ -590,7 +590,11 @@
     @auth
         @if(auth()->user()->hasRole('Operator Kecamatan') || auth()->user()->hasRole('Super Admin'))
             <div class="py-4 relative z-10">
-                <div class="container mx-auto px-6 flex justify-center md:justify-end">
+                <div class="container mx-auto px-6 flex justify-center md:justify-end gap-4">
+                    <a href="{{ route('economy.create') }}"
+                        class="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-black text-xs bg-teal-50 hover:bg-teal-100 px-4 py-2 rounded-xl transition-colors">
+                        <i class="fas fa-plus-circle"></i> Daftar Usaha / Jasa Baru
+                    </a>
                     <a href="{{ route('kecamatan.pelayanan.visitor.index') }}"
                         class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-teal-600 transition-colors px-4 py-1.5 rounded-full border border-slate-200 bg-white hover:border-teal-200 hover:bg-teal-50 hover:shadow-sm no-underline decoration-0">
                         <i class="fas fa-book-open text-teal-500"></i>
@@ -873,8 +877,8 @@
 
                         <div class="mt-8 p-6 bg-amber-50 rounded-3xl border border-amber-100">
                             <p class="text-xs font-bold text-amber-800 leading-relaxed mb-4">Ingin produk Anda tayang di sini? Daftar sekarang gratis!</p>
-                            <a href="{{ route('umkm_rakyat.create') }}" class="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-2 hover:gap-3 transition-all">
-                                Buka Toko Digital <i class="fas fa-arrow-right"></i>
+                            <a href="{{ route('economy.create') }}" class="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-2 hover:gap-3 transition-all">
+                                Buka Usaha / Jasa <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
                     </div>

@@ -10,7 +10,7 @@
                 @endif
             </div>
             <div class="logo-text">
-                <span class="logo-title fw-bold text-uppercase">PORTAL UMKM</span>
+                <span class="logo-title fw-bold text-uppercase">PORTAL EKONOMI</span>
                 <span class="logo-subtitle tracking-wider">{{ strtoupper(appProfile()->full_region_name) }}</span>
             </div>
         </div>
@@ -19,7 +19,7 @@
 
     <nav class="sidebar-nav">
         <div class="nav-section">
-            <span class="nav-section-title">DASHBOARD UMKM</span>
+            <span class="nav-section-title">DASHBOARD EKONOMI</span>
             <ul class="nav-menu">
                 <li class="nav-item">
                     <a href="{{ route('kecamatan.umkm.index') }}"
@@ -32,7 +32,7 @@
         </div>
 
         <div class="nav-section">
-            <span class="nav-section-title">KELOLA UMKM</span>
+            <span class="nav-section-title">KELOLA USAHA / JASA</span>
             <ul class="nav-menu">
                 <li class="nav-item">
                     <a href="{{ route('kecamatan.umkm.index') }}?filter=pending"

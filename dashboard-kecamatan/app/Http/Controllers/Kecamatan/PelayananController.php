@@ -33,6 +33,8 @@ class PelayananController extends Controller
         // Mapping logic for strict separation
         if ($category === 'pelayanan') {
             $query->where('category', PublicService::CATEGORY_PELAYANAN);
+        } elseif ($category === 'ekonomi') {
+            $query->whereIn('category', [PublicService::CATEGORY_UMKM, PublicService::CATEGORY_PEKERJAAN]);
         } else {
             $query->where('category', $category);
         }

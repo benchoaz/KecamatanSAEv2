@@ -121,7 +121,13 @@ class EconomyController extends Controller
     {
         $desas = Desa::orderBy('nama_desa')->get();
         $categories = WorkDirectory::getCategories();
-        $jobTypes = ['jasa' => 'Jasa', 'transportasi' => 'Transportasi', 'keliling' => 'Keliling', 'harian' => 'Harian'];
+        $jobTypes = [
+            'umkm' => 'UMKM / Dagang',
+            'jasa' => 'Jasa / Keahlian',
+            'transportasi' => 'Transportasi',
+            'keliling' => 'Pedagang Keliling',
+            'harian' => 'Pekerja Harian'
+        ];
 
         return view('economy.create', compact('desas', 'categories', 'jobTypes'));
     }
@@ -134,7 +140,7 @@ class EconomyController extends Controller
         $request->validate([
             'display_name' => 'required|string|max:255',
             'job_category' => 'required|string',
-            'job_type' => 'required|string|in:jasa,transportasi,keliling,harian',
+            'job_type' => 'required|string|in:umkm,jasa,transportasi,keliling,harian',
             'job_title' => 'required|string|max:255',
             'contact_phone' => 'required|string|max:20',
             'service_area' => 'nullable|string|max:255',
@@ -167,14 +173,16 @@ class EconomyController extends Controller
             'uraian' => "Pendaftaran Pekerjaan/Jasa Baru: {$workDir->job_title} ({$workDir->job_category}). Atas nama: {$workDir->display_name}. Kontak: {$workDir->contact_phone}.", // Harusan PIN dihapus
             'whatsapp' => $workDir->contact_phone,
             'status' => PublicService::STATUS_MENUNGGU,
-            'category' => PublicService::CATEGORY_PEKERJAAN,
+            'category' => $request->job_type == 'umkm' ? PublicService::CATEGORY_UMKM : PublicService::CATEGORY_PEKERJAAN,
             'source' => 'web_form'
         ]);
 
         // Send WhatsApp notification
         $this->sendWhatsAppNotification($workDir);
 
-        return redirect()->route('economy.index', ['tab' => 'jasa'])->with('success', 'Terima kasih. Data pekerjaan/jasa Anda akan ditampilkan setelah diverifikasi.');
+        $message = $request->job_type == 'umkm' ? 'Terima kasih. Data UMKM/Usaha Anda akan ditampilkan setelah diverifikasi.' : 'Terima kasih. Data pekerjaan/jasa Anda akan ditampilkan setelah diverifikasi.';
+        
+        return redirect()->route('economy.index', ['tab' => 'jasa'])->with('success', $message);
     }
 
     /**
@@ -224,7 +232,7 @@ class EconomyController extends Controller
         $request->validate([
             'display_name' => 'required|string|max:255',
             'job_category' => 'required|string',
-            'job_type' => 'required|string|in:jasa,transportasi,keliling,harian',
+            'job_type' => 'required|string|in:umkm,jasa,transportasi,keliling,harian',
             'job_title' => 'required|string|max:255',
             'service_area' => 'nullable|string|max:255',
             'service_time' => 'nullable|string|max:100',

@@ -56,6 +56,22 @@
         .side-image-overlay {
             background: linear-gradient(135deg, rgba(13, 148, 136, 0.8) 0%, rgba(30, 41, 59, 0.8) 100%);
         }
+
+        /* Fix: Prevent "Dark Screen" and click blocking */
+        body {
+            pointer-events: auto !important;
+        }
+
+        dialog:not([open])::backdrop {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+
+        .modal-backdrop,
+        [class*="modal-"][class*="backdrop"] {
+            display: none !important;
+        }
     </style>
 </head>
 

@@ -33,7 +33,7 @@
         </div>
 
         <div class="nav-section">
-            <span class="nav-section-title">BIDANG PELAYANAN</span>
+            <span class="nav-section-title">DASHBOARD EKONOMI</span>
             <ul class="nav-menu">
                 <li class="nav-item has-submenu {{ request()->is('kecamatan/pelayanan/inbox*') ? 'open' : '' }}">
                     <a href="javascript:void(0)"
@@ -49,12 +49,12 @@
                                 <i class="fas fa-file-invoice me-2 small"></i> Pelayanan Berkas
                             </a>
                         </li>
-                        <li class="nav-submenu-item">
-                            <a href="{{ route('kecamatan.pelayanan.inbox', ['category' => 'umkm']) }}"
-                                class="nav-sublink {{ request()->query('category') == 'umkm' ? 'active' : '' }}">
-                                <i class="fas fa-store me-2 small"></i> Pendaftaran UMKM
-                            </a>
-                        </li>
+                            <li class="nav-submenu-item">
+                                <a href="{{ route('kecamatan.pelayanan.inbox', ['category' => 'ekonomi']) }}"
+                                    class="nav-sublink {{ request()->query('category') == 'ekonomi' ? 'active' : '' }}">
+                                    <i class="fas fa-store me-2 small"></i> Pendaftaran Usaha & Jasa
+                                </a>
+                            </li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -218,7 +218,7 @@
                         <a href="{{ route('kecamatan.umkm.index') }}"
                             class="nav-link {{ Route::is('kecamatan.umkm.*') ? 'active' : '' }}">
                             <span class="nav-icon"><i class="fas fa-store text-orange-500"></i></span>
-                            <span class="nav-text">Etalase UMKM</span>
+                            <span class="nav-text">Etalase Usaha & Jasa</span>
                         </a>
                     </li>
                 </ul>

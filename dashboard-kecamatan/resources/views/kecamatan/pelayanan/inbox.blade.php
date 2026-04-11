@@ -5,7 +5,11 @@
     $pageDesc = '';
     $accentColor = 'slate';
     
-    if ($category === 'umkm') {
+    if ($category === 'ekonomi') {
+        $pageTitle .= 'Usaha & Jasa';
+        $pageDesc = 'Verifikasi pendaftaran UMKM dan Jasa baru dari warga.';
+        $accentColor = 'teal';
+    } elseif ($category === 'umkm') {
         $pageTitle .= 'UMKM';
         $pageDesc = 'Verifikasi pendaftaran UMKM baru dari warga.';
         $accentColor = 'blue';
@@ -30,9 +34,9 @@
                 <p class="text-slate-400 small mb-0">{{ $pageDesc }}</p>
             </div>
             <div class="d-flex gap-2">
-                @if($category == 'umkm')
-                    <a href="{{ route('kecamatan.umkm.create') }}" class="btn btn-brand-600 rounded-3 px-3 small fw-bold text-white shadow-sm hover-up">
-                        <i class="fas fa-plus me-2"></i> Bantu Daftar UMKM
+                @if($category == 'umkm' || $category == 'ekonomi')
+                    <a href="{{ route('economy.create') }}" class="btn btn-brand-600 rounded-3 px-3 small fw-bold text-white shadow-sm hover-up">
+                        <i class="fas fa-plus me-2"></i> Bantu Daftar Ekonomi
                     </a>
                 @endif
             </div>
@@ -104,9 +108,13 @@
                                         <div class="text-[10px] text-slate-400 d-flex align-items-center gap-1 flex-wrap">
                                             @if($category == 'pelayanan')
                                                 {{ Str::limit($item->uraian, 40) }}
-                                            @elseif($category == 'umkm')
-                                                <span class="badge bg-blue-50 text-blue-600 border border-blue-100 text-[8px] px-1 py-0">UMKM</span>
-                                                Pendaftaran Baru
+                                            @elseif($category == 'ekonomi' || $category == 'umkm')
+                                                @if($item->category == 'umkm')
+                                                    <span class="badge bg-blue-50 text-blue-600 border border-blue-100 text-[8px] px-1 py-0">UMKM</span>
+                                                @else
+                                                    <span class="badge bg-teal-50 text-teal-600 border border-teal-100 text-[8px] px-1 py-0">JASA</span>
+                                                @endif
+                                                Pendaftaran Terpadu
                                             @else
                                                 <span class="badge bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8px] px-1 py-0">LOKER</span>
                                                 Info Kerja Warga

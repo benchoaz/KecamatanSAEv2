@@ -291,9 +291,9 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('umkm_rakyat.create') }}"
+                    <a href="{{ route('economy.create') }}"
                         class="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold text-xs shadow-sm transition-all">
-                        Buka Toko
+                        Daftar Usaha
                     </a>
                     <a href="{{ route('umkm_rakyat.login') }}"
                         class="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-xs shadow-sm transition-all">

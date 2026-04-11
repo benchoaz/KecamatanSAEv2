@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Daftar Pekerjaan & Jasa - ' . appProfile()->region_level . ' ' . appProfile()->region_name)
+@section('title', 'Daftar Usaha & Jasa - ' . appProfile()->region_level . ' ' . appProfile()->region_name)
 
 @section('content')
     <div class="min-h-screen bg-gradient-to-tr from-slate-50 via-teal-50/30 to-emerald-50/30 py-12 md:py-20">
@@ -12,7 +12,7 @@
                         class="inline-flex items-center justify-center w-24 h-24 bg-white rounded-3xl shadow-xl shadow-teal-200/50 mb-6 group hover:rotate-6 transition-transform duration-500">
                         <i class="fas fa-briefcase text-4xl text-teal-500 group-hover:scale-110 transition-transform"></i>
                     </div>
-                    <h1 class="text-4xl md:text-5xl font-black text-slate-800 mb-4 tracking-tight">Daftar Pekerjaan & Jasa
+                    <h1 class="text-4xl md:text-5xl font-black text-slate-800 mb-4 tracking-tight">Daftar Usaha & Jasa
                     </h1>
                     <p class="text-slate-500 text-lg font-medium max-w-md mx-auto leading-relaxed">
                         Tawarkan keahlian Anda kepada warga {{ appProfile()->region_level }}
@@ -109,14 +109,14 @@
                                     <div
                                         class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white text-sm font-bold">
                                         2</div>
-                                    <h2 class="text-xl font-bold text-slate-800">Detail Jasa</h2>
+                                    <h2 class="text-xl font-bold text-slate-800">Detail Usaha / Jasa</h2>
                                 </div>
 
                                 <div class="grid grid-cols-1 gap-6">
                                     {{-- Judul Jasa --}}
                                     <div class="form-control w-full">
                                         <label class="label mb-1">
-                                            <span class="label-text font-bold text-slate-700">Judul Jasa/Pekerjaan <span
+                                            <span class="label-text font-bold text-slate-700">Judul Usaha / Jasa <span
                                                     class="text-rose-500">*</span></span>
                                         </label>
                                         <div class="relative group">
@@ -134,7 +134,7 @@
                                         {{-- Kategori --}}
                                         <div class="form-control w-full">
                                             <label class="label mb-1">
-                                                <span class="label-text font-bold text-slate-700">Kategori Jasa <span
+                                                <span class="label-text font-bold text-slate-700">Kategori Usaha / Jasa <span
                                                         class="text-rose-500">*</span></span>
                                             </label>
                                             <div class="relative group">
