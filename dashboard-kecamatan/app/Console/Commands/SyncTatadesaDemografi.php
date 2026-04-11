@@ -57,7 +57,7 @@ class SyncTatadesaDemografi extends Command
                     $pool->as('pekerjaan')->timeout(10)->get("{$baseUrl}/penduduk/statistik/pekerjaan"),
                     $pool->as('agama')->timeout(10)->get("{$baseUrl}/penduduk/statistik/agama"),
                     $pool->as('kesehatan')->timeout(10)->get("{$baseUrl}/health/statistik/yearly"),
-                    $pool->as('desil')->timeout(10)->get("{$baseUrl}/desil/latest"),
+                    $pool->as('desil')->timeout(10)->get("{$baseUrl}/desil/statistik"),
                 ]);
 
                 if ($responses['demografi']->successful()) {

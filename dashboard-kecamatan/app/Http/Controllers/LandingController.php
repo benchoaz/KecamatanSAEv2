@@ -105,10 +105,10 @@ class LandingController extends Controller
             }),
             'kk_total' => $desas->sum('jumlah_kk'),
             'poverty_avg' => $desas->avg(function($d) {
-                $stat = $d->stat_kesejahteraan;
+                $stat = $d->stat_desil;
                 if (is_string($stat)) $stat = json_decode($stat, true);
                 if (!is_array($stat)) return 0;
-                return $stat['desil_1'] ?? 0;
+                return $stat['totalDesil1'] ?? 0;
             }),
         ];
 
@@ -120,7 +120,7 @@ class LandingController extends Controller
         $common = $this->prepareStatistikData();
         $statPendidikan = [];
         foreach ($common['desas'] as $desa) {
-            $stats = is_string($desa->stat_pendidikan) ? json_decode($desa->stat_pendidikan, true) : ($desa->stat_pendidikan ?? []);
+            $stats = $desa->stat_pendidikan ?? [];
             foreach ($stats as $item) {
                 $nama = $item['nama'] ?? '';
                 if ($nama) $statPendidikan[$nama] = ($statPendidikan[$nama] ?? 0) + ($item['jumlah'] ?? 0);
@@ -137,7 +137,7 @@ class LandingController extends Controller
         $common = $this->prepareStatistikData();
         $statPekerjaan = [];
         foreach ($common['desas'] as $desa) {
-            $stats = is_string($desa->stat_pekerjaan) ? json_decode($desa->stat_pekerjaan, true) : ($desa->stat_pekerjaan ?? []);
+            $stats = $desa->stat_pekerjaan ?? [];
             foreach ($stats as $item) {
                 $nama = $item['nama'] ?? '';
                 if ($nama) $statPekerjaan[$nama] = ($statPekerjaan[$nama] ?? 0) + ($item['jumlah'] ?? 0);
@@ -154,7 +154,7 @@ class LandingController extends Controller
         $common = $this->prepareStatistikData();
         $statAgama = [];
         foreach ($common['desas'] as $desa) {
-            $stats = is_string($desa->stat_agama) ? json_decode($desa->stat_agama, true) : ($desa->stat_agama ?? []);
+            $stats = $desa->stat_agama ?? [];
             foreach ($stats as $item) {
                 $nama = $item['nama'] ?? '';
                 if ($nama) $statAgama[$nama] = ($statAgama[$nama] ?? 0) + ($item['jumlah'] ?? 0);
