@@ -85,8 +85,14 @@ services:
     image: nginx:alpine
     container_name: kecamatan-nginx
     restart: unless-stopped
-    ports:
-      - "80:80"
+    # ports:
+    #   - "80:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kecamatan-dashboard.rule=Host(`kecamatanbesuk.my.id`) || Host(`localhost`)"
+      - "traefik.http.routers.kecamatan-dashboard.entrypoints=web,websecure"
+      - "traefik.http.routers.kecamatan-dashboard.tls.certresolver=myresolver"
+      - "traefik.http.services.kecamatan-dashboard.loadbalancer.server.port=80"
     volumes:
       - ./:/var/www:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
@@ -148,8 +154,8 @@ services:
       - WAHA_API_KEY=${WAHA_API_KEY}
       - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
       - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
-      - DASHBOARD_URL=http://kecamatan-nginx
-      - PUBLIC_BASE_URL=${APP_URL}
+      - WEBHOOK_URL=http://kecamatan-n8n:5678/
+      - N8N_SECURE_COOKIE=false
       - EXECUTIONS_MODE=regular
       - EXECUTIONS_DATA_SAVE_ON_ERROR=all
       - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
@@ -187,8 +193,8 @@ services:
 
 networks:
   app-network:
+    external: true
     name: kecamatan-network
-    driver: bridge
 
 volumes:
   dbdata:

@@ -1,0 +1,34 @@
+http:
+  routers:
+    # ============================================================
+    # LANDING PAGE / DASHBOARD LARAVEL
+    # Priority 1 (lowest) - fallback for all hosts
+    # ============================================================
+    dashboard-https:
+      rule: "Host(`kecamatanbesuk.my.id`)"
+      entryPoints: ["websecure"]
+      service: dashboard-service
+      priority: 1
+      tls:
+        certResolver: myresolver
+
+    dashboard-http:
+      rule: "Host(`kecamatanbesuk.my.id`) || Host(`localhost`) || Host(`babette-nonslanderous-randi.ngrok-free.dev`)"
+      entryPoints: ["web"]
+      service: dashboard-service
+      priority: 1
+
+    dashboard-localhost-https:
+      rule: "Host(`localhost`) || Host(`babette-nonslanderous-randi.ngrok-free.dev`)"
+      entryPoints: ["websecure"]
+      service: dashboard-service
+      priority: 1
+      tls: {}
+
+
+
+  services:
+    dashboard-service:
+      loadBalancer:
+        servers:
+          - url: "http://kecamatan-nginx:80"

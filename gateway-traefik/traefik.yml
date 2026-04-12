@@ -1,0 +1,36 @@
+api:
+  dashboard: true
+  insecure: true # We will secure it later with labels if needed, or access via port 8080 internally
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: kecamatan-network
+
+certificatesResolvers:
+  myresolver:
+    acme:
+      email: admin@kecamatanbesuk.my.id
+      storage: acme.json
+      httpChallenge:
+        entryPoint: web
+
+log:
+  level: INFO
+  format: common
+
+accessLog:
+  format: common
