@@ -50,7 +50,7 @@
     }
     $totAnak = $totStunting + $totGiziNormal + $totGiziBuruk ?: 1;
 
-    // Desil / P3KE
+    // Desil / DTSEN
     $d1=0; $d2=0; $d3=0; $d4=0; $d5=0; $d610=0; $dKpm=0; $dTotal=0;
     foreach ($desas as $desa) {
         $d = $desa->stat_desil ?? [];
@@ -77,7 +77,7 @@
         ['icon'=>'fa-venus',           'val'=>number_format($totalPerempuan),'label'=>'Perempuan',          'from'=>'from-pink-500',   'to'=>'to-rose-600',    'shadow'=>'shadow-pink-400/30'],
         ['icon'=>'fa-house-chimney',   'val'=>number_format($totalKk),      'label'=>'Kepala Keluarga',    'from'=>'from-amber-500',  'to'=>'to-orange-600',  'shadow'=>'shadow-amber-400/30'],
         ['icon'=>'fa-heart-circle-exclamation','val'=>number_format($totStunting),'label'=>'Kasus Stunting','from'=>'from-red-500',  'to'=>'to-rose-700',    'shadow'=>'shadow-red-400/30'],
-        ['icon'=>'fa-hand-holding-heart','val'=>number_format($d1),         'label'=>'Desil 1 (P3KE)',     'from'=>'from-teal-500',   'to'=>'to-emerald-700', 'shadow'=>'shadow-teal-400/30'],
+        ['icon'=>'fa-hand-holding-heart','val'=>number_format($d1),         'label'=>'Desil 1 (DTSEN)',     'from'=>'from-teal-500',   'to'=>'to-emerald-700', 'shadow'=>'shadow-teal-400/30'],
     ];
     @endphp
     @foreach($kpis as $kpi)
@@ -192,7 +192,7 @@
 </div>
 
 {{-- =====================================================
-     ROW 4: P3KE/DESIL FULL WIDTH
+     ROW 4: DTSEN/DESIL FULL WIDTH
      ===================================================== --}}
 <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2rem] shadow-2xl p-8 mb-6 overflow-hidden relative">
     {{-- Decorative --}}
@@ -201,7 +201,7 @@
 
     <div class="flex items-center gap-2 mb-1 relative z-10">
         <span class="w-2 h-5 bg-teal-400 rounded-full"></span>
-        <h4 class="font-black text-white text-sm">Piramida Kesejahteraan — P3KE Desil 1-10</h4>
+        <h4 class="font-black text-white text-sm">Piramida Kesejahteraan — DTSEN Desil 1-10</h4>
         <span class="ml-auto bg-teal-500/20 text-teal-300 text-[9px] font-bold px-3 py-1 rounded-full border border-teal-500/30">{{ number_format($dKpm) }} KPM Teridentifikasi</span>
     </div>
     <p class="text-[10px] text-slate-400 mb-6 ml-4 relative z-10">Komposisi keluarga berdasarkan tingkat kesejahteraan. Desil 1 = termiskin, Desil 10 = terkaya.</p>
@@ -252,7 +252,7 @@
         ['label'=>'Sex Ratio', 'val'=>$ratioSex, 'unit'=>'per 100 ♀', 'icon'=>'fa-scale-balanced', 'note'=>$ratioSex >= 100 ? 'Dominan Laki-Laki' : 'Dominan Perempuan', 'color'=>'text-blue-600', 'bg'=>'bg-blue-50'],
         ['label'=>'Rata-rata Penduduk', 'val'=>number_format($avgPerDesa), 'unit'=>'jiwa/desa', 'icon'=>'fa-chart-simple', 'note'=>'Per desa rata-rata', 'color'=>'text-indigo-600', 'bg'=>'bg-indigo-50'],
         ['label'=>'Prevalensi Stunting', 'val'=>$stuntIdx.'%', 'unit'=>'dari anak terdata', 'icon'=>'fa-child-reaching', 'note'=>$stuntIdx > 20 ? '⚠ Perlu perhatian' : '✓ Terkendali', 'color'=>'text-rose-600', 'bg'=>'bg-rose-50'],
-        ['label'=>'Coverage Desil 1', 'val'=>$desil1Pct.'%', 'unit'=>'dari total P3KE', 'icon'=>'fa-circle-half-stroke', 'note'=>'Kelompok rentan', 'color'=>'text-teal-600', 'bg'=>'bg-teal-50'],
+        ['label'=>'Coverage Desil 1', 'val'=>$desil1Pct.'%', 'unit'=>'dari total DTSEN', 'icon'=>'fa-circle-half-stroke', 'note'=>'Kelompok rentan', 'color'=>'text-teal-600', 'bg'=>'bg-teal-50'],
     ];
     @endphp
     @foreach($insights as $ins)

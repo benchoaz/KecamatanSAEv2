@@ -247,4 +247,40 @@ class KesraController extends Controller
 
         return response()->download(storage_path('app/temp/' . $zipName))->deleteFileAfterSend(true);
     }
+
+    /**
+     * Analisis Konvergensi Stunting - Overview & Per Kelompok Aksi
+     */
+    public function stuntingAnalysis()
+    {
+        abort_unless(auth()->user()->isSuperAdmin() || auth()->user()->isOperatorKecamatan(), 403);
+
+        $convergenceData = null;
+        if (\Illuminate\Support\Facades\Storage::exists('convergence_data.json')) {
+            $raw = \Illuminate\Support\Facades\Storage::get('convergence_data.json');
+            $convergenceData = json_decode($raw, true);
+        }
+
+        $desas = Desa::orderBy('nama_desa')->get();
+
+        return view('kecamatan.kesra.stunting.analysis', compact('convergenceData', 'desas'));
+    }
+
+    /**
+     * Peringkat Desa Berdasarkan Data Sasaran Konvergensi
+     */
+    public function stuntingRanking()
+    {
+        abort_unless(auth()->user()->isSuperAdmin() || auth()->user()->isOperatorKecamatan(), 403);
+
+        $convergenceData = null;
+        if (\Illuminate\Support\Facades\Storage::exists('convergence_data.json')) {
+            $raw = \Illuminate\Support\Facades\Storage::get('convergence_data.json');
+            $convergenceData = json_decode($raw, true);
+        }
+
+        $desas = Desa::orderBy('nama_desa')->get();
+
+        return view('kecamatan.kesra.stunting.ranking', compact('convergenceData', 'desas'));
+    }
 }

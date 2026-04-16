@@ -29,7 +29,7 @@ certificatesResolvers:
         entryPoint: web
 
 log:
-  level: INFO
+  level: ERROR
   format: common
 
 accessLog:

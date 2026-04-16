@@ -1,33 +1,26 @@
-version: '3.8'
-
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v2.10
     container_name: traefik-gateway
-    restart: unless-stopped
-    user: "0:1001"
-    networks:
-      - kecamatan-network
+    restart: always
+    command:
+      - "--log.level=INFO"
+      - "--api.insecure=false"
+      - "--providers.file.filename=/etc/traefik/dynamic_conf.yml"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=benchoaz@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/acme.json"
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./dynamic_conf.yml:/etc/traefik/dynamic_conf.yml:ro
       - ./acme.json:/acme.json
-      - ./dynamic_conf.yml:/dynamic_conf.yml:ro
-    environment:
-      - TZ=Asia/Jakarta
-    command:
-      - "--api.dashboard=true"
-      - "--api.insecure=true"
-      - "--providers.file.filename=/dynamic_conf.yml"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.email=admin@kecamatanbesuk.my.id"
-      - "--certificatesresolvers.myresolver.acme.storage=acme.json"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--log.level=INFO"
+    networks:
+      - kecamatan-network
 
 networks:
   kecamatan-network:

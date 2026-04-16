@@ -1,34 +1,45 @@
 http:
   routers:
-    # ============================================================
-    # LANDING PAGE / DASHBOARD LARAVEL
-    # Priority 1 (lowest) - fallback for all hosts
-    # ============================================================
-    dashboard-https:
+    kecamatan-dashboard:
       rule: "Host(`kecamatanbesuk.my.id`)"
-      entryPoints: ["websecure"]
-      service: dashboard-service
-      priority: 1
+      entryPoints:
+        - websecure
+      service: kecamatan-dashboard-svc
       tls:
         certResolver: myresolver
+      middlewares:
+        - kecamatan-compress
+        - kecamatan-headers
 
-    dashboard-http:
-      rule: "Host(`kecamatanbesuk.my.id`) || Host(`localhost`) || Host(`babette-nonslanderous-randi.ngrok-free.dev`)"
-      entryPoints: ["web"]
-      service: dashboard-service
-      priority: 1
+    kecamatan-http-redirect:
+      rule: "Host(`kecamatanbesuk.my.id`)"
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      service: kecamatan-dashboard-svc
 
-    dashboard-localhost-https:
-      rule: "Host(`localhost`) || Host(`babette-nonslanderous-randi.ngrok-free.dev`)"
-      entryPoints: ["websecure"]
-      service: dashboard-service
-      priority: 1
-      tls: {}
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
 
+    kecamatan-compress:
+      compress: {}
 
+    kecamatan-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        frameDeny: true
 
   services:
-    dashboard-service:
+    kecamatan-dashboard-svc:
       loadBalancer:
         servers:
           - url: "http://kecamatan-nginx:80"

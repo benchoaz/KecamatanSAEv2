@@ -169,7 +169,17 @@ class LandingController extends Controller
     public function statKesehatan()
     {
         $common = $this->prepareStatistikData();
-        return view('landing.statistik.kesehatan', $common);
+
+        // Load convergence data from scraped JSON
+        $convergenceData = null;
+        if (\Illuminate\Support\Facades\Storage::exists('convergence_data.json')) {
+            $raw = \Illuminate\Support\Facades\Storage::get('convergence_data.json');
+            $convergenceData = json_decode($raw, true);
+        }
+
+        return view('landing.statistik.kesehatan', array_merge($common, [
+            'convergenceData' => $convergenceData,
+        ]));
     }
 
     public function statKesejahteraan()

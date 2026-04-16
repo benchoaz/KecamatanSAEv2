@@ -89,9 +89,15 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Jam Operasional</label>
-                            <input type="text" name="service_time" value="{{ $workItem->service_time }}"
+                            <input type="text" name="service_time" id="service_time_input" value="{{ $workItem->service_time }}"
                                 placeholder="Contoh: 08:00 - 17:00 / 24 Jam"
                                 class="w-full bg-slate-50 border-2 border-slate-50 rounded-2xl px-6 py-4 text-sm font-bold text-slate-700 focus:bg-white focus:border-teal-500/20 focus:ring-4 focus:ring-teal-500/10 transition-all outline-none">
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button type="button" onclick="setServiceTime('Setiap Hari (24 Jam)')" class="px-3 py-1.5 bg-slate-100 hover:bg-teal-50 hover:text-teal-600 text-slate-500 rounded-lg text-[10px] font-bold transition-all border border-slate-200">24 Jam</button>
+                                <button type="button" onclick="setServiceTime('Senin - Jumat (08:00 - 16:00)')" class="px-3 py-1.5 bg-slate-100 hover:bg-teal-50 hover:text-teal-600 text-slate-500 rounded-lg text-[10px] font-bold transition-all border border-slate-200">Jam Kerja</button>
+                                <button type="button" onclick="setServiceTime('Weekend (09:00 - 17:00)')" class="px-3 py-1.5 bg-slate-100 hover:bg-teal-50 hover:text-teal-600 text-slate-500 rounded-lg text-[10px] font-bold transition-all border border-slate-200">Weekend</button>
+                                <button type="button" onclick="setServiceTime('Sesuai Perjanjian')" class="px-3 py-1.5 bg-slate-100 hover:bg-teal-50 hover:text-teal-600 text-slate-500 rounded-lg text-[10px] font-bold transition-all border border-slate-200">Sesuai Janji</button>
+                            </div>
                         </div>
                     </div>
 
@@ -147,4 +153,10 @@
         </form>
     </div>
 </section>
+
+<script>
+    function setServiceTime(value) {
+        document.getElementById('service_time_input').value = value;
+    }
+</script>
 @endsection

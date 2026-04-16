@@ -50,7 +50,7 @@
                 </div>
                 <h2 class="text-3xl md:text-5xl font-black text-slate-800 mb-4">Sebaran {{ count($desas) }} Desa</h2>
                 <p class="text-slate-500 max-w-2xl mx-auto font-medium leading-relaxed">
-                    Klik pada area desa untuk mengunjungi portal resmi masing-masing wilayah.
+                    Klik area desa untuk zoom in. Double-klik untuk mengunjungi portal resmi desa.
                 </p>
             </div>
 
@@ -112,7 +112,7 @@
                 </a>
                 <a href="{{ route('landing.statistik.kesejahteraan') }}" 
                    class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 {{ request()->routeIs('landing.statistik.kesejahteraan') ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
-                    <i class="fas fa-chart-pie"></i> P3KE
+                    <i class="fas fa-chart-pie"></i> DTSEN
                 </a>
             </div>
 
@@ -201,6 +201,7 @@
                 zoom: 13,
                 scrollWheelZoom: false,
                 attributionControl: false,
+                doubleClickZoom: false,
                 zoomControl: false
             });
 
@@ -275,13 +276,10 @@
                         },
                         onEachFeature: function (feature, layer) {
                             const name = getGeoName(feature.properties);
-                            let url = villageUrls[name] || "#";
-                            
-                            // Fix for absolute URLs without protocol
-                            if (url !== "#" && !url.startsWith('http')) {
-                                url = `https://${url}`;
-                            }
-                            
+                            // Always use tatadesa.com pattern (lowercase, no spaces)
+                            const slug = name.toLowerCase().replace(/\s+/g, '');
+                            const url = `https://${slug}.tatadesa.com`;
+
                             // Permanent Label
                             layer.bindTooltip(`<span class="font-black text-[9px] uppercase tracking-tighter text-slate-700">${name}</span>`, {
                                 permanent: true,
@@ -289,16 +287,22 @@
                                 className: 'village-label-tooltip'
                             });
 
-                            layer.bindPopup(`
-                                <div class="p-2 text-center min-w-[140px]">
-                                    <h5 class="font-black text-slate-800 text-sm mb-1">${name}</h5>
-                                    <p class="text-[9px] text-slate-500 mb-3 uppercase tracking-widest font-bold">Wilayah Terintegrasi</p>
-                                    <a href="${url}" target="_blank" class="btn btn-xs bg-teal-600 hover:bg-teal-700 text-white border-0 rounded-lg px-4 h-8 flex items-center justify-center gap-1">
-                                        Portal Desa <i class="fas fa-external-link-alt text-[8px]"></i>
-                                    </a>
-                                </div>
-                            `);
+                            // Disable any default popup
+                            layer.unbindPopup();
+
                             layer.on({
+                                click: (e) => {
+                                    // Prevent any popup from opening
+                                    e.originalEvent.stopPropagation();
+                                    map.flyToBounds(e.target.getBounds(), {
+                                        padding: [80, 80],
+                                        duration: 1.2
+                                    });
+                                },
+                                dblclick: (e) => {
+                                    e.originalEvent.stopPropagation();
+                                    window.open(url, '_blank');
+                                },
                                 mouseover: (e) => {
                                     const l = e.target;
                                     l.setStyle({ fillOpacity: 0.7, weight: 3 });
@@ -310,6 +314,11 @@
                             });
                         }
                     }).addTo(map);
+
+                    // Close any existing popups when clicking the map
+                    map.on('popupopen', function(e) {
+                        map.closePopup();
+                    });
                 });
 
             // Marker Sync from Database

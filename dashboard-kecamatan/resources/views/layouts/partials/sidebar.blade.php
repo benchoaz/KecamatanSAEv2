@@ -100,6 +100,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('kecamatan.kesra.stunting.analysis') }}"
+                                class="nav-link {{ request()->is('kecamatan/kesra/stunting*') ? 'active' : '' }}">
+                                <span class="nav-icon"><i class="fas fa-shield-virus text-emerald-500"></i></span>
+                                <span class="nav-text text-emerald-600 font-medium">Analisis Stunting</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="{{ route('kecamatan.kesra.bansos.index') }}"
                                 class="nav-link {{ request()->is('kecamatan/kesra/bansos*') ? 'active' : '' }}">
                                 <span class="nav-icon"><i class="fas fa-hand-holding-heart"></i></span>

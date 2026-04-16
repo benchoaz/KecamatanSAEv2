@@ -245,6 +245,65 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="col-md-6">
+                                                <div
+                                                    class="p-3 bg-white border border-slate-200 rounded-3 d-flex align-items-center justify-content-between">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div
+                                                            class="avatar-sm bg-blue-100 text-blue-600 rounded-circle d-flex align-items-center justify-content-center">
+                                                            <i class="fas fa-file-alt"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-0 fw-bold text-slate-900">Menu Pelayanan</h6>
+                                                            <small class="text-slate-500 text-[10px]">Aktifkan halaman
+                                                                layanan dan persyaratan.</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            name="is_menu_pelayanan_active" {{ $profile->is_menu_pelayanan_active ?? true ? 'checked' : '' }} style="width: 2.5em; height: 1.25em;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div
+                                                    class="p-3 bg-white border border-slate-200 rounded-3 d-flex align-items-center justify-content-between">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div
+                                                            class="avatar-sm bg-purple-100 text-purple-600 rounded-circle d-flex align-items-center justify-content-center">
+                                                            <i class="fas fa-chart-bar"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-0 fw-bold text-slate-900">Menu Statistik</h6>
+                                                            <small class="text-slate-500 text-[10px]">Aktifkan halaman
+                                                                statistik kependudukan.</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            name="is_menu_statistik_active" {{ $profile->is_menu_statistik_active ?? true ? 'checked' : '' }} style="width: 2.5em; height: 1.25em;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div
+                                                    class="p-3 bg-white border border-slate-200 rounded-3 d-flex align-items-center justify-content-between">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <div
+                                                            class="avatar-sm bg-rose-100 text-rose-600 rounded-circle d-flex align-items-center justify-content-center">
+                                                            <i class="fas fa-newspaper"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h6 class="mb-0 fw-bold text-slate-900">Menu Berita</h6>
+                                                            <small class="text-slate-500 text-[10px]">Aktifkan berita dan publikasi wilayah.</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox"
+                                                            name="is_menu_berita_active" {{ $profile->is_menu_berita_active ?? true ? 'checked' : '' }} style="width: 2.5em; height: 1.25em;">
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <!-- AI Assistant Toggle -->
                                             <div class="col-md-12">

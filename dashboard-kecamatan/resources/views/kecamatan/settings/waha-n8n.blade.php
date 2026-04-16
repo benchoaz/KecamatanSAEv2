@@ -5,16 +5,19 @@
 @section('content')
     <div class="container-fluid px-4 py-4">
         <!-- Header -->
-        <div class="content-header mb-4">
-            <div class="header-title">
-                <h1 class="text-slate-900 fw-bold display-6">
-                    <i class="fab fa-whatsapp text-success me-2"></i>
-                    Pengaturan WhatsApp Bot
-                </h1>
-                <p class="text-slate-500 fs-5 mb-0">
-                    Update nomor WhatsApp bot yang ditampilkan di halaman depan.
-                </p>
-                <div class="header-accent"></div>
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="flex-shrink-0 bg-success bg-opacity-10 rounded-3 p-3">
+                <i class="fab fa-whatsapp text-success fs-3"></i>
+            </div>
+            <div>
+                <h1 class="fw-bold fs-4 mb-0">Pengaturan WhatsApp Bot</h1>
+                <p class="text-muted small mb-0">Update nomor WhatsApp bot yang ditampilkan di halaman depan.</p>
+            </div>
+            <div class="ms-auto">
+                <a href="{{ route('kecamatan.settings.waha-n8n.provider') }}"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-plug me-1"></i> Konfigurasi Provider WA
+                </a>
             </div>
         </div>
 

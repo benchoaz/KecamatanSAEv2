@@ -10,63 +10,96 @@ use App\Models\WahaN8nSetting;
 trait HasWhatsAppNotifications
 {
     /**
-     * Send WhatsApp notification via n8n (preferred) or WAHA direct
+     * Send WhatsApp notification via active WA provider (primary) or n8n webhook (fallback).
+     *
+     * Provider priority:
+     *   1. WhatsAppManager::driver()    — uses whichever provider admin set in dashboard
+     *                                     (WAHA / Fonnte / UltraMsg / Generic HTTP)
+     *   2. n8n webhook (if configured)  — fallback jika provider utama gagal
+     *
+     * Dengan urutan ini, admin bisa ganti provider kapan saja dari dashboard
+     * tanpa perlu mengubah workflow n8n.
      */
     protected function sendWaNotification($model, $type = 'status_update'): bool
     {
         try {
             $phone = $this->normalizePhone($model->whatsapp ?? $model->contact_wa ?? $model->no_wa);
-            if (!$phone) return false;
+            if (!$phone) {
+                Log::warning("WhatsApp Notification skipped: no phone number", [
+                    'model_id' => $model->id ?? 'unknown',
+                    'type'     => $type,
+                ]);
+                return false;
+            }
 
             $message = $this->buildWaMessage($model, $type);
-            
-            // 1. PRIORITIZE n8n Webhook (As requested: "Otomatis lewat n8n")
-            $n8nWebhook = config('services.n8n.reply_webhook_url', env('N8N_REPLY_WEBHOOK_URL'));
-            
-            if ($n8nWebhook) {
-                $response = Http::timeout(10)->post($n8nWebhook, [
-                    'phone' => $phone,
-                    'message' => $message,
-                    'type' => $type,
-                    'category' => $model->category ?? 'service',
-                    'service_id' => $model->id,
-                    'uuid' => $model->uuid ?? $model->manage_token ?? $model->id,
-                    'tracking_code' => $model->tracking_code ?? null,
-                ]);
 
-                if ($response->successful()) {
-                    Log::info("WhatsApp Notification sent via n8n", ['phone' => $phone, 'type' => $type]);
+            // 1. PRIMARY: Active WhatsApp Provider (WAHA / Fonnte / UltraMsg / Generic HTTP)
+            //    Langsung kirim ke provider yang dipilih admin di dashboard
+            try {
+                $provider = \App\Services\WhatsApp\WhatsAppManager::driver();
+                $providerType = $provider->getProviderType();
+                $result = $provider->sendMessage($phone, $message);
+
+                if ($result['success'] ?? false) {
+                    Log::info("WhatsApp Notification sent via active provider", [
+                        'provider' => $providerType,
+                        'phone'    => $phone,
+                        'type'     => $type,
+                    ]);
                     return true;
                 }
-                
-                Log::warning("n8n Webhook failed, trying fallback", ['status' => $response->status()]);
+
+                Log::warning("WhatsApp provider [{$providerType}] failed, trying n8n fallback", [
+                    'error' => $result['message'] ?? 'Unknown error',
+                    'phone' => $phone,
+                ]);
+            } catch (\Exception $providerErr) {
+                Log::warning("WhatsApp provider threw exception, trying n8n fallback", [
+                    'error' => $providerErr->getMessage(),
+                ]);
             }
 
-            // 2. FALLBACK: WAHA Direct
-            $wahaSettings = WahaN8nSetting::getSettings();
-            if ($wahaSettings && $wahaSettings->waha_api_url) {
-                $headers = ['Content-Type' => 'application/json'];
-                if ($wahaSettings->waha_api_key) {
-                    $headers['X-Api-Key'] = $wahaSettings->waha_api_key;
-                }
-                
-                $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
-                $response = Http::withHeaders($headers)
-                    ->timeout(10)
-                    ->post(rtrim($wahaSettings->waha_api_url, '/') . '/api/sendText', [
-                        'session' => $wahaSettings->waha_session_name ?? 'default',
-                        'chatId' => $cleanPhone . '@c.us',
-                        'text' => $message,
+            // 2. FALLBACK: n8n Webhook (jika provider utama gagal)
+            $n8nWebhook = config('services.n8n.reply_webhook_url', env('N8N_REPLY_WEBHOOK_URL'));
+
+            if ($n8nWebhook) {
+                $payload = [
+                    'phone'         => $phone,
+                    'chatId'        => str_replace('+', '', $phone) . '@c.us',
+                    'message'       => $message,
+                    'replyText'     => $message,
+                    'reply'         => $message,
+                    'type'          => $type,
+                    'category'      => $model->category ?? 'service',
+                    'service_id'    => $model->id,
+                    'uuid'          => $model->uuid ?? $model->manage_token ?? $model->id,
+                    'tracking_code' => $model->tracking_code ?? null,
+                ];
+
+                $response = Http::timeout(10)->post($n8nWebhook, $payload);
+
+                if ($response->successful()) {
+                    Log::info("WhatsApp Notification sent via n8n fallback", [
+                        'phone' => $phone,
+                        'type'  => $type,
                     ]);
-                
-                return $response->successful();
+                    return true;
+                }
+
+                Log::warning("n8n Webhook fallback also failed", ['status' => $response->status()]);
             }
 
+            Log::error("WhatsApp Notification FAILED: all methods exhausted", [
+                'phone' => $phone,
+                'type'  => $type,
+            ]);
             return false;
+
         } catch (\Exception $e) {
             Log::error("Failed to send WhatsApp notification", [
-                'error' => $e->getMessage(),
-                'model_id' => $model->id ?? 'unknown'
+                'error'    => $e->getMessage(),
+                'model_id' => $model->id ?? 'unknown',
             ]);
             return false;
         }
@@ -144,7 +177,21 @@ trait HasWhatsAppNotifications
         }
 
         if ($model->status === PublicService::STATUS_SELESAI) {
-            if ($model->completion_type === 'digital' && $model->result_file_path) {
+            if (in_array($model->category ?? '', [PublicService::CATEGORY_UMKM, PublicService::CATEGORY_PEKERJAAN])) {
+                $workDir = \App\Models\WorkDirectory::where('contact_phone', $model->whatsapp)
+                    ->where('display_name', $model->nama_pemohon)
+                    ->latest()
+                    ->first();
+                    
+                $jenisLapakan = ($model->category == PublicService::CATEGORY_UMKM) ? 'Lapak UMKM' : 'Profil Jasa';
+                $msg .= "🌟 *Selamat! {$jenisLapakan} Anda diverifikasi.*\n\n";
+                
+                if ($workDir) {
+                    $msg .= "✅ Usaha/Jasa Anda kini sudah **otomatis tampil** dan dapat dicari di halaman Direktori Ekonomi website Kecamatan.\n\n";
+                    $msg .= "🌐 *Lihat tampilan lapak publik Anda disini:*\n";
+                    $msg .= route('economy.show', $workDir->id) . "\n\n";
+                }
+            } elseif ($model->completion_type === 'digital' && $model->result_file_path) {
                 $msg .= "📎 *Dokumen PDF Anda sudah siap:*\n";
                 $msg .= asset('storage/' . $model->result_file_path) . "\n\n";
             } elseif ($model->completion_type === 'physical') {
@@ -155,9 +202,11 @@ trait HasWhatsAppNotifications
             }
         }
 
-        $trackingUrl = url('/layanan?q=' . $trackingToken);
-        $msg .= "🌐 *Cek Detail Online:*\n{$trackingUrl}\n\n";
-        $msg .= "💡 Ketik *STATUS* untuk cek progres via WhatsApp.";
+        if (!in_array($model->category ?? '', [PublicService::CATEGORY_UMKM, PublicService::CATEGORY_PEKERJAAN])) {
+            $trackingUrl = url('/layanan?q=' . $trackingToken);
+            $msg .= "🌐 *Cek Detail Online:*\n{$trackingUrl}\n\n";
+            $msg .= "💡 Ketik *STATUS* untuk cek progres via WhatsApp.";
+        }
         
         return $msg;
     }

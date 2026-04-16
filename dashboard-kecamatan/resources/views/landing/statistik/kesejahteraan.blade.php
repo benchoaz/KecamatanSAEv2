@@ -1,10 +1,10 @@
 @extends('landing.statistik.layout')
 
 @section('stat_title', 'Statistik Kesejahteraan')
-@section('stat_badge', 'Data P3KE')
-@section('stat_header', 'Kesejahteraan Keluarga (P3KE)')
+@section('stat_badge', 'Data DTSEN')
+@section('stat_header', 'Kesejahteraan Keluarga (DTSEN)')
 @section('stat_description')
-    Laporan rincian tingkat kesejahteraan keluarga berdasarkan data P3KE yang dihimpun dari 17 desa di wilayah {{ appProfile()->full_region_name }}.
+    Laporan rincian tingkat kesejahteraan keluarga berdasarkan data DTSEN yang dihimpun dari 17 desa di wilayah {{ appProfile()->full_region_name }}.
 @endsection
 
 @section('stat_content')
@@ -14,7 +14,7 @@
                 <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-chart-line"></i>
                 </div>
-                Analisis Tren Desil Kesejahteraan (P3KE)
+                Analisis Tren Desil Kesejahteraan (DTSEN)
             </h3>
             <div class="bg-slate-50 border border-slate-100 px-4 py-2 rounded-xl text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                 Update Otomatis: {{ now()->translatedFormat('d F Y') }}
@@ -30,7 +30,7 @@
                         <th class="px-6 py-4 text-center font-bold uppercase tracking-widest text-[10px] bg-blue-600">Desil 1 (n)</th>
                         <th class="px-6 py-4 text-center font-bold uppercase tracking-widest text-[10px] bg-blue-700">Desil 1 (n-1)</th>
                         <th class="px-6 py-4 text-center font-bold uppercase tracking-widest text-[10px]">Tren</th>
-                        <th class="px-6 py-4 text-center font-bold uppercase tracking-widest text-[10px] bg-slate-700 text-white">Total KK P3KE</th>
+                        <th class="px-6 py-4 text-center font-bold uppercase tracking-widest text-[10px] bg-slate-700 text-white">Total KK DTSEN</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -125,7 +125,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                         <!-- Summary Cards -->
                         <div class="bg-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-blue-200">
-                            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80 mb-1">Total Keluarga (P3KE)</div>
+                            <div class="text-[10px] font-bold uppercase tracking-wider opacity-80 mb-1">Total Keluarga (DTSEN)</div>
                             <div class="text-4xl font-black mb-1" id="modalTotalKk">0</div>
                             <div class="text-[10px] font-medium opacity-70">Kepala Keluarga Terdata</div>
                         </div>

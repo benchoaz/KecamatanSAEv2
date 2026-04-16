@@ -124,11 +124,18 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="btn btn-outline-danger rounded-pill px-4" 
+                                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                        <i class="fas fa-power-off me-1"></i> Keluar (Logout)
+                                    </button>
                                     <button type="submit" class="btn btn-primary rounded-pill px-4">
                                         <i class="fas fa-save me-1"></i> Simpan Password
                                     </button>
                                 </div>
+                            </form>
+                            <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                @csrf
                             </form>
                         </div>
                     </div>

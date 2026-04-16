@@ -168,10 +168,16 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
             Route::delete('/{apiToken}', [\App\Http\Controllers\ApiTokenController::class, 'destroy'])->name('destroy');
         });
 
-        // WAHA & n8n Management - Simplified
+        // WAHA & n8n Management - Bot Number
         Route::prefix('settings/waha-n8n')->name('settings.waha-n8n.')->group(function () {
-            Route::get('/', [WahaN8nController::class, 'index'])->name('index');
-            Route::put('/', [WahaN8nController::class, 'update'])->name('update');
+            Route::get('/',                      [WahaN8nController::class, 'index'])->name('index');
+            Route::put('/',                      [WahaN8nController::class, 'update'])->name('update');
+
+            // Multi-provider WhatsApp settings
+            Route::get('/provider',              [WahaN8nController::class, 'providerSettings'])->name('provider');
+            Route::put('/provider',              [WahaN8nController::class, 'updateProvider'])->name('provider.update');
+            Route::post('/provider/test',        [WahaN8nController::class, 'testProvider'])->name('provider.test');
+            Route::get('/workflow/download',     [WahaN8nController::class, 'downloadN8nWorkflow'])->name('workflow.download');
         });
 
         // Ekbang (Monitoring Side)
@@ -218,6 +224,11 @@ Route::middleware(['auth', 'role:Operator Kecamatan,Super Admin,pelayanan_admin,
             Route::get('/kesehatan', [KesraController::class, 'kesehatanIndex'])->name('kesehatan.index');
             Route::get('/sosial-budaya', [KesraController::class, 'sosialBudayaIndex'])->name('sosial-budaya.index');
             Route::get('/rekomendasi', [KesraController::class, 'rekomendasiIndex'])->name('rekomendasi.index');
+            
+            // Analisis Stunting
+            Route::get('/stunting/analisis', [KesraController::class, 'stuntingAnalysis'])->name('stunting.analysis');
+            Route::get('/stunting/peringkat', [KesraController::class, 'stuntingRanking'])->name('stunting.ranking');
+            
             Route::post('/process/{id}', [KesraController::class, 'process'])->name('process');
         });
 

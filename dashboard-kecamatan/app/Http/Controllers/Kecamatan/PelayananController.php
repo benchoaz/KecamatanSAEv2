@@ -11,6 +11,7 @@ use App\Models\Desa;
 use App\Models\Umkm;
 
 use App\Models\WorkDirectory;
+use App\Models\JobVacancy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -62,11 +63,19 @@ class PelayananController extends Controller
     }
 
     /**
-     * Detail Pengaduan
+     * Detail Pengaduan / Pelayanan
      */
     public function show($id)
     {
         $complaint = PublicService::with(['desa', 'handler'])->findOrFail($id);
+
+        if (in_array($complaint->category, [PublicService::CATEGORY_UMKM, PublicService::CATEGORY_PEKERJAAN])) {
+            $workDir = \App\Models\WorkDirectory::where('contact_phone', $complaint->whatsapp)
+                ->where('display_name', $complaint->nama_pemohon)
+                ->latest()
+                ->first();
+            return view('kecamatan.pelayanan.ekonomi_show', compact('complaint', 'workDir'));
+        }
 
         return view('kecamatan.pelayanan.show', compact('complaint'));
     }
@@ -116,10 +125,10 @@ class PelayananController extends Controller
             'public_response' => $publicResponse,
             'handled_by'      => auth()->id(),
             'handled_at'      => now(),
-            'completion_type' => $request->completion_type,
-            'ready_at'        => $request->ready_at,
-            'pickup_person'   => $request->pickup_person,
-            'pickup_notes'    => $request->pickup_notes,
+            'completion_type' => $request->completion_type ?? null,
+            'ready_at'        => $request->ready_at ?? null,
+            'pickup_person'   => $request->pickup_person ?? null,
+            'pickup_notes'    => $request->pickup_notes ?? null,
         ];
 
         // Handle PDF upload for digital completion
@@ -134,6 +143,26 @@ class PelayananController extends Controller
 
         $complaint->update($updateData);
 
+        // EXTRA HOOK FOR UMKM & JASA: Activate the WorkDirectory record!
+        if (in_array($complaint->category, [PublicService::CATEGORY_UMKM, PublicService::CATEGORY_PEKERJAAN])) {
+            $workDir = \App\Models\WorkDirectory::where('contact_phone', $complaint->whatsapp)
+                ->where('display_name', $complaint->nama_pemohon)
+                ->latest()
+                ->first();
+                
+            if ($workDir && $request->status === PublicService::STATUS_SELESAI) {
+                $workDir->update([
+                    'status' => 'active', 
+                    'is_verified' => true
+                ]);
+            } elseif ($workDir && $request->status === PublicService::STATUS_DITOLAK) {
+                $workDir->update([
+                    'status' => 'inactive', 
+                    'is_verified' => false
+                ]);
+            }
+        }
+
         // Send WhatsApp notification
         $shouldNotify = $request->boolean('send_whatsapp_notification', true);
         if ($shouldNotify && $complaint->whatsapp) {
@@ -145,7 +174,7 @@ class PelayananController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'Tindak lanjut pengaduan berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Tindak lanjut pengaduan/pelayanan berhasil diperbarui.');
     }
 
     /**
@@ -164,7 +193,9 @@ class PelayananController extends Controller
             'umkm_active' => Umkm::where('status', Umkm::STATUS_AKTIF)->count(),
 
 
-            // Skilled workers directory
+            // Sectoral metrics (Jobs & Workers)
+            'loker_total' => JobVacancy::count(),
+            'loker_active' => JobVacancy::where('is_active', true)->count(),
             'pekerja_total' => WorkDirectory::count(),
             'pekerja_public' => WorkDirectory::where('status', 'active')->where('consent_public', true)->count(),
 

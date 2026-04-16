@@ -24,22 +24,30 @@
             <li><a href="/"
                     class="text-sm font-medium {{ request()->is('/') ? 'text-teal-600 bg-teal-50' : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50' }} rounded-lg">Beranda</a>
             </li>
+            @if(appProfile()->is_menu_pelayanan_active)
             <li><a href="{{ request()->is('/') ? '#layanan' : '/#layanan' }}"
                     class="text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg">Layanan</a>
             </li>
+            @endif
+            @if(appProfile()->is_menu_umkm_active)
             <li><a href="{{ route('economy.index') }}"
                     class="text-sm font-medium {{ request()->is('ekonomi*') ? 'text-teal-600 bg-teal-50' : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50' }} rounded-lg">Pusat
                     Ekonomi</a>
             </li>
+            @endif
+            @if(appProfile()->is_menu_statistik_active)
             <li>
                 <a href="{{ route('landing.statistik.index') }}"
                     class="text-sm font-medium {{ request()->is('statistik*') ? 'text-teal-600 bg-teal-50' : 'text-gray-600 hover:text-teal-600 hover:bg-teal-50' }} rounded-lg">
                     Statistik
                 </a>
             </li>
+            @endif
+            @if(appProfile()->is_menu_berita_active)
             <li><a href="{{ request()->is('/') ? '#berita' : '/#berita' }}"
                     class="text-sm font-medium text-gray-600 hover:text-teal-600 hover:bg-teal-50 rounded-lg">Berita</a>
             </li>
+            @endif
         </ul>
     </div>
     <div class="navbar-end gap-2">

@@ -60,11 +60,12 @@ services:
     environment:
       - PHP_OPCACHE_ENABLE=1
       - PHP_OPCACHE_MEMORY=256
-      - PHP_OPCACHE_MAX_ACCELERATED_FILES=10000
-      - SESSION_DRIVER=file
+      - PHP_OPCACHE_MAX_ACCELERATED_FILES=20000
+      - SESSION_DRIVER=redis
       - SESSION_DOMAIN=null
     volumes:
       - ./:/var/www
+      - ./docker/php/conf.d/opcache.ini:/usr/local/etc/php/conf.d/opcache.ini:ro
     networks:
       - app-network
     depends_on:
@@ -92,7 +93,27 @@ services:
       - "traefik.http.routers.kecamatan-dashboard.rule=Host(`kecamatanbesuk.my.id`) || Host(`localhost`)"
       - "traefik.http.routers.kecamatan-dashboard.entrypoints=web,websecure"
       - "traefik.http.routers.kecamatan-dashboard.tls.certresolver=myresolver"
+      - "traefik.http.routers.kecamatan-dashboard.middlewares=kecamatan-compress,kecamatan-rate,kecamatan-buffer,kecamatan-headers"
       - "traefik.http.services.kecamatan-dashboard.loadbalancer.server.port=80"
+      
+      # Middleware - Compression (Super Fast)
+      - "traefik.http.middlewares.kecamatan-compress.compress=true"
+      
+      # Middleware - Rate Limit (Arus aman, tidak tabrakan)
+      - "traefik.http.middlewares.kecamatan-rate.ratelimit.average=100"
+      - "traefik.http.middlewares.kecamatan-rate.ratelimit.burst=50"
+      
+      # Middleware - Buffering (Powerfull & Stable)
+      - "traefik.http.middlewares.kecamatan-buffer.buffering.retryExpression=IsNetworkError() && Attempts() <= 2"
+      
+      # Middleware - Security Headers (Fix Not Secure)
+      - "traefik.http.middlewares.kecamatan-headers.headers.browserXssFilter=true"
+      - "traefik.http.middlewares.kecamatan-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.kecamatan-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.kecamatan-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.kecamatan-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.kecamatan-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.kecamatan-headers.headers.frameDeny=true"
     volumes:
       - ./:/var/www:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
@@ -182,7 +203,8 @@ services:
       - WAHA_DASHBOARD_PASSWORD=${WAHA_API_KEY}
       - WHATSAPP_START_SESSION=default
       - WHATSAPP_RESTART_ALL_SESSIONS=true
-      - WHATSAPP_HOOK_URL=http://kecamatan-n8n:5678/webhook/whatsapp-primary
+      - WAHA_WEBHOOK_ENDPOINT=http://kecamatan-n8n:5678/webhook/whatsapp-primary
+      - WAHA_WEBHOOK_EVENTS=message,message.any,session.status
       - WAHA_SESSION_DATA_SAVE=true
     volumes:
       - waha_sessions:/app/.sessions

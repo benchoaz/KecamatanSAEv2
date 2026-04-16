@@ -41,6 +41,9 @@ class ApplicationProfileController extends Controller
             'hero_bg_blur' => 'nullable|integer|min:0|max:20',
             'is_menu_pengaduan_active' => 'nullable|in:0,1,on',
             'is_menu_umkm_active' => 'nullable|in:0,1,on',
+            'is_menu_berita_active' => 'nullable|in:0,1,on',
+            'is_menu_pelayanan_active' => 'nullable|in:0,1,on',
+            'is_menu_statistik_active' => 'nullable|in:0,1,on',
             'address' => 'nullable|string|max:1000',
             'phone' => 'nullable|string|max:50',
             'whatsapp_complaint' => 'nullable|string|max:50',
@@ -87,6 +90,9 @@ class ApplicationProfileController extends Controller
         $data['hero_image_active'] = $request->has('hero_image_active') ? true : false;
         $data['is_menu_pengaduan_active'] = $request->has('is_menu_pengaduan_active') ? true : false;
         $data['is_menu_umkm_active'] = $request->has('is_menu_umkm_active') ? true : false;
+        $data['is_menu_berita_active'] = $request->has('is_menu_berita_active') ? true : false;
+        $data['is_menu_pelayanan_active'] = $request->has('is_menu_pelayanan_active') ? true : false;
+        $data['is_menu_statistik_active'] = $request->has('is_menu_statistik_active') ? true : false;
         $data['updated_by'] = auth()->id();
 
         // Handle File Uploads

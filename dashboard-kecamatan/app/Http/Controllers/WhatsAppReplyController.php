@@ -34,21 +34,61 @@ class WhatsAppReplyController extends Controller
         }
 
         try {
-            // Get n8n webhook URL from config
+            $phoneNormalized = $this->normalizePhoneNumber($request->phone);
+            
+            // 1. PRIMARY: Active WhatsApp Provider (WAHA / Fonnte / UltraMsg / Generic HTTP)
+            try {
+                $provider = \App\Services\WhatsApp\WhatsAppManager::driver();
+                $result = $provider->sendMessage($phoneNormalized, $request->message);
+
+                if ($result['success'] ?? false) {
+                    Log::info('WhatsApp reply sent successfully via active provider', [
+                        'provider' => $provider->getProviderType(),
+                        'phone' => $phoneNormalized,
+                        'type' => $request->type,
+                        'service_id' => $request->service_id,
+                        'uuid' => $request->uuid,
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Reply sent successfully',
+                        'data' => [
+                            'phone' => $phoneNormalized,
+                            'type' => $request->type,
+                            'sent_at' => now()->toISOString()
+                        ]
+                    ]);
+                }
+                
+                Log::warning('WhatsApp provider failed, falling back to n8n', [
+                    'error' => $result['message'] ?? 'Unknown error'
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('WhatsApp provider threw exception, falling back to n8n', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // 2. FALLBACK: n8n webhook
             $n8nWebhookUrl = config('services.n8n.reply_webhook_url', env('N8N_REPLY_WEBHOOK_URL'));
 
             if (empty($n8nWebhookUrl)) {
-                Log::error('N8N_REPLY_WEBHOOK_URL not configured');
+                Log::error('N8N_REPLY_WEBHOOK_URL not configured and primary provider failed');
                 return response()->json([
                     'success' => false,
-                    'message' => 'WhatsApp service not configured'
+                    'message' => 'WhatsApp service not configured or failed'
                 ], 500);
             }
 
-            // Prepare payload for n8n
+            // Prepare payload for n8n with enhanced compatibility
             $payload = [
-                'phone' => $this->normalizePhoneNumber($request->phone),
+                'phone' => $phoneNormalized,
+                'chatId' => $phoneNormalized . '@c.us',
                 'message' => $request->message,
+                'msg' => $request->message,
+                'replyText' => $request->message,
+                'reply' => $request->message,
                 'type' => $request->type,
                 'timestamp' => now()->toISOString(),
             ];
@@ -65,7 +105,7 @@ class WhatsAppReplyController extends Controller
             $response = Http::timeout(10)->post($n8nWebhookUrl, $payload);
 
             if (!$response->successful()) {
-                Log::error('Failed to send WhatsApp reply via n8n', [
+                Log::error('Failed to send WhatsApp reply via n8n (fallback)', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'payload' => $payload
@@ -73,14 +113,14 @@ class WhatsAppReplyController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to send reply via n8n',
+                    'message' => 'Failed to send reply via primary provider AND n8n fallback',
                     'n8n_status' => $response->status()
                 ], 502);
             }
 
             // Log successful reply
-            Log::info('WhatsApp reply sent successfully', [
-                'phone' => $request->phone,
+            Log::info('WhatsApp reply sent successfully via n8n fallback', [
+                'phone' => $phoneNormalized,
                 'type' => $request->type,
                 'service_id' => $request->service_id,
                 'uuid' => $request->uuid,

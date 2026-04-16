@@ -169,7 +169,6 @@
                                         </div>
                                     </div>
 
-                                    {{-- Jam Layanan --}}
                                     <div class="form-control w-full">
                                         <label class="label mb-1">
                                             <span class="label-text font-bold text-slate-700">Jam Layanan</span>
@@ -179,9 +178,15 @@
                                                 class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500">
                                                 <i class="fas fa-clock"></i>
                                             </div>
-                                            <input type="text" name="service_time"
+                                            <input type="text" name="service_time" id="service_time_input"
                                                 placeholder="Contoh: Senin-Sabtu 07.00-17.00"
                                                 class="input input-lg w-full pl-12 bg-white border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-2xl transition-all font-medium text-slate-700 placeholder:text-slate-300" />
+                                        </div>
+                                        <div class="flex flex-wrap gap-2 mt-3">
+                                            <button type="button" onclick="setServiceTime('Setiap Hari (24 Jam)')" class="badge badge-outline border-slate-300 hover:border-blue-500 hover:bg-blue-50 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold text-slate-500 transition-all">24 Jam</button>
+                                            <button type="button" onclick="setServiceTime('Senin - Jumat (08:00 - 16:00)')" class="badge badge-outline border-slate-300 hover:border-blue-500 hover:bg-blue-50 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold text-slate-500 transition-all">Jam Kerja</button>
+                                            <button type="button" onclick="setServiceTime('Weekend (09:00 - 17:00)')" class="badge badge-outline border-slate-300 hover:border-blue-500 hover:bg-blue-50 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold text-slate-500 transition-all">Weekend</button>
+                                            <button type="button" onclick="setServiceTime('Sesuai Perjanjian')" class="badge badge-outline border-slate-300 hover:border-blue-500 hover:bg-blue-50 py-3 px-4 rounded-xl cursor-pointer text-[10px] font-bold text-slate-500 transition-all">Sesuai Janji</button>
                                         </div>
                                     </div>
 
@@ -285,4 +290,10 @@
             animation: fadeIn 0.8s ease-out forwards;
         }
     </style>
+
+    <script>
+        function setServiceTime(value) {
+            document.getElementById('service_time_input').value = value;
+        }
+    </script>
 @endsection

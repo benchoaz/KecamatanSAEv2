@@ -12,13 +12,36 @@ class WahaN8nSetting extends Model
     use HasFactory;
 
     protected $fillable = [
+        // WAHA
         'waha_api_url',
         'waha_api_key',
         'waha_session_name',
         'waha_webhook_url',
+
+        // n8n
         'n8n_api_url',
         'n8n_api_key',
         'n8n_webhook_url',
+
+        // Active provider selector
+        'active_provider',
+
+        // Fonnte
+        'fonnte_token',
+        'fonnte_device',
+
+        // UltraMsg
+        'ultramsg_instance_id',
+        'ultramsg_token',
+
+        // Generic HTTP
+        'generic_http_url',
+        'generic_http_headers',
+        'generic_http_phone_field',
+        'generic_http_message_field',
+        'generic_http_extra_body',
+
+        // Status & Bot
         'is_waha_connected',
         'is_n8n_connected',
         'last_connection_check',
@@ -30,11 +53,13 @@ class WahaN8nSetting extends Model
     ];
 
     protected $casts = [
-        'is_waha_connected' => 'boolean',
-        'is_n8n_connected' => 'boolean',
-        'bot_enabled' => 'boolean',
-        'connection_details' => 'array',
-        'last_connection_check' => 'datetime',
+        'is_waha_connected'       => 'boolean',
+        'is_n8n_connected'        => 'boolean',
+        'bot_enabled'             => 'boolean',
+        'connection_details'      => 'array',
+        'last_connection_check'   => 'datetime',
+        'generic_http_headers'    => 'array',
+        'generic_http_extra_body' => 'array',
     ];
 
     /**
@@ -342,6 +367,30 @@ class WahaN8nSetting extends Model
         return $this->bot_enabled
             && $this->is_waha_connected
             && $this->bot_status === 'connected';
+    }
+
+    /**
+     * Get the active provider key (default: 'waha')
+     */
+    public function getActiveProvider(): string
+    {
+        return $this->active_provider ?? 'waha';
+    }
+
+    /**
+     * Get human-readable label for the active provider
+     */
+    public function getActiveProviderLabel(): string
+    {
+        return \App\Services\WhatsApp\WhatsAppManager::supportedProviders()[$this->getActiveProvider()] ?? 'WAHA';
+    }
+
+    /**
+     * Whether the active provider is WAHA
+     */
+    public function isWahaActive(): bool
+    {
+        return $this->getActiveProvider() === 'waha';
     }
 
     /**

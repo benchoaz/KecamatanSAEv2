@@ -375,6 +375,7 @@
                 </div>
             </div>
 
+            @if(appProfile()->is_menu_statistik_active)
             <!-- Slide 3: Regional Potential -->
             <div class="swiper-slide hero-slide">
                 <!-- Statistic Background -->
@@ -422,7 +423,7 @@
                     </div>
                 </div>
             </div>
-
+            @endif
         </div>
 
         <!-- Add Pagination -->
@@ -607,6 +608,7 @@
     @endauth
     <!-- END INTERNAL ACCESS -->
 
+    @if(appProfile()->is_menu_statistik_active)
     <!-- Section: Statistik & Kepercayaan (NEW) -->
     <div class="py-16 bg-white relative overflow-hidden">
         <div class="container mx-auto px-6">
@@ -646,9 +648,11 @@
             </div>
         </div>
     </div>
+    @endif
 
 
 
+    @if(appProfile()->is_menu_pelayanan_active)
     <!-- Section: Layanan Terpadu (REFINED) -->
     <div class="w-full h-24 bg-gradient-to-b from-slate-50 to-white"></div>
     <div id="layanan" class="py-24 bg-white">
@@ -743,6 +747,7 @@
 
         </div>
     </div>
+    @endif
 
 
 
@@ -788,6 +793,7 @@
         </div>
     @endif
 
+    @if(appProfile()->is_menu_umkm_active)
     <!-- Section: Pasar Rakyat & Produk UMKM (NEW - Buyer Experience) -->
     <div id="pasar" class="py-24 bg-slate-50 border-t border-slate-100 relative overflow-hidden">
         {{-- Background Decorations --}}
@@ -886,7 +892,9 @@
             </div>
         </div>
     </div>
+    @endif
 
+    @if(appProfile()->is_menu_berita_active)
     <!-- Berita & Informasi Section -->
     <div id="berita" class="py-20 bg-white border-t border-slate-100">
         <div class="container mx-auto px-6">
@@ -970,6 +978,7 @@
             </div>
         </div> <!-- Close Container -->
     </div> <!-- Close Section -->
+    @endif
 
 
 
@@ -2636,6 +2645,7 @@
                 scrollWheelZoom: false,
                 attributionControl: false,
                 zoomControl: false,
+                doubleClickZoom: false, // Disabled to prevent zooming when opening portal
                 zoomSnap: 0.5,
                 zoomDelta: 0.5
             });
@@ -2764,6 +2774,9 @@
                             const slug = nama.toLowerCase().replace(/\s+/g, '');
                             const url = `https://${slug}.tatadesa.com`;
 
+                            // Ensure no popup binds to this layer
+                            layer.unbindPopup();
+
                             layer.on({
                                 mouseover: function (e) {
                                     const l = e.target;
@@ -2775,9 +2788,13 @@
                                     });
 
                                     layer.bindTooltip(`
-                                    <div class="px-2 py-1 text-center">
+                                    <div class="px-3 py-2 text-center">
                                         <p class="text-[8px] font-bold text-teal-400 uppercase tracking-widest mb-0.5">Wilayah Desa</p>
-                                        <p class="text-xs font-black text-white">${nama}</p>
+                                        <p class="text-sm font-black text-white mb-1.5">${nama}</p>
+                                        <div class="bg-slate-800/80 rounded-lg p-1.5 border border-slate-600/50 flex flex-col gap-1 text-left">
+                                            <p class="text-[8px] text-slate-300 flex items-center gap-1.5"><i class="fas fa-hand-pointer text-teal-400"></i> Single-Klik = Zoom</p>
+                                            <p class="text-[8px] text-slate-300 flex items-center gap-1.5"><i class="fas fa-mouse text-amber-400"></i> Double-Klik = Portal Desa</p>
+                                        </div>
                                     </div>
                                 `, {
                                         sticky: true,
@@ -2792,40 +2809,24 @@
                                     desaLayer.resetStyle(e.target);
                                 },
                                 click: function (e) {
+                                    e.originalEvent.stopPropagation();
                                     map.flyToBounds(e.target.getBounds(), {
                                         padding: [80, 80],
                                         duration: 1.2
                                     });
-
-                                    const popupContent = `
-                                    <div class="premium-popup-card">
-                                        <div class="popup-header">
-                                            <div class="icon-box">
-                                                <i class="fas fa-landmark"></i>
-                                            </div>
-                                            <div class="text-box">
-                                                <h4>${nama}</h4>
-                                                <span>Portal Resmi Desa</span>
-                                            </div>
-                                        </div>
-                                        <div class="popup-body">
-                                            <p>Akses layanan mandiri dan informasi publik Desa ${nama} secara digital.</p>
-                                            <a href="${url}" target="_blank" rel="noopener noreferrer" class="popup-btn">
-                                                Kunjungi Website <i class="fas fa-external-link-alt ml-2"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                `;
-
-                                    layer.bindPopup(popupContent, {
-                                        className: 'premium-leaflet-popup',
-                                        closeButton: false,
-                                        maxWidth: 280
-                                    }).openPopup();
+                                },
+                                dblclick: function (e) {
+                                    e.originalEvent.stopPropagation();
+                                    window.open(url, '_blank');
                                 }
                             });
                         }
                     }).addTo(map);
+
+                    // Close any stray popups
+                    map.on('popupopen', function() {
+                        map.closePopup();
+                    });
 
                     // Initial fit to villages if no kecamatan bounds set yet
                     if (!desaLayer.getBounds().isEmpty()) {
