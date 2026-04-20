@@ -34,3 +34,9 @@ Route::get('/bpjs', fn() => redirect()->route('apply.form', 'bpjs'))->name('appl
 
 Route::post('/layanan/apply', [App\Http\Controllers\Public\LayananController::class, 'store'])
     ->name('apply.store');
+
+// NEW: Dynamic Decision Tree Route (slug-based, backward compatible)
+Route::get('/layanan/{slug}', [App\Http\Controllers\Public\LayananController::class, 'showLayanan'])
+    ->name('apply.layanan');
+Route::post('/layanan/node/submit', [App\Http\Controllers\Public\LayananController::class, 'storeNodeBased'])
+    ->name('apply.node.store');
