@@ -43,13 +43,23 @@
 
                                 <!-- Deskripsi / Syarat -->
                                 <div class="col-12">
+                                    <div class="alert bg-indigo-50 border-indigo-100 text-indigo-800 d-flex gap-3 align-items-start rounded-4 mb-4">
+                                        <div class="flex-shrink-0 mt-1">
+                                            <i class="fas fa-lightbulb text-indigo-500 fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <strong>Tips Layanan Dinamis (Decision Tree)</strong><br>
+                                            <small class="text-indigo-700">Jika Anda ingin syarat berkas yang berbeda-beda tergantung opsi warga,
+                                            <strong>kosongkan</strong> bagian Persyaratan & Upload di bawah ini. Setelah menyimpan, pergi ke Daftar Layanan lalu atur cabang syarat dengan klik tombol <b>Buat Node</b>.</small>
+                                        </div>
+                                    </div>
+
                                     <label
                                         class="form-label text-slate-700 fw-bold small uppercase tracking-wider">Persyaratan
-                                        (Teks) <span class="text-rose-500">*</span></label>
+                                        (Teks Klasik) <span class="text-slate-400 fw-normal text-lowercase">(opsional)</span></label>
                                     <textarea name="deskripsi_syarat"
                                         class="form-control border-slate-200 bg-slate-50 rounded-3" rows="3"
-                                        placeholder="Contoh: Fotokopi KTP, KK, & Surat Pengantar RT/RW."
-                                        required>{{ old('deskripsi_syarat', $layanan->deskripsi_syarat ?? '') }}</textarea>
+                                        placeholder="Contoh: Fotokopi KTP, KK, & Surat Pengantar RT/RW.">{{ old('deskripsi_syarat', $layanan->deskripsi_syarat ?? '') }}</textarea>
                                 </div>
 
                                 <!-- Dynamic Attachment Requirements -->
@@ -57,7 +67,7 @@
                                     <div class="d-flex align-items-center justify-content-between mb-3">
                                         <label
                                             class="form-label text-slate-700 fw-bold small uppercase tracking-wider mb-0">
-                                            <i class="fas fa-paperclip text-primary me-1"></i> Upload Berkas Mandiri
+                                            <i class="fas fa-paperclip text-primary me-1"></i> Upload Berkas Mandiri <span class="text-slate-400 fw-normal text-lowercase">(opsional)</span>
                                         </label>
                                         <button type="button" id="addAttachmentBtn"
                                             class="btn btn-xs btn-outline-primary rounded-pill px-3">
@@ -72,7 +82,7 @@
                                             <div class="attachment-row d-flex gap-2">
                                                 <input type="text" name="attachment_requirements[]" value="{{ $req }}"
                                                     class="form-control border-slate-200 bg-slate-50 rounded-3"
-                                                    placeholder="Contoh: Foto Ijazah Asli" required>
+                                                    placeholder="Contoh: Foto Ijazah Asli">
                                                 <button type="button"
                                                     class="btn btn-outline-rose rounded-3 remove-attachment-btn">
                                                     <i class="fas fa-times"></i>
@@ -310,7 +320,7 @@
                 row.innerHTML = `
                         <input type="text" name="attachment_requirements[]" 
                             class="form-control border-slate-200 bg-slate-50 rounded-3" 
-                            placeholder="Contoh: Foto KK Asli" required>
+                            placeholder="Contoh: Foto KK Asli">
                         <button type="button" class="btn btn-outline-rose rounded-3 remove-attachment-btn">
                             <i class="fas fa-times"></i>
                         </button>

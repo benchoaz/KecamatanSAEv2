@@ -326,7 +326,7 @@ class PelayananController extends Controller
     {
         $validated = $request->validate([
             'nama_layanan' => 'required|string|max:255',
-            'deskripsi_syarat' => 'required|string',
+            'deskripsi_syarat' => 'nullable|string',
             'estimasi_waktu' => 'nullable|string|max:100',
             'ikon' => 'required|string|max:100',
             'warna_bg' => 'required|string|max:100',
@@ -355,7 +355,7 @@ class PelayananController extends Controller
         $layanan = MasterLayanan::findOrFail($id);
         $validated = $request->validate([
             'nama_layanan' => 'required|string|max:255',
-            'deskripsi_syarat' => 'required|string',
+            'deskripsi_syarat' => 'nullable|string',
             'estimasi_waktu' => 'nullable|string|max:100',
             'ikon' => 'required|string|max:100',
             'warna_bg' => 'required|string|max:100',
