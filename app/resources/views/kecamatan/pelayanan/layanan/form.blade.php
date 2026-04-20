@@ -48,18 +48,18 @@
                                             <i class="fas fa-lightbulb text-indigo-500 fs-5"></i>
                                         </div>
                                         <div>
-                                            <strong>Tips Layanan Dinamis (Decision Tree)</strong><br>
-                                            <small class="text-indigo-700">Jika Anda ingin syarat berkas yang berbeda-beda tergantung opsi warga,
-                                            <strong>kosongkan</strong> bagian Persyaratan & Upload di bawah ini. Setelah menyimpan, pergi ke Daftar Layanan lalu atur cabang syarat dengan klik tombol <b>Buat Node</b>.</small>
+                                            <strong>Mode Lanjutan: Syarat Bertingkat</strong><br>
+                                            <small class="text-indigo-700">Layanan ini secara default menggunakan syarat tunggal (statis) di bawah ini. Jika layanan Anda punya ragam syarat yang berbeda-beda (*alur bercabang*), silakan isi ini dengan syarat umum, lalu navigasi ke <b>Daftar Layanan &rarr; Kelola Node</b> untuk mengatur cabangnya nanti.</small>
                                         </div>
                                     </div>
 
                                     <label
                                         class="form-label text-slate-700 fw-bold small uppercase tracking-wider">Persyaratan
-                                        (Teks Klasik) <span class="text-slate-400 fw-normal text-lowercase">(opsional)</span></label>
+                                        (Teks) <span class="text-rose-500">*</span></label>
                                     <textarea name="deskripsi_syarat"
                                         class="form-control border-slate-200 bg-slate-50 rounded-3" rows="3"
-                                        placeholder="Contoh: Fotokopi KTP, KK, & Surat Pengantar RT/RW.">{{ old('deskripsi_syarat', $layanan->deskripsi_syarat ?? '') }}</textarea>
+                                        placeholder="Contoh: Fotokopi KTP, KK, & Surat Pengantar RT/RW."
+                                        required>{{ old('deskripsi_syarat', $layanan->deskripsi_syarat ?? '') }}</textarea>
                                 </div>
 
                                 <!-- Dynamic Attachment Requirements -->
