@@ -50,6 +50,9 @@ class ServiceNodeController extends Controller
             'is_active'         => 'nullable|boolean',
         ]);
 
+        $masterLayananId = $request->input('master_layanan_id');
+
+        $validated['master_layanan_id'] = $masterLayananId;
         $validated['is_leaf']   = $request->boolean('is_leaf');
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['parent_id'] = $validated['parent_id'] ?: null;
@@ -57,13 +60,13 @@ class ServiceNodeController extends Controller
         ServiceNode::create($validated);
 
         // Aktifkan flag has_nodes pada master_layanan
-        MasterLayanan::where('id', $validated['master_layanan_id'])
+        MasterLayanan::where('id', $masterLayananId)
             ->update(['has_nodes' => true]);
 
-        $this->treeService->clearCache((int) $validated['master_layanan_id']);
+        $this->treeService->clearCache((int) $masterLayananId);
 
         return redirect()
-            ->route('kecamatan.pelayanan.layanan.nodes.index', $validated['master_layanan_id'])
+            ->route('kecamatan.pelayanan.layanan.nodes.index', $masterLayananId)
             ->with('success', 'Node berhasil ditambahkan!');
     }
 
