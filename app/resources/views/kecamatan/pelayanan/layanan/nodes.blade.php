@@ -118,7 +118,7 @@
                 <h5 class="modal-title fw-bold" id="addNodeModalTitle">Tambah Node Baru</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="nodeForm" method="POST">
+            <form id="nodeForm" method="POST" action="{{ route('kecamatan.pelayanan.layanan.nodes.store') }}">
                 @csrf
                 <input type="hidden" name="_method" id="nodeMethod" value="POST">
                 <input type="hidden" name="parent_id" id="nodeParentId" value="">
