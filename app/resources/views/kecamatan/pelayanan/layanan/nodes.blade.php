@@ -441,23 +441,31 @@ document.getElementById('addRequirementField').addEventListener('click', () => a
 // ── Edit Node Modal Setup ──────────────────────────────────
 document.querySelectorAll('.edit-node-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        const d = this.dataset;
-        const nodeId = d.nodeId;
-        const route  = '{{ route("kecamatan.pelayanan.layanan.nodes.update", "DUMMY_ID") }}'.replace('DUMMY_ID', nodeId);
+        const nodeId = this.getAttribute('data-node-id');
+        const nodeName = this.getAttribute('data-node-name');
+        const nodeDesc = this.getAttribute('data-node-desc') || '';
+        const nodeIkon = this.getAttribute('data-node-ikon') || 'fa-folder';
+        const nodeUrutan = this.getAttribute('data-node-urutan') || '0';
+        const nodeReqText = this.getAttribute('data-node-req-text') || '';
+        const isLeaf = this.getAttribute('data-is-leaf') === '1';
+        const isActive = this.getAttribute('data-is-active') === '1';
+        const showIdentity = this.getAttribute('data-show-identity') !== '0';
+        
+        const route = '{{ route("kecamatan.pelayanan.layanan.nodes.update", "DUMMY_ID") }}'.replace('DUMMY_ID', nodeId);
 
-        document.getElementById('addNodeModalTitle').textContent = 'Edit Node: ' + d.nodeName;
+        document.getElementById('addNodeModalTitle').textContent = 'Edit Node: ' + nodeName;
         document.getElementById('nodeForm').action    = route;
         document.getElementById('nodeMethod').value   = 'PUT';
-        document.getElementById('nodeName').value     = d.nodeName;
-        document.getElementById('nodeDesc').value     = d.nodeDesc || '';
-        document.getElementById('nodeIkon').value     = d.nodeIkon || 'fa-folder';
-        document.getElementById('nodeUrutan').value   = d.nodeUrutan || 0;
-        document.getElementById('nodeIsLeaf').checked = d.isLeaf === '1';
-        document.getElementById('nodeIsActive').checked = d.isActive === '1';
-        document.getElementById('nodeShowIdentity').checked = d.showIdentity !== '0';
-        document.getElementById('nodeReqText').value = d.nodeReqText || '';
+        document.getElementById('nodeName').value     = nodeName;
+        document.getElementById('nodeDesc').value     = nodeDesc;
+        document.getElementById('nodeIkon').value     = nodeIkon;
+        document.getElementById('nodeUrutan').value   = nodeUrutan;
+        document.getElementById('nodeIsLeaf').checked = isLeaf;
+        document.getElementById('nodeIsActive').checked = isActive;
+        document.getElementById('nodeShowIdentity').checked = showIdentity;
+        document.getElementById('nodeReqText').value  = nodeReqText;
 
-        if (d.isLeaf === '1') {
+        if (isLeaf) {
             document.getElementById('leafConfigs').classList.remove('d-none');
             // Fetch and populate requirements
             fetchRequirementsForModal(nodeId);
