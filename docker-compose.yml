@@ -11,9 +11,13 @@ services:
     command:
       - "--log.level=INFO"
       - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
       - "--providers.file.filename=/etc/traefik/dynamic_conf.yml"
       - "--providers.file.watch=true"
       - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${ACME_EMAIL:-benchoaz@gmail.com}"
@@ -24,6 +28,7 @@ services:
     volumes:
       - ./gateway/dynamic_conf.yml:/etc/traefik/dynamic_conf.yml:ro
       - ./gateway/acme.json:/acme.json
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - kecamatan-network
 
@@ -55,11 +60,16 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
+      # Route utama: semua traffic ke dashboard Laravel (priority rendah)
       - "traefik.http.routers.kecamatan-dashboard.rule=Host(`${DOMAIN:-kecamatanbesuk.my.id}`)"
-      - "traefik.http.routers.kecamatan-dashboard.entrypoints=web,websecure"
+      - "traefik.http.routers.kecamatan-dashboard.entrypoints=websecure"
       - "traefik.http.routers.kecamatan-dashboard.tls.certresolver=myresolver"
+      - "traefik.http.routers.kecamatan-dashboard.priority=1"
       - "traefik.http.middlewares.kecamatan-compress.compress=true"
-      - "traefik.http.routers.kecamatan-dashboard.middlewares=kecamatan-compress"
+      - "traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
+      - "traefik.http.routers.kecamatan-dashboard.middlewares=kecamatan-compress,secure-headers"
     volumes:
       - ./app:/var/www:ro
       - ./app/docker/nginx/conf.d:/etc/nginx/conf.d:ro
@@ -123,8 +133,7 @@ services:
     image: devlikeapro/waha:latest
     container_name: waha-kecamatan
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # Tidak ada ports: — akses hanya via https://kecamatanbesuk.my.id/waha
     environment:
       - WHATSAPP_API_TOKEN=${WAHA_API_KEY}
       - WAHA_API_KEY=${WAHA_API_KEY}
@@ -135,6 +144,19 @@ services:
       - WHATSAPP_SWAGGER_PASSWORD=${WAHA_DASHBOARD_PASSWORD}
     volumes:
       - waha_sessions:/app/.sessions
+    labels:
+      - "traefik.enable=true"
+      # Route path /waha ke container ini (priority tinggi)
+      - "traefik.http.routers.waha.rule=Host(`${DOMAIN:-kecamatanbesuk.my.id}`) && PathPrefix(`/waha`)"
+      - "traefik.http.routers.waha.entrypoints=websecure"
+      - "traefik.http.routers.waha.tls.certresolver=myresolver"
+      - "traefik.http.routers.waha.priority=10"
+      - "traefik.http.services.waha.loadbalancer.server.port=3000"
+      # Strip prefix /waha sebelum diteruskan ke container
+      - "traefik.http.middlewares.waha-strip.stripprefix.prefixes=/waha"
+      # IP whitelist — isi ALLOWED_IPS di .env dengan IP Anda
+      - "traefik.http.middlewares.waha-ipwhitelist.ipwhitelist.sourcerange=${ALLOWED_IPS:-127.0.0.1/32}"
+      - "traefik.http.routers.waha.middlewares=waha-strip,waha-ipwhitelist"
     networks:
       - kecamatan-network
 
@@ -142,8 +164,7 @@ services:
     image: n8nio/n8n:latest
     container_name: kecamatan-n8n
     restart: unless-stopped
-    ports:
-      - "5678:5678"
+    # Tidak ada ports: — akses hanya via https://kecamatanbesuk.my.id/n8n
     environment:
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
@@ -151,8 +172,24 @@ services:
       - WAHA_API_KEY=${WAHA_API_KEY}
       - DASHBOARD_API_TOKEN=${DASHBOARD_API_TOKEN}
       - DASHBOARD_URL=http://kecamatan-nginx
+      - N8N_HOST=${DOMAIN:-kecamatanbesuk.my.id}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_PATH=/n8n/
+      - WEBHOOK_URL=https://${DOMAIN:-kecamatanbesuk.my.id}/n8n/
     volumes:
       - n8n_data:/home/node/.n8n
+    labels:
+      - "traefik.enable=true"
+      # Route path /n8n ke container ini (priority tinggi)
+      - "traefik.http.routers.n8n.rule=Host(`${DOMAIN:-kecamatanbesuk.my.id}`) && PathPrefix(`/n8n`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=myresolver"
+      - "traefik.http.routers.n8n.priority=10"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+      # IP whitelist — isi ALLOWED_IPS di .env dengan IP Anda
+      - "traefik.http.middlewares.n8n-ipwhitelist.ipwhitelist.sourcerange=${ALLOWED_IPS:-127.0.0.1/32}"
+      - "traefik.http.routers.n8n.middlewares=n8n-ipwhitelist"
     networks:
       - kecamatan-network
     depends_on:
