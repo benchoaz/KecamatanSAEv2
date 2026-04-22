@@ -31,6 +31,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - kecamatan-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ============================================================
   # Application Core (Laravel 10)
@@ -45,7 +54,8 @@ services:
     working_dir: /var/www
     env_file: ./app/.env
     volumes:
-      - ./app:/var/www
+      - ./app/storage:/var/www/storage:rw
+      - ./app/bootstrap/cache:/var/www/bootstrap/cache:rw
     networks:
       - kecamatan-network
     depends_on:
@@ -53,6 +63,24 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "php", "artisan", "migrate:status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   nginx:
     image: nginx:alpine
@@ -60,7 +88,6 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      # Route utama: semua traffic ke dashboard Laravel (priority rendah)
       - "traefik.http.routers.kecamatan-dashboard.rule=Host(`${DOMAIN:-kecamatanbesuk.my.id}`)"
       - "traefik.http.routers.kecamatan-dashboard.entrypoints=websecure"
       - "traefik.http.routers.kecamatan-dashboard.tls.certresolver=myresolver"
@@ -71,15 +98,23 @@ services:
       - "traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true"
       - "traefik.http.routers.kecamatan-dashboard.middlewares=kecamatan-compress,secure-headers"
     volumes:
-      - ./app:/var/www:ro
+      - ./app/public:/var/www/public:ro
       - ./app/docker/nginx/conf.d:/etc/nginx/conf.d:ro
     networks:
       kecamatan-network:
         aliases:
           - dashboard-kecamatan
-          - dashboard-kecamatan-nginx
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   db:
     image: postgres:17-alpine
@@ -98,6 +133,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
@@ -110,6 +154,15 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   scheduler:
     build:
@@ -125,6 +178,15 @@ services:
       - kecamatan-network
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ============================================================
   # WhatsApp & Automation (WAHA + n8n)
@@ -133,7 +195,6 @@ services:
     image: devlikeapro/waha:latest
     container_name: waha-kecamatan
     restart: unless-stopped
-    # Tidak ada ports: — akses hanya via https://kecamatanbesuk.my.id/waha
     environment:
       - WHATSAPP_API_TOKEN=${WAHA_API_KEY}
       - WAHA_API_KEY=${WAHA_API_KEY}
@@ -146,25 +207,30 @@ services:
       - waha_sessions:/app/.sessions
     labels:
       - "traefik.enable=true"
-      # Route path /waha ke container ini (priority tinggi)
       - "traefik.http.routers.waha.rule=Host(`${DOMAIN:-kecamatanbesuk.my.id}`) && PathPrefix(`/waha`)"
       - "traefik.http.routers.waha.entrypoints=websecure"
       - "traefik.http.routers.waha.tls.certresolver=myresolver"
       - "traefik.http.routers.waha.priority=10"
       - "traefik.http.services.waha.loadbalancer.server.port=3000"
-      # Strip prefix /waha sebelum diteruskan ke container
       - "traefik.http.middlewares.waha-strip.stripprefix.prefixes=/waha"
-      # IP whitelist — isi ALLOWED_IPS di .env dengan IP Anda
       - "traefik.http.middlewares.waha-ipwhitelist.ipwhitelist.sourcerange=${ALLOWED_IPS:-127.0.0.1/32}"
       - "traefik.http.routers.waha.middlewares=waha-strip,waha-ipwhitelist"
     networks:
       - kecamatan-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   n8n:
     image: n8nio/n8n:latest
     container_name: kecamatan-n8n
     restart: unless-stopped
-    # Tidak ada ports: — akses hanya via https://kecamatanbesuk.my.id/n8n
     environment:
       - N8N_BASIC_AUTH_ACTIVE=false
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
@@ -181,19 +247,26 @@ services:
       - n8n_data:/home/node/.n8n
     labels:
       - "traefik.enable=true"
-      # Route path /n8n ke container ini (priority tinggi)
       - "traefik.http.routers.n8n.rule=Host(`${DOMAIN:-kecamatanbesuk.my.id}`) && PathPrefix(`/n8n`)"
       - "traefik.http.routers.n8n.entrypoints=websecure"
       - "traefik.http.routers.n8n.tls.certresolver=myresolver"
       - "traefik.http.routers.n8n.priority=10"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
-      # IP whitelist — isi ALLOWED_IPS di .env dengan IP Anda
       - "traefik.http.middlewares.n8n-ipwhitelist.ipwhitelist.sourcerange=${ALLOWED_IPS:-127.0.0.1/32}"
       - "traefik.http.routers.n8n.middlewares=n8n-ipwhitelist"
     networks:
       - kecamatan-network
     depends_on:
       - waha
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   kecamatan-network:

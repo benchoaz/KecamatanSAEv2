@@ -28,6 +28,12 @@
                     <span class="text-slate-400 small fw-bold uppercase tracking-wider">
                         <i class="far fa-calendar-alt me-1"></i> {{ now()->translatedFormat('l, d F Y') }}
                     </span>
+                    @if($stats['last_updated'])
+                        <div class="h-px bg-white bg-opacity-10 w-4"></div>
+                        <span class="text-slate-500 small tracking-wider">
+                            <i class="fas fa-sync-alt me-1"></i> Terakhir Sinkron: <span class="text-info">{{ \Carbon\Carbon::parse($stats['last_updated'])->diffForHumans() }}</span>
+                        </span>
+                    @endif
                 </div>
 
                 <div class="row align-items-center">
@@ -78,8 +84,14 @@
                                 <span class="text-success small fw-bold"><i class="fas fa-chart-line"></i></span>
                             </div>
                         </div>
+                        </div>
                     </div>
                     <div class="h-1 w-100 bg-primary opacity-10"></div>
+                    <div class="px-4 py-2 bg-slate-50 border-top border-slate-100">
+                        <span class="text-[10px] fw-black text-slate-400 uppercase tracking-widest">
+                            <i class="fas fa-globe me-1"></i> Sumber: tatadesa.com
+                        </span>
+                    </div>
                 </div>
             </div>
             <div class="col-xl-3 col-md-6 animate-entrance" style="animation-delay: 0.2s">

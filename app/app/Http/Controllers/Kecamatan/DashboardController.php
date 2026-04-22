@@ -16,11 +16,13 @@ class DashboardController extends Controller
         $currentUser = auth()->user();
         abort_unless($currentUser->desa_id === null, 403);
 
+        $desas = Desa::all();
         $stats = [
-            'jumlah_desa' => Desa::count(),
+            'jumlah_desa' => $desas->count(),
             'pengunjung_hari_ini' => PengunjungKecamatan::hariIni()->count(),
-            'total_penduduk' => 12847, // Placeholder
-            'laporan_masuk' => Submission::whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])->count(),
+            'total_penduduk' => $desas->sum('jumlah_penduduk'),
+            'surat_bulan_ini' => Submission::whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])->count(),
+            'last_updated' => $desas->max('updated_at'),
         ];
 
         $activities = AuditLog::with('user')
@@ -64,15 +66,19 @@ class DashboardController extends Controller
      */
     public function stats()
     {
+        $desas = Desa::all();
+        $totalPenduduk = $desas->sum('jumlah_penduduk');
+        $suratBulanIni = Submission::whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])->count();
+
         return response()->json([
-            'total_penduduk' => 12847,
-            'surat_bulan_ini' => 156,
-            'jumlah_desa' => 8,
-            'umkm_terdaftar' => 342,
+            'total_penduduk' => $totalPenduduk,
+            'surat_bulan_ini' => $suratBulanIni,
+            'jumlah_desa' => $desas->count(),
+            'umkm_terdaftar' => \App\Models\UmkmLocal::count(),
             'trend' => [
-                'penduduk' => '+2.5%',
-                'surat' => '+12%',
-                'umkm' => '+8.3%'
+                'penduduk' => '+0.0%', // Bisa dikalkulasi jika ada data historis
+                'surat' => '+0.0%',
+                'umkm' => '+0.0%'
             ]
         ]);
     }

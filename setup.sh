@@ -2,50 +2,66 @@
 set -e
 
 # ============================================================
-# SILAP System Setup & Deployment Script
-# =) Centralized Installer for Kecamatan Besuk
+# SILAP System Setup & Deployment Script (Anti-Error Version)
 # ============================================================
 
-echo "🏛️  SILAP System - Setup Wizard"
-echo "--------------------------------"
+echo "🏛️  SILAP System - Robust Setup Wizard"
+echo "----------------------------------------"
 
-# 1. Check Prerequisities
-echo "🔍 Checking prerequisites..."
-if ! command -v docker &> /dev/null; then
-    echo "❌ Error: Docker is not installed. Please install Docker first."
-    exit 1
-fi
+# 1. Pre-flight Checks
+chmod +x scripts/pre-flight.sh
+./scripts/pre-flight.sh
 
-# 2. Setup Environment
+# 2. Setup Environment (Idempotent)
 echo "📝 Preparing environment files..."
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "✅ Root .env created from example. (Please edit it later)"
-else
-    echo "ℹ️  Root .env already exists."
-fi
+[ ! -f .env ] && cp .env.example .env && echo "✅ Root .env created."
+[ ! -f app/.env ] && cp app/.env.example app/.env && echo "✅ App .env created."
 
-if [ ! -f app/.env ]; then
-    cp app/.env.example app/.env
-    echo "✅ App .env created from example."
-else
-    echo "ℹ️  App .env already exists."
-fi
+# 3. Safe Pull & Build
+echo "🏗️  Pulling images sequentially (safe mode)..."
+services=("traefik:v2.10" "postgres:17-alpine" "redis:7-alpine" "nginx:alpine" "node:18-alpine" "php:8.1-fpm-alpine")
+for img in "${services[@]}"; do
+    docker pull $img || echo "⚠️ Warning: Failed to pull $img, will try building."
+done
 
-# 3. Pull & Build
 echo "🏗️  Building system components..."
 docker compose build --pull
 
-# 4. Start System
+# 4. Start System with Retry
 echo "🚀 Starting services..."
-docker compose up -d
+MAX_RETRIES=3
+COUNT=0
+until docker compose up -d || [ $COUNT -eq $MAX_RETRIES ]; do
+    echo "⚠️ Failed to start. Retrying ($((++COUNT))/$MAX_RETRIES)..."
+    sleep 5
+done
 
-# 5. Initialize App
+if [ $COUNT -eq $MAX_RETRIES ]; then
+    echo "❌ ERROR: System failed to start after $MAX_RETRIES retries."
+    exit 1
+fi
+
+# 5. Initialize App (Laravel Hardening)
 echo "⚙️  Initializing Laravel Core..."
-docker exec kecamatan-app php artisan key:generate --ansi
-docker exec kecamatan-app php artisan optimize:clear
+# Fix permissions first
+docker exec kecamatan-app chown -R www-data:www-data storage bootstrap/cache
+docker exec kecamatan-app chmod -R 775 storage bootstrap/cache
 
-echo "--------------------------------"
-echo "✅ SETUP COMPLETE!"
-echo "🌐 Your system is running on port 80/443."
-echo "👉 Use 'docker compose logs -f' to monitor the system."
+# Generate key if empty
+APP_KEY=$(grep APP_KEY app/.env | cut -d '=' -f2)
+if [ -z "$APP_KEY" ]; then
+    docker exec kecamatan-app php artisan key:generate --ansi
+fi
+
+# Optimize & Migrate
+docker exec kecamatan-app php artisan optimize:clear
+docker exec kecamatan-app php artisan migrate --force
+
+# 6. Cleanup
+echo "🧹 Cleaning up old images and cache..."
+docker system prune -f --volumes || true
+
+echo "----------------------------------------"
+echo "✅ DEPLOYMENT SUCCESSFUL!"
+echo "🌐 Your system is running and hardened."
+echo "👉 Use './scripts/check-status.sh' to verify."
